@@ -1,0 +1,56 @@
+laundry (Laundry)
+    - washing-machines  = Washing Machines
+    - washer-dryers  = Washer Dryers
+    - tumble-dryers  = Tumble Dryers
+refrigeration (Refrigeration)
+    - fridge-freezers  = Fridge Freezers
+    - american-fridge-freezers  = American Style Fridge Freezers
+    - fridges  = Fridges
+    - freezers  = Freezers
+    - wine-coolers  = Wine Coolers
+dishwashers (Dishwashers)
+    - integrated-dishwashers  = Integrated Dishwashers
+    - freestanding-dishwashers  = Freestanding Dishwashers
+cooking (Cooking)
+    - ovens  = Ovens
+    - hobs  = Hobs
+    - cookers  = Cookers
+    - microwaves  = Microwaves
+    - cooker-hoods  = Cooker Hoods & Extractors
+    - warming-drawers  = Warming Drawers
+coffee-machines (Coffee Machines)
+    - bean-to-cup  = Bean to Cup & Espresso
+    - tassimo  = Tassimo & Pod Machines
+    - filter-coffee  = Filter Coffee Machines
+    - coffee-grinders  = Coffee Grinders
+floorcare (Floorcare)
+    - vacuum-cleaners  = Vacuum Cleaners
+    - cordless-vacuums  = Cordless Vacuums
+    - robot-vacuums  = Robot Vacuums
+    - floor-cleaners  = Hard Floor Cleaners
+small-appliances (Small Appliances)
+    - kettles  = Kettles
+    - toasters  = Toasters
+    - blenders  = Blenders
+    - food-prep  = Food Prep & Kitchen Machines
+    - air-fryers-multi-cookers  = Air Fryers & Multi Cookers
+    - grills-bbq  = Grills & BBQ
+    - coolers  = Cool Boxes
+    - cookware  = Cookware
+tv-audio (TV & Audio)
+    - televisions  = Televisions
+    - soundbars-speakers  = Soundbars & Speakers
+    - blu-ray-players  = Blu-ray & DVD Players
+accessories-parts (Accessories & Spare Parts)
+    - cooking-accessories  = Oven & Cooking Accessories
+    - hob-accessories  = Hob Accessories
+    - cooker-hood-accessories  = Hood Filters & Accessories
+    - laundry-accessories  = Laundry Accessories
+    - refrigeration-accessories  = Refrigeration Accessories
+    - dishwasher-accessories  = Dishwasher Accessories
+    - vacuum-accessories  = Vacuum Bags & Accessories
+    - coffee-accessories  = Coffee Machine Accessories
+    - kitchen-machine-accessories  = Kitchen Machine Accessories
+    - kitchen-utensils  = Kitchen Utensils
+    - cleaning-products  = Cleaning & Care Products
+    - spare-parts  = Spare Parts

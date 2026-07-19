@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+/* ============================================================
+   Euronics Ruislip — premium white + blue.
+   Deep navy + crisp electric blue accent on a clean white/paper
+   ground. Cormorant Garamond (display), Hanken Grotesk (UI),
+   Space Mono (product codes / eyebrows).
+   ============================================================ */
+@theme {
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+
+  /* dark ground (hero, header, footer) */
+  --color-navy: #071a33;
+  --color-navy-2: #0d2949;
+  --color-navy-3: #04101f;
+
+  /* light ground */
+  --color-paper: #ffffff;
+  --color-paper-2: #eef3f9;
+  --color-card: #f8fbff;
+
+  /* blue accent scale */
+  --color-blue: #1173d4;       /* primary */
+  --color-sky: #3f9df0;        /* bright */
+  --color-blue-deep: #0b4a8d;  /* deep */
+
+  --color-ink: #0f1b2d;
+  --color-muted: #5b6b80;
+  --color-line: #dde6f0;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+::selection { background: var(--color-sky); color: #fff; }
+.font-display { font-family: var(--font-display); }
+
+.container-x { width: 100%; max-width: 1280px; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem; }
+
+/* electric-blue shimmer on the hero's italic line */
+@keyframes blueShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+.shimmer {
+  background: linear-gradient(100deg, #7bc0ff 0%, #3f9df0 30%, #1173d4 50%, #3f9df0 70%, #7bc0ff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: blueShimmer 7s linear infinite;
+}
+
+/* the reel — "design movement" from the reference, both directions */
+@keyframes reelRight { 0% { transform: translate3d(-33.333%,0,0); } 100% { transform: translate3d(0,0,0); } }
+@keyframes reelLeft  { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-33.333%,0,0); } }
+.reel-right { animation: reelRight 52s linear infinite; }
+.reel-left  { animation: reelLeft 44s linear infinite; }
+
+/* hero video/overlay ambience */
+@keyframes heroGlow { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-10%, 8%); } }
+.hero-glow { animation: heroGlow 19s ease-in-out infinite; }
+@keyframes heroSheen { 0% { transform: translateX(-140%) skewX(-16deg); } 100% { transform: translateX(360%) skewX(-16deg); } }
+.hero-sheen { animation: heroSheen 13s ease-in-out infinite 2s; }
+@keyframes heroKen { 0% { transform: scale(1.03); } 100% { transform: scale(1.14); } }
+.hero-ken { animation: heroKen 26s ease-in-out infinite alternate; will-change: transform; }
+
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.marquee { animation: marquee 38s linear infinite; }
+
+@keyframes ctaUp { 0% { transform: translateY(120%); } 100% { transform: translateY(0); } }
+.cta-up { animation: ctaUp .5s cubic-bezier(.2,.8,.2,1); }
+
+@keyframes reveal { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.reveal { animation: reveal .7s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fadeIn .4s ease both; }
+
+.card-lift { transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease, border-color .45s ease; }
+.card-lift:hover { transform: translateY(-4px); box-shadow: 0 26px 50px -30px rgba(11,74,141,.45); border-color: rgba(17,115,212,.5); }
+
+/* product shots are shot on white — multiply drops the box background out */
+.shot { mix-blend-mode: multiply; }
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c3d3e6; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-blue); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}

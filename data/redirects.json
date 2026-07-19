@@ -1,0 +1,362 @@
+[
+  {
+    "oldUrl": "/zenith-integrated-dishwasher---a-energy-rated/p-4561",
+    "newUrl": "/products/zenith-zdwi600-integrated-full-size-dishwasher-13-place-settings",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-pug61raa5b-592cm-induction-hob---black/p-5468",
+    "newUrl": "/products/bosch-pug61raa5b-59-2cm-plug-and-play-induction-hob-black",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-bchf220gb-serie-2-2-in-1-cordless-vacuum-cleaner---44-minutes-run-time---jet-black/p-7208",
+    "newUrl": "/products/bosch-readyyy-series-2-bchf220gb-2in1-cordless-vacuum-cleaner-44-min-runtime-black",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-kgn34nleag-60cm-5050-no-frost-fridge-freezer---silver/p-7236",
+    "newUrl": "/products/bosch-kgn34nleag-60cm-50-50-frost-free-fridge-freezer-silver",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-wan28258gb-8kg-1400-spin-washing-machine---white/p-7320",
+    "newUrl": "/products/bosch-wan28258gb-8kg-1400-spin-washing-machine-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-hqa574bs3b-594cm-built-in-electric-single-oven---stainless-steel/p-7730",
+    "newUrl": "/products/bosch-hqa574bs3b-59-4cm-built-in-electric-single-oven-stainless-steel",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-sms4emw06g-wifi-enabled-dishwasher---white---14-place-settings/p-7967",
+    "newUrl": "/products/bosch-sms4emw06g-wifi-enabled-dishwasher-white-14-place-settings",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-wgg254z1gb-10kg-1400-spin-washing-machine---white/p-8111",
+    "newUrl": "/products/bosch-wgg254z1gb-10kg-1400-spin-washing-machine-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-9-kg-1400-spin/p-8741",
+    "newUrl": "/products/bosch-9-kg-1400-spin-wan28259",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-wge03408gb-8kg-1400-spin-washing-machine---white/p-7303",
+    "newUrl": "/products/bosch-wge03408gb-8kg-1400-spin-washing-machine-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-smv2htx02g-built-in-dishwasher---13-place-settings---white/p-7647",
+    "newUrl": "/products/bosch-smv2htx02g-built-in-dishwasher-13-place-settings-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-60cm-dishwasher---white-12-place-settings/p-8051",
+    "newUrl": "/products/bosch-sms26aw08g-60cm-dishwasher-white-12-place-settings",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/neff-b3ace4ag3b-594cm-built-in-electric-single-oven---graphite-grey/p-7913",
+    "newUrl": "/products/neff-b3ace4ag3b-slide-and-hide-59-4cm-built-in-electric-single-oven-graphite-grey",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/sensis-wdf018514aw-8kg5kg-washer-dryer---white/p-7798",
+    "newUrl": "/products/sensis-wdf018514aw-8kg-5kg-washer-dryer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/sensis-rftlf01z54ew-548cm-low-frost-tall-freezer---white/p-7799",
+    "newUrl": "/products/sensis-rftlf01z54ew-54-8cm-low-frost-tall-freezer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/schonhaus-dwsf0115fsbw-dishwasher---white/p-7787",
+    "newUrl": "/products/schonhaus-dwsf0115fsbw-dishwasher-white-15-place-settings",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/miele-tec645-wp-8kg-tumble-dryer---white/p-7907",
+    "newUrl": "/products/miele-tec645-wp-8kg-tumble-dryer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/beko-bmn3t3823w-8kg-heat-pump-tumble-dryer---white/p-7245",
+    "newUrl": "/products/beko-bmn3t3823w-8kg-heat-pump-tumble-dryer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/beko-caffeexperto-cep5302b-manual-espresso-with-steam-wand---black/p-7661",
+    "newUrl": "/products/beko-caffeexperto-cep5304x-manual-espresso-with-steam-wand-black",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/blomberg-lwa18461w-8kg-1400-spin-washing-machine---white/p-7252",
+    "newUrl": "/products/blomberg-lwa18461w-8kg-1400-spinsave-washing-machine-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/blomberg-ldv42320-built-in-dishwasher---14-place-settings/p-7263",
+    "newUrl": "/products/blomberg-ldv42320-built-in-dishwasher-14-place-settings",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/blomberg-lwa29461w-9kg-1400-spin-recycledtub-washing-machine---white/p-7509",
+    "newUrl": "/products/blomberg-lwa29461w-9kg-1400-spin-spinsave-washing-machine-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/blomberg-ggrn655n-60cm-double-oven-gas-cooker-with-gas-hob---anthracite/p-7718",
+    "newUrl": "/products/blomberg-ggrn655n-60cm-double-oven-gas-cooker-with-gas-hob-anthracite",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-bcs71hyggb-cordless-vacuum-cleaner-60-minutes-run-time---whiteaqua/p-6611",
+    "newUrl": "/products/bosch-unlimited-7-bcs71hyggb-aqua-vacuum-and-mop-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/sensis-rfcmf0160ew-595cm-fridge-freezer---white/p-7806",
+    "newUrl": "/products/sensis-rfcmf0160ew-59-5cm-60-40-total-nofrost-fridge-freezer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/sensis-dwi0113fsdw-integrated-dishwasher-with-sliding-hinges/p-7810",
+    "newUrl": "/products/sensis-dwi0113fsdw-integrated-dishwasher-13-place-settings",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/sensis-tdhf018a2w-8kg-heat-pump-tumble-dryer---white/p-7863",
+    "newUrl": "/products/sensis-tdhf018a2w-8kg-heat-pump-tumble-dryer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/sensis-tdhf019a2w-9kg-heat-pump-tumble-dryer---white/p-7864",
+    "newUrl": "/products/sensis-tdhf019a2w-9kg-heat-pump-tumble-dryer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/schonhaus-wmsf011014aw-10kg-1400-spin-washing-machine---white/p-7868",
+    "newUrl": "/products/schonhaus-wmsf011014aw-10kg-1400-spin-washing-machine-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/schonhaus-wmsf01914ag-9kg-1400-spin-washing-machine---graphite/p-7869",
+    "newUrl": "/products/schonhaus-wmsf01914ag-9kg-1400-spin-washing-machine-graphite",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/hisense-e6431c-595cm-ceramic-hob---black/p-6431",
+    "newUrl": "/products/hisense-e6431c-59-5cm-ceramic-hob-black",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/miele-web365-wcs-8kg-1400-spin-washing-machine---lotus-white/p-7881",
+    "newUrl": "/products/miele-web365-wcs-8kg-1400-spin-washing-machine-lotus-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/blomberg-ggrn655w-60cm-double-oven-gas-cooker-with-gas-hob---white/p-7706",
+    "newUrl": "/products/blomberg-ggrn655w-60cm-double-oven-gas-cooker-with-gas-hob-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/hoover-hvt3cleckihw-545cm-fridge-freezer---white/p-7240",
+    "newUrl": "/products/hoover-hvt3cleckihw-54-5cm-50-50-low-frost-fridge-freezer-white",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/bosch-built-in-electric-single-oven---stainless-steel---a-rated/p-3445",
+    "newUrl": "/products/bosch-hhf113br0b-59-4cm-series-2-built-in-electric-single-oven-with-3d-hot-air-stainless-steel",
+    "type": "product",
+    "status": 301
+  },
+  {
+    "oldUrl": "/laundry",
+    "newUrl": "/category/laundry",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/laundry/washing-machines",
+    "newUrl": "/category/laundry/washing-machines",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/laundry/tumble-dryers",
+    "newUrl": "/category/laundry/tumble-dryers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/laundry/washer-dryers",
+    "newUrl": "/category/laundry/washer-dryers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/refrigeration",
+    "newUrl": "/category/refrigeration",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/refrigeration/american-style-fridge-freezers",
+    "newUrl": "/category/refrigeration/american-style-fridge-freezers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/refrigeration/fridge-freezers",
+    "newUrl": "/category/refrigeration/fridge-freezers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/refrigeration/freezers",
+    "newUrl": "/category/refrigeration/freezers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/refrigeration/refrigerators",
+    "newUrl": "/category/refrigeration/refrigerators",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/dishwashing",
+    "newUrl": "/category/dishwashing",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/dishwashing/full-size-dishwashers",
+    "newUrl": "/category/dishwashing/full-size-dishwashers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/dishwashing/slimline-dishwashers",
+    "newUrl": "/category/dishwashing/slimline-dishwashers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/cooking",
+    "newUrl": "/category/cooking",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/cooking/cookers",
+    "newUrl": "/category/cooking/cookers",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/cooking/ovens",
+    "newUrl": "/category/cooking/ovens",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/cooking/microwaves",
+    "newUrl": "/category/cooking/microwaves",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/cooking/hobs",
+    "newUrl": "/category/cooking/hobs",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/floorcare",
+    "newUrl": "/category/floorcare",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/floorcare/upright-vacuum-cleaners",
+    "newUrl": "/category/floorcare/upright-vacuum-cleaners",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/floorcare/cordless-vacuum-cleaners",
+    "newUrl": "/category/floorcare/cordless-vacuum-cleaners",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/small-appliances",
+    "newUrl": "/category/small-appliances",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/small-appliances/kettles",
+    "newUrl": "/category/small-appliances/kettles",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/small-appliances/toasters",
+    "newUrl": "/category/small-appliances/toasters",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/small-appliances/coffee-machines",
+    "newUrl": "/category/small-appliances/coffee-machines",
+    "type": "category",
+    "status": 301
+  },
+  {
+    "oldUrl": "/tv-blu-ray--audio/televisions",
+    "newUrl": "/category/tv-blu-ray--audio/televisions",
+    "type": "category",
+    "status": 301
+  }
+]

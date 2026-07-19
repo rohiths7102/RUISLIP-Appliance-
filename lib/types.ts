@@ -1,0 +1,34 @@
+export type AvailabilityNormalised =
+  | "in_stock" | "limited" | "awaiting_stock" | "call_to_confirm" | "unavailable" | "unknown";
+
+export interface Product {
+  id: string; sourceUrl: string; oldUrl: string; newSlug: string;
+  title: string; brand: string; productCode: string;
+  category: string; subcategory: string; breadcrumbs: string[];
+  priceNow: number | null; priceWas: number | null; saving: number | null; currency: string;
+  availability: string; availabilityNormalised: AvailabilityNormalised;
+  warranty: string; shortDescription: string; descriptionHtml: string; descriptionText: string;
+  specifications: { label: string; value: string }[]; features: string[];
+  energyLabelUrl: string; image: string; gallery: string[];
+  relatedProducts: { productCode: string; title: string; url: string; price: number | null }[];
+  services: { name: string; price: number | null; optional: boolean }[];
+  deliveryNotes: string; seoTitle: string; seoDescription: string;
+  meta: Record<string, unknown>; scrapedAt: string;
+}
+export interface Category {
+  id: string; name: string; slug: string; sourceUrl: string; parentCategory: string;
+  children: string[]; description: string; productCount: number; image: string;
+  seoTitle: string; seoDescription: string;
+}
+export interface Brand {
+  id: string; name: string; slug: string; sourceUrl: string; logo: string; productCount: number;
+}
+export interface Business {
+  businessName: string; tradingName: string; phone: string; email: string;
+  address: { line1: string; line2: string; county: string; postcode: string; country: string };
+  openingHours: Record<string, string>;
+  delivery: { radius: string; notes: string; timescale: string };
+  socialLinks: { platform: string; url: string }[];
+  mapQuery: string; googleMapsEmbedUrl: string; googleMapsDirectionsUrl: string;
+}
+export interface Service { id: string; name: string; description: string; price: number | null; optional: boolean; category: string; }

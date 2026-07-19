@@ -1,0 +1,40 @@
+{
+  "businessName": "Jyotsna Electrical Ltd",
+  "tradingName": "Euronics Ruislip",
+  "phone": "0208 864 5763",
+  "email": "",
+  "address": {
+    "line1": "724 Fieldend Road",
+    "line2": "South Ruislip",
+    "county": "Middlesex",
+    "postcode": "HA4 0QP",
+    "country": "United Kingdom"
+  },
+  "openingHours": {
+    "monday": "09:00 - 17:30",
+    "tuesday": "09:00 - 17:30",
+    "wednesday": "09:00 - 17:30",
+    "thursday": "09:00 - 17:30",
+    "friday": "09:00 - 17:30",
+    "saturday": "09:00 - 17:30",
+    "sunday": "Closed"
+  },
+  "delivery": {
+    "radius": "12 mile radius of HA4 0QP",
+    "notes": "Local delivery only — please confirm with the store.",
+    "timescale": ""
+  },
+  "socialLinks": [
+    {
+      "platform": "facebook",
+      "url": "https://en-gb.facebook.com/ruislipeuronics.co.uk"
+    },
+    {
+      "platform": "instagram",
+      "url": "https://www.instagram.com/jyotsna_euronics"
+    }
+  ],
+  "mapQuery": "Jyotsna Electrical Ltd, 724 Fieldend Road, South Ruislip, Middlesex, HA4 0QP",
+  "googleMapsEmbedUrl": "https://www.google.com/maps?q=Jyotsna%20Electrical%20Ltd%2C%20724%20Fieldend%20Road%2C%20South%20Ruislip%2C%20Middlesex%2C%20HA4%200QP&output=embed",
+  "googleMapsDirectionsUrl": "https://www.google.com/maps/dir/?api=1&destination=Jyotsna%20Electrical%20Ltd%2C%20724%20Fieldend%20Road%2C%20South%20Ruislip%2C%20Middlesex%2C%20HA4%200QP"
+}

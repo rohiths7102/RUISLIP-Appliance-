@@ -1,0 +1,226 @@
+[
+ {
+  "id": "aeg",
+  "name": "AEG",
+  "slug": "aeg",
+  "sourceUrl": "",
+  "logo": "/brands/aeg.png",
+  "productCount": 24
+ },
+ {
+  "id": "beko",
+  "name": "Beko",
+  "slug": "beko",
+  "sourceUrl": "",
+  "logo": "/brands/beko.gif",
+  "productCount": 15
+ },
+ {
+  "id": "blomberg",
+  "name": "Blomberg",
+  "slug": "blomberg",
+  "sourceUrl": "",
+  "logo": "/brands/blomberg.gif",
+  "productCount": 5
+ },
+ {
+  "id": "bosch",
+  "name": "Bosch",
+  "slug": "bosch",
+  "sourceUrl": "",
+  "logo": "/brands/bosch.gif",
+  "productCount": 837
+ },
+ {
+  "id": "fisher-paykel",
+  "name": "Fisher & Paykel",
+  "slug": "fisher-paykel",
+  "sourceUrl": "",
+  "logo": "",
+  "productCount": 4
+ },
+ {
+  "id": "haden",
+  "name": "Haden",
+  "slug": "haden",
+  "sourceUrl": "",
+  "logo": "/brands/haden.jpg",
+  "productCount": 1
+ },
+ {
+  "id": "haier",
+  "name": "Haier",
+  "slug": "haier",
+  "sourceUrl": "",
+  "logo": "/brands/haier.gif",
+  "productCount": 15
+ },
+ {
+  "id": "hisense",
+  "name": "Hisense",
+  "slug": "hisense",
+  "sourceUrl": "",
+  "logo": "/brands/hisense.gif",
+  "productCount": 14
+ },
+ {
+  "id": "hoover",
+  "name": "Hoover",
+  "slug": "hoover",
+  "sourceUrl": "",
+  "logo": "/brands/hoover.gif",
+  "productCount": 2
+ },
+ {
+  "id": "hotpoint",
+  "name": "Hotpoint",
+  "slug": "hotpoint",
+  "sourceUrl": "",
+  "logo": "/brands/hotpoint.jpg",
+  "productCount": 19
+ },
+ {
+  "id": "lg",
+  "name": "LG",
+  "slug": "lg",
+  "sourceUrl": "",
+  "logo": "/brands/lg.gif",
+  "productCount": 50
+ },
+ {
+  "id": "liebherr",
+  "name": "Liebherr",
+  "slug": "liebherr",
+  "sourceUrl": "",
+  "logo": "/brands/liebherr.png",
+  "productCount": 3
+ },
+ {
+  "id": "midea",
+  "name": "Midea",
+  "slug": "midea",
+  "sourceUrl": "",
+  "logo": "",
+  "productCount": 5
+ },
+ {
+  "id": "miele",
+  "name": "Miele",
+  "slug": "miele",
+  "sourceUrl": "",
+  "logo": "/brands/miele.jpg",
+  "productCount": 15
+ },
+ {
+  "id": "neff",
+  "name": "Neff",
+  "slug": "neff",
+  "sourceUrl": "",
+  "logo": "/brands/neff.gif",
+  "productCount": 451
+ },
+ {
+  "id": "ninja",
+  "name": "Ninja",
+  "slug": "ninja",
+  "sourceUrl": "",
+  "logo": "/brands/ninja.jpg",
+  "productCount": 40
+ },
+ {
+  "id": "nutribullet",
+  "name": "Nutribullet",
+  "slug": "nutribullet",
+  "sourceUrl": "",
+  "logo": "/brands/nutribullet.png",
+  "productCount": 3
+ },
+ {
+  "id": "quooker",
+  "name": "Quooker",
+  "slug": "quooker",
+  "sourceUrl": "",
+  "logo": "",
+  "productCount": 1
+ },
+ {
+  "id": "russell-hobbs",
+  "name": "Russell Hobbs",
+  "slug": "russell-hobbs",
+  "sourceUrl": "",
+  "logo": "",
+  "productCount": 1
+ },
+ {
+  "id": "samsung",
+  "name": "Samsung",
+  "slug": "samsung",
+  "sourceUrl": "",
+  "logo": "/brands/samsung.gif",
+  "productCount": 31
+ },
+ {
+  "id": "schonhaus",
+  "name": "Schonhaus",
+  "slug": "schonhaus",
+  "sourceUrl": "",
+  "logo": "",
+  "productCount": 1
+ },
+ {
+  "id": "sensis",
+  "name": "Sensis",
+  "slug": "sensis",
+  "sourceUrl": "",
+  "logo": "/brands/sensis.png",
+  "productCount": 1
+ },
+ {
+  "id": "shark",
+  "name": "Shark",
+  "slug": "shark",
+  "sourceUrl": "",
+  "logo": "/brands/shark.gif",
+  "productCount": 2
+ },
+ {
+  "id": "sharp",
+  "name": "Sharp",
+  "slug": "sharp",
+  "sourceUrl": "",
+  "logo": "/brands/sharp.gif",
+  "productCount": 1
+ },
+ {
+  "id": "siemens",
+  "name": "Siemens",
+  "slug": "siemens",
+  "sourceUrl": "",
+  "logo": "/brands/siemens.gif",
+  "productCount": 12
+ },
+ {
+  "id": "smeg",
+  "name": "Smeg",
+  "slug": "smeg",
+  "sourceUrl": "",
+  "logo": "/brands/smeg.gif",
+  "productCount": 1
+ },
+ {
+  "id": "sony",
+  "name": "Sony",
+  "slug": "sony",
+  "sourceUrl": "",
+  "logo": "/brands/sony.jpg",
+  "productCount": 22
+ },
+ {
+  "id": "statesman",
+  "name": "Statesman",
+  "slug": "statesman",
+  "sourceUrl": "",
+  "logo": "",
+  "productCount": 1
+ }
+]

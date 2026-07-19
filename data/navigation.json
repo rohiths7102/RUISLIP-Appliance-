@@ -1,0 +1,158 @@
+[
+  {
+    "label": "Laundry",
+    "url": "https://www.kitchen-appliances.co.uk/laundry",
+    "newSlug": "/category/laundry",
+    "children": [
+      {
+        "label": "Washing Machines",
+        "url": "https://www.kitchen-appliances.co.uk/laundry/washing-machines",
+        "newSlug": "/category/laundry/washing-machines",
+        "children": []
+      },
+      {
+        "label": "Tumble Dryers",
+        "url": "https://www.kitchen-appliances.co.uk/laundry/tumble-dryers",
+        "newSlug": "/category/laundry/tumble-dryers",
+        "children": []
+      },
+      {
+        "label": "Washer Dryers",
+        "url": "https://www.kitchen-appliances.co.uk/laundry/washer-dryers",
+        "newSlug": "/category/laundry/washer-dryers",
+        "children": []
+      }
+    ]
+  },
+  {
+    "label": "Refrigeration",
+    "url": "https://www.kitchen-appliances.co.uk/refrigeration",
+    "newSlug": "/category/refrigeration",
+    "children": [
+      {
+        "label": "American Style Fridge Freezer",
+        "url": "https://www.kitchen-appliances.co.uk/refrigeration/american-style-fridge-freezers",
+        "newSlug": "/category/refrigeration/american-style-fridge-freezers",
+        "children": []
+      },
+      {
+        "label": "Fridge Freezers",
+        "url": "https://www.kitchen-appliances.co.uk/refrigeration/fridge-freezers",
+        "newSlug": "/category/refrigeration/fridge-freezers",
+        "children": []
+      },
+      {
+        "label": "Freezers",
+        "url": "https://www.kitchen-appliances.co.uk/refrigeration/freezers",
+        "newSlug": "/category/refrigeration/freezers",
+        "children": []
+      },
+      {
+        "label": "Refrigerators",
+        "url": "https://www.kitchen-appliances.co.uk/refrigeration/refrigerators",
+        "newSlug": "/category/refrigeration/refrigerators",
+        "children": []
+      }
+    ]
+  },
+  {
+    "label": "Dishwashing",
+    "url": "https://www.kitchen-appliances.co.uk/dishwashing",
+    "newSlug": "/category/dishwashing",
+    "children": [
+      {
+        "label": "Full Size",
+        "url": "https://www.kitchen-appliances.co.uk/dishwashing/full-size-dishwashers",
+        "newSlug": "/category/dishwashing/full-size-dishwashers",
+        "children": []
+      },
+      {
+        "label": "Slimline",
+        "url": "https://www.kitchen-appliances.co.uk/dishwashing/slimline-dishwashers",
+        "newSlug": "/category/dishwashing/slimline-dishwashers",
+        "children": []
+      }
+    ]
+  },
+  {
+    "label": "Cooking",
+    "url": "https://www.kitchen-appliances.co.uk/cooking",
+    "newSlug": "/category/cooking",
+    "children": [
+      {
+        "label": "Cookers",
+        "url": "https://www.kitchen-appliances.co.uk/cooking/cookers",
+        "newSlug": "/category/cooking/cookers",
+        "children": []
+      },
+      {
+        "label": "Ovens",
+        "url": "https://www.kitchen-appliances.co.uk/cooking/ovens",
+        "newSlug": "/category/cooking/ovens",
+        "children": []
+      },
+      {
+        "label": "Microwaves",
+        "url": "https://www.kitchen-appliances.co.uk/cooking/microwaves",
+        "newSlug": "/category/cooking/microwaves",
+        "children": []
+      },
+      {
+        "label": "Hobs",
+        "url": "https://www.kitchen-appliances.co.uk/cooking/hobs",
+        "newSlug": "/category/cooking/hobs",
+        "children": []
+      }
+    ]
+  },
+  {
+    "label": "Floorcare",
+    "url": "https://www.kitchen-appliances.co.uk/floorcare",
+    "newSlug": "/category/floorcare",
+    "children": [
+      {
+        "label": "Upright Vacuum Cleaners",
+        "url": "https://www.kitchen-appliances.co.uk/floorcare/upright-vacuum-cleaners",
+        "newSlug": "/category/floorcare/upright-vacuum-cleaners",
+        "children": []
+      },
+      {
+        "label": "Cordless Vacuum Cleaners",
+        "url": "https://www.kitchen-appliances.co.uk/floorcare/cordless-vacuum-cleaners",
+        "newSlug": "/category/floorcare/cordless-vacuum-cleaners",
+        "children": []
+      }
+    ]
+  },
+  {
+    "label": "Small Appliances",
+    "url": "https://www.kitchen-appliances.co.uk/small-appliances",
+    "newSlug": "/category/small-appliances",
+    "children": [
+      {
+        "label": "Kettles",
+        "url": "https://www.kitchen-appliances.co.uk/small-appliances/kettles",
+        "newSlug": "/category/small-appliances/kettles",
+        "children": []
+      },
+      {
+        "label": "Toasters",
+        "url": "https://www.kitchen-appliances.co.uk/small-appliances/toasters",
+        "newSlug": "/category/small-appliances/toasters",
+        "children": []
+      },
+      {
+        "label": "Coffee Makers",
+        "url": "https://www.kitchen-appliances.co.uk/small-appliances/coffee-machines",
+        "newSlug": "/category/small-appliances/coffee-machines",
+        "children": []
+      }
+    ]
+  },
+  {
+    "label": "TV & Entertainment",
+    "url": "https://www.kitchen-appliances.co.uk/tv-blu-ray--audio/televisions",
+    "newSlug": "/category/tv-blu-ray--audio/televisions",
+    "children": []
+  }
+]

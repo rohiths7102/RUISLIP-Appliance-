@@ -1,0 +1,29 @@
+{
+  "name": "kitchen-appliances-scraper",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Content/data migration scraper for kitchen-appliances.co.uk (client-owned). Phone-first, no ecommerce.",
+  "scripts": {
+    "scrape": "tsx runScrape.ts",
+    "scrape:discover": "tsx runScrape.ts --discover-only",
+    "scrape:sample": "tsx runScrape.ts --limit 15",
+    "validate": "tsx validateData.ts",
+    "media": "tsx downloadMedia.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx selftest.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "p-limit": "^6.1.0",
+    "slugify": "^1.6.6",
+    "fs-extra": "^11.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.14.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2"
+  }
+}

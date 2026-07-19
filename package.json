@@ -1,0 +1,59 @@
+{
+  "name": "kitchen-appliances-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "dev": "next dev -p 3005",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3005",
+    "build:check": "node scripts/build-check.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset -f",
+    "db:studio": "prisma studio",
+    "db:import": "tsx scripts/scraper/syncToDatabase.ts",
+    "catalog:build": "node scripts/catalog/build.mjs",
+    "catalog:report": "node scripts/catalog/report.mjs",
+    "rag:build": "tsx scripts/rag/buildIndex.ts",
+    "rag:test": "tsx scripts/rag/testRetrieval.ts",
+    "rag:sync": "tsx scripts/rag/syncProductToRag.ts",
+    "chat:test": "tsx scripts/chat/testChat.ts",
+    "test": "tsx tests/run-unit.ts",
+    "test:e2e": "playwright test",
+    "verify:admin": "node scripts/catalog/verify-admin.mjs",
+    "verify:auth": "node scripts/catalog/verify-admin-auth.mjs",
+    "verify:site": "node scripts/catalog/verify-site.mjs",
+    "verify:all": "npm run verify:auth && npm run verify:lockdown && npm run verify:admin && npm run verify:admin-complete && npm run verify:analytics && npm run verify:site && npm run verify:slideshow && npm run verify:ratelimit",
+    "verify:slideshow": "node scripts/catalog/verify-slideshow.mjs",
+    "verify:admin-complete": "node scripts/catalog/verify-admin-complete.mjs",
+    "verify:analytics": "node scripts/catalog/verify-analytics.mjs",
+    "verify:ratelimit": "node scripts/catalog/verify-ratelimit.mjs",
+    "verify:lockdown": "node scripts/catalog/verify-admin-lockdown.mjs http://localhost:3005 default",
+    "demo:reset": "node scripts/catalog/reset-demo-data.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.1.0",
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "lucide-react": "^0.469.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "postcss": "^8.4.49",
+    "prisma": "^6.1.0",
+    "tsx": "^4.19.2"
+  }
+}

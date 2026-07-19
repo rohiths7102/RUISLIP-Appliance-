@@ -1,0 +1,23 @@
+node_modules
+.next
+dist
+.env
+.env*.local
+*.log
+.DS_Store
+
+# Customer enquiries captured by the contact form — real personal data, never commit.
+data/enquiries.jsonl
+
+# 2.5GB of extracted catalogue imagery; regenerate from the catalog zips.
+public/catalog/
+
+# build:check output (see scripts/build-check.mjs)
+.next-check/
+
+# Admin-uploaded product photos
+public/uploads/
+
+# Local SQLite database
+prisma/*.db
+prisma/*.db-journal

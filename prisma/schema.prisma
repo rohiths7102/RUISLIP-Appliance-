@@ -1,0 +1,191 @@
+// Kitchen Appliances — data layer.
+// Local dev uses SQLite; for production switch `provider` to "postgresql" and set
+// DATABASE_URL. List/nested fields are modelled as Json so the SAME schema runs on
+// both engines (SQLite has no scalar lists/enums). In Postgres you may later convert
+// Json list fields to native arrays and RAGDocument.embedding to pgvector.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id                    String    @id @default(cuid())
+  sourceUrl             String
+  oldUrl                String
+  slug                  String    @unique
+  title                 String
+  brand                 String
+  productCode           String
+  category              String    @default("")
+  subcategory           String    @default("")
+  breadcrumbs           Json
+  priceNow              Float?
+  priceWas              Float?
+  saving                Float?
+  currency              String    @default("GBP")
+  availabilityRaw       String    @default("")
+  availabilityNormalised String   @default("call_to_confirm")
+  warranty              String    @default("")
+  shortDescription      String    @default("")
+  descriptionHtml       String    @default("")
+  descriptionText       String    @default("")
+  specifications        Json
+  features              Json
+  energyLabelUrl        String    @default("")
+  mainImage             String    @default("")
+  galleryImages         Json
+  relatedProductCodes   Json
+  serviceAddOns         Json
+  deliveryNotes         String    @default("")
+  seoTitle              String    @default("")
+  seoDescription        String    @default("")
+  lastScrapedAt         DateTime?
+  lastUpdatedByAdmin    DateTime?
+  isVisible             Boolean   @default(true)
+  featured              Boolean   @default(false)
+  adminOverrideFields   Json      // field names locked from being overwritten by re-scrape
+  categoryRef           Category? @relation(fields: [categoryId], references: [id])
+  categoryId            String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([productCode])
+  @@index([brand])
+  @@index([category])
+}
+
+model Category {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  sourceUrl      String     @default("")
+  parentId       String?
+  parent         Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children       Category[] @relation("CategoryTree")
+  description    String     @default("")
+  image          String     @default("")
+  productCount   Int        @default(0)
+  order          Int        @default(0)
+  isVisible      Boolean    @default(true)
+  seoTitle       String     @default("")
+  seoDescription String     @default("")
+  products       Product[]
+}
+
+model Brand {
+  id           String  @id @default(cuid())
+  name         String
+  slug         String  @unique
+  sourceUrl    String  @default("")
+  logo         String  @default("")
+  description  String  @default("")
+  productCount Int     @default(0)
+  isVisible    Boolean @default(true)
+  requiresLogoPermissionReview Boolean @default(true)
+}
+
+model BusinessInfo {
+  id                     String   @id @default("business") // single-row singleton
+  businessName           String
+  tradingName            String   @default("")
+  phone                  String
+  email                  String   @default("")
+  address                Json
+  openingHours           Json
+  deliveryRadius         String   @default("")
+  deliveryNotes          String   @default("")
+  socialLinks            Json
+  services               Json
+  mapQuery               String   @default("")
+  googleMapsEmbedUrl     String   @default("")
+  googleMapsDirectionsUrl String  @default("")
+  updatedAt              DateTime @updatedAt
+}
+
+model ServiceAddOn {
+  id               String  @id @default(cuid())
+  name             String
+  description      String  @default("")
+  price            Float?
+  optional         Boolean @default(true)
+  appliesToCategory String @default("")
+  sourceUrl        String  @default("")
+}
+
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  entityType    String
+  entityId      String
+  action        String
+  changedFields Json
+  previousValue Json
+  newValue      Json
+  changedBy     String
+  createdAt     DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model ScrapeJob {
+  id              String    @id @default(cuid())
+  status          String    @default("pending") // pending|running|completed|failed
+  startedAt       DateTime  @default(now())
+  finishedAt      DateTime?
+  pagesFound      Int       @default(0)
+  pagesScraped    Int       @default(0)
+  productsFound   Int       @default(0)
+  productsCreated Int       @default(0)
+  productsUpdated Int       @default(0)
+  productsFailed  Int       @default(0)
+  errors          Json
+  reportPath      String    @default("")
+}
+
+model RAGDocument {
+  id         String   @id @default(cuid())
+  sourceType String   // product|category|brand|business|service|page|faq
+  sourceId   String
+  title      String
+  content    String
+  metadata   Json
+  embedding  Json     // float[] as JSON now; pgvector in production
+  needsReindex Boolean @default(false)
+  updatedAt  DateTime @updatedAt
+
+  @@index([sourceType, sourceId])
+}
+
+// First-party, anonymous analytics: which products people call about, and where
+// they are (postcode checks). No cookies, no IP addresses, no user identifiers —
+// just the event, so the owner can see demand without a GDPR headache.
+model TrackedEvent {
+  id          String   @id @default(cuid())
+  type        String   // call_click | postcode_check
+  path        String   @default("")
+  productSlug String   @default("")
+  postcode    String   @default("")
+  isLocal     Boolean?
+  createdAt   DateTime @default(now())
+
+  @@index([type, createdAt])
+}
+
+model Enquiry {
+  id           String   @id @default(cuid())
+  productCode  String   @default("")
+  productTitle String   @default("")
+  name         String
+  email        String   @default("")
+  phone        String   @default("")
+  message      String
+  source       String   @default("product") // product|contact
+  status       String   @default("new")      // new|contacted|closed
+  createdAt    DateTime @default(now())
+
+  @@index([status])
+}

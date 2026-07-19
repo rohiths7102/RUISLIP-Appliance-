@@ -1,0 +1,47 @@
+[
+  {
+    "id": "local-delivery",
+    "name": "Local delivery",
+    "description": "Delivery within the store's local radius.",
+    "price": null,
+    "optional": false,
+    "category": "delivery",
+    "note": "Price/availability to confirm with store — not yet scraped."
+  },
+  {
+    "id": "connection-install",
+    "name": "Connection / installation",
+    "description": "Connect and test your new appliance.",
+    "price": null,
+    "optional": true,
+    "category": "install",
+    "note": "Price/availability to confirm with store — not yet scraped."
+  },
+  {
+    "id": "removal-recycle",
+    "name": "Removal & recycling of old appliance",
+    "description": "Take away and recycle your old appliance.",
+    "price": null,
+    "optional": true,
+    "category": "disposal",
+    "note": "Price/availability to confirm with store — not yet scraped."
+  },
+  {
+    "id": "packaging-removal",
+    "name": "Packaging removal",
+    "description": "Remove and dispose of all packaging.",
+    "price": null,
+    "optional": true,
+    "category": "disposal",
+    "note": "Price/availability to confirm with store — not yet scraped."
+  },
+  {
+    "id": "upstairs-delivery",
+    "name": "Upstairs / room-of-choice delivery",
+    "description": "Delivery to the room of your choice, including upstairs.",
+    "price": null,
+    "optional": true,
+    "category": "delivery",
+    "note": "Price/availability to confirm with store — not yet scraped."
+  }
+]

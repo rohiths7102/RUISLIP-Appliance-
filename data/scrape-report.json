@@ -1,0 +1,45 @@
+{
+  "scrapedAt": "2026-07-01T00:26:06.161Z",
+  "baseUrl": "https://www.kitchen-appliances.co.uk",
+  "totalPagesFound": 70,
+  "totalPagesScraped": 35,
+  "totalProducts": 35,
+  "totalCategories": 25,
+  "totalBrands": 19,
+  "totalImages": 53,
+  "failedUrls": [],
+  "duplicateProducts": [],
+  "missingPrices": [],
+  "missingImages": [
+    "WAN28259"
+  ],
+  "missingAvailability": [],
+  "manualReviewNeeded": [
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/AEG_Logo_Red_RGB.png",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/beko.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/belling.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/blomberg.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/bosch.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/fridgemaster.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/hisense.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/hoover.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/Hotpoint-logo.jpg",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/Indesit-logo.jpg",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/lec.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/lg.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/Miele.jpg",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/neff.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/sebo.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/sharp.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/siemens.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/smeg.gif",
+    "https://9d9b92f95c69d3713501-15e5cd540c7f9837456c62dda9d27e5a.ssl.cf3.rackcdn.com/images/brands/zanussi.gif"
+  ],
+  "notes": [
+    "SEED DATA from homepage reconnaissance only (~35 featured products) — NOT a full catalogue crawl.",
+    "Run `npm run scrape` on a machine that can stay online (robots.txt Crawl-delay: 20s) to populate the full catalogue.",
+    "All availability set to call_to_confirm per the store's own site note ('please call our store on 0208 864 5763').",
+    "Warranty labels on source cards contained a trailing 'test' string; scraper strips it via normalise.cleanWarranty.",
+    "Brand logos flagged requiresManualPermissionReview — confirm reuse rights before production."
+  ]
+}
