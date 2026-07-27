@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import PostcodePrompt from "@/components/PostcodePrompt";
 import CallTracker from "@/components/CallTracker";
+import ConsentAnalytics from "@/components/ConsentAnalytics";
 import { getBusiness } from "@/lib/repo";
 
 const AREAS_SERVED = [
@@ -52,7 +53,7 @@ function BrandSchema({ business }: { business: any }) {
     name: business.tradingName,
     legalName: business.businessName,
     url: base,
-    logo: { "@type": "ImageObject", url: `${base}/logo-ra-house-512.png`, width: 512, height: 512 },
+    logo: { "@type": "ImageObject", url: `${base}/brand/euronics-badge.png`, width: 512, height: 512 },
     foundingDate: "1977",
     telephone: business.phone,
     sameAs: (business.socialLinks || []).map((s: any) => s.url),
@@ -124,6 +125,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ChatWidget phone={business.phone} />
         <PostcodePrompt phone={business.phone} />
         <CallTracker />
+        <ConsentAnalytics />
       </body>
     </html>
   );

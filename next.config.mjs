@@ -30,5 +30,26 @@ const nextConfig = {
     for (const c of categories) add(c.slug, `/categories/${c.id}`);     // /laundry/washing-machines -> /categories/washing-machines
     return out;
   },
+  // Baseline security headers on every route. No CSP yet — it would break inline
+  // scripts/JSON-LD; noted for later hardening.
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          // Stops browsers MIME-sniffing responses into executable types.
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Blocks cross-origin framing (clickjacking); same-origin embeds still work.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          // Full referrer same-origin only; origin-only downgraded/cross-origin.
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Denies powerful device APIs the site never uses.
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // Allows DNS prefetch of external hosts (e.g. image CDN) for faster loads.
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+    ];
+  },
 };
 export default nextConfig;

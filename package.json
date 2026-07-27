@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev -p 3005",
-    "build": "prisma generate && next build",
+    "build": "node scripts/db/engine.mjs generate && next build",
     "start": "next start -p 3005",
     "build:check": "node scripts/build-check.mjs",
     "typecheck": "tsc --noEmit",
@@ -36,24 +36,28 @@
     "verify:analytics": "node scripts/catalog/verify-analytics.mjs",
     "verify:ratelimit": "node scripts/catalog/verify-ratelimit.mjs",
     "verify:lockdown": "node scripts/catalog/verify-admin-lockdown.mjs http://localhost:3005 default",
-    "demo:reset": "node scripts/catalog/reset-demo-data.mjs"
+    "demo:reset": "node scripts/catalog/reset-demo-data.mjs",
+    "blob:sync:dry": "node scripts/blob/upload-images.mjs --dry-run",
+    "blob:sync": "node scripts/blob/upload-images.mjs",
+    "pg:deploy": "node scripts/db/engine.mjs deploy"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
+    "@vercel/blob": "^2.6.1",
+    "lucide-react": "^0.469.0",
     "next": "15.1.6",
     "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "lucide-react": "^0.469.0"
+    "react-dom": "19.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0",
-    "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
     "postcss": "^8.4.49",
     "prisma": "^6.1.0",
-    "tsx": "^4.19.2"
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
   }
 }

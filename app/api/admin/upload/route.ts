@@ -6,12 +6,11 @@ import { getAdmin } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 /**
- * Product image upload. Writes into public/uploads/ and returns the public path,
- * which the caller stores as the product's mainImage.
- *
- * NOTE: a local disk works here (and on any VM/dedicated host). On serverless
- * hosting, swap this for object storage (S3 / Supabase Storage / Vercel Blob) —
- * the route is deliberately the only place that knows where bytes land.
+ * Product image upload. Returns a public URL which the caller stores as the
+ * product's mainImage. This route is deliberately the only place that knows
+ * where bytes land:
+ *   - BLOB_READ_WRITE_TOKEN set  -> Vercel Blob (serverless-safe, production)
+ *   - otherwise                  -> public/uploads/ on local disk (dev)
  */
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -48,6 +47,24 @@ export async function POST(req: Request) {
 
   // Generated name: no user-controlled path segments at all.
   const name = `${randomUUID()}.${ext}`;
+
+  // Production: Vercel Blob (serverless has no writable public/ dir).
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const { put } = await import("@vercel/blob");
+      const { url } = await put(`uploads/${name}`, bytes, {
+        access: "public",
+        contentType: file.type,
+        addRandomSuffix: false, // name is already a UUID
+      });
+      return NextResponse.json({ ok: true, url, bytes: file.size, stored: "blob" });
+    } catch (e) {
+      console.error("blob upload failed", e);
+      return NextResponse.json({ error: "Could not save the image." }, { status: 500 });
+    }
+  }
+
+  // Dev fallback: local disk.
   const dir = join(process.cwd(), "public", "uploads");
   try {
     await mkdir(dir, { recursive: true });
@@ -56,7 +73,7 @@ export async function POST(req: Request) {
     console.error("upload write failed", e);
     return NextResponse.json({ error: "Could not save the image." }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, url: `/uploads/${name}`, bytes: file.size });
+  return NextResponse.json({ ok: true, url: `/uploads/${name}`, bytes: file.size, stored: "disk" });
 }
 
 /** Magic-number check for the formats we accept. */

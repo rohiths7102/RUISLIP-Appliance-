@@ -14,10 +14,8 @@ export default function Footer({ business }: { business: Business }) {
       <div className="container-x grid gap-10 py-16 md:grid-cols-2 lg:grid-cols-4">
         <div>
           <div className="mb-4">
-            <span className="inline-flex items-center rounded-md bg-white px-3 py-2 shadow-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/ruislip-appliances-logo.png" alt="Ruislip Appliances" width={185} height={76} className="h-9 w-auto" />
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/euronics-logo.png" alt="Euronics Ruislip" width={290} height={74} className="h-10 w-auto" />
           </div>
           <p className="mb-4 max-w-[300px] text-[13.5px] leading-relaxed text-[#8ea6c4]">
             {business.businessName}. A family-run appliance shop serving Ruislip, South Ruislip and the

@@ -19,13 +19,11 @@ export default function Header({ business }: { business: Business }) {
   return (
     <header className="sticky top-0 z-50 border-b border-blue/20 bg-navy/95 backdrop-blur-md">
       <div className="container-x flex h-[74px] items-center justify-between gap-6">
-        <Link href="/" className="flex items-center gap-3" onClick={() => setOpen(false)} aria-label="Ruislip Appliances — home">
-          {/* The logo has navy text; on the dark header it sits on a white panel so it stays legible. */}
-          <span className="flex items-center rounded-md bg-white px-2.5 py-1.5 shadow-sm">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/ruislip-appliances-logo.png" alt="Ruislip Appliances" width={185} height={76} className="h-9 w-auto" />
-          </span>
-          <span className="hidden flex-col gap-0.5 sm:flex">
+        <Link href="/" className="flex items-center gap-3.5" onClick={() => setOpen(false)} aria-label="Euronics Ruislip — home">
+          {/* White-lettered Euronics lockup (transparent PNG) sits directly on the navy header. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/euronics-logo.png" alt="Euronics Ruislip" width={290} height={74} className="h-10 w-auto" />
+          <span className="hidden flex-col gap-0.5 border-l border-paper/15 pl-3.5 sm:flex">
             <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-blue">Est. 1977 · South Ruislip</span>
           </span>
         </Link>

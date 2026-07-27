@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Search, Trash2, Upload, X, ExternalLink, Download, FileUp } from "lucide-react";
+import { Badge, Button, Card, Notice, PageTitle } from "@/components/admin/ui";
 
 type ImportPreview = {
   rows: number; updates: number; creates: number; unchanged: number;
@@ -181,29 +182,30 @@ export default function ProductsAdmin({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold">
-          Products <span className="text-sm text-ink/40">({total.toLocaleString("en-GB")})</span>
-        </h1>
-        <div className="flex items-center gap-3">
-          {msg && <span className="text-sm font-medium text-emerald-700">{msg}</span>}
-          <a href="/api/admin/products/export" download
-            className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold hover:border-blue hover:text-blue-deep">
-            <Download size={15} /> Export CSV
-          </a>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold hover:border-blue hover:text-blue-deep">
-            <FileUp size={15} /> {importBusy && !importPreview ? "Reading…" : "Import CSV"}
-            <input type="file" accept=".csv,text/csv" className="hidden"
-              onChange={(e) => { pickImportFile(e.target.files?.[0]); e.target.value = ""; }} />
-          </label>
-          <button onClick={() => { setEditing(blank()); setIsNew(true); setErr(""); }}
-            className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-paper hover:bg-navy-2">
-            <Plus size={15} /> Add product
-          </button>
-        </div>
-      </div>
+      <PageTitle
+        actions={
+          <>
+            {msg && <span className="text-sm font-medium text-success">{msg}</span>}
+            <a href="/api/admin/products/export" download
+              className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold hover:border-blue hover:text-blue-deep">
+              <Download size={15} /> Export CSV
+            </a>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold hover:border-blue hover:text-blue-deep">
+              <FileUp size={15} /> {importBusy && !importPreview ? "Reading…" : "Import CSV"}
+              <input type="file" accept=".csv,text/csv" className="hidden"
+                onChange={(e) => { pickImportFile(e.target.files?.[0]); e.target.value = ""; }} />
+            </label>
+            <Button onClick={() => { setEditing(blank()); setIsNew(true); setErr(""); }}
+              className="inline-flex items-center gap-2">
+              <Plus size={15} /> Add product
+            </Button>
+          </>
+        }
+      >
+        Products <span className="text-sm font-normal text-muted">({total.toLocaleString("en-GB")})</span>
+      </PageTitle>
 
-      {err && <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
+      {err && <Notice tone="danger" className="mt-3">{err}</Notice>}
 
       <div className="relative mt-4 max-w-md">
         <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" />
@@ -242,7 +244,7 @@ export default function ProductsAdmin({
         </div>
       )}
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-white">
+      <Card className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-paper-2 text-left text-ink/60">
             <tr>
@@ -289,7 +291,7 @@ export default function ProductsAdmin({
                     {AVAIL.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                   </select>
                 </td>
-                <td className="p-3">{r.isVisible ? "Yes" : <span className="text-ink/40">Hidden</span>}</td>
+                <td className="p-3">{r.isVisible ? <Badge tone="success">Yes</Badge> : <Badge tone="neutral">Hidden</Badge>}</td>
                 <td className="p-3 whitespace-nowrap text-right">
                   {r.slug && (
                     <a href={`/products/${r.slug}`} target="_blank" rel="noopener noreferrer" title="View on site"
@@ -298,7 +300,7 @@ export default function ProductsAdmin({
                   <button onClick={() => { setEditing(r); setIsNew(false); setErr(""); }}
                     className="rounded-full border border-navy/20 px-3 py-1.5 text-xs hover:border-blue">Edit</button>
                   <button onClick={() => remove(r)} aria-label={`Delete ${r.productCode}`}
-                    className="ml-1 rounded p-2 text-ink/40 hover:text-red-600"><Trash2 size={14} /></button>
+                    className="ml-1 rounded p-2 text-ink/40 hover:text-danger"><Trash2 size={14} /></button>
                 </td>
               </tr>
             ))}
@@ -306,15 +308,13 @@ export default function ProductsAdmin({
         </table>
         {loading && <div className="p-4 text-center text-sm text-ink/40">Loading…</div>}
         {!loading && !rows.length && <div className="p-10 text-center text-sm text-ink/40">No products match “{q}”.</div>}
-      </div>
+      </Card>
 
       {pages > 1 && (
         <div className="mt-5 flex items-center justify-center gap-2">
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-            className="rounded-full border border-line px-4 py-2 text-xs font-semibold disabled:opacity-40">Previous</button>
-          <span className="px-2 text-xs text-ink/50">Page {page} of {pages}</span>
-          <button onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}
-            className="rounded-full border border-line px-4 py-2 text-xs font-semibold disabled:opacity-40">Next</button>
+          <Button variant="secondary" small onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+          <span className="px-2 text-xs text-muted">Page {page} of {pages}</span>
+          <Button variant="secondary" small onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}>Next</Button>
         </div>
       )}
 
@@ -330,19 +330,19 @@ export default function ProductsAdmin({
           onClick={() => { setImportPreview(null); setImportCsv(null); }}>
           <div className="w-full max-w-xl rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-display text-xl font-semibold">Import preview</h2>
-            <p className="mt-1 text-sm text-ink/50">Nothing has been written yet — this is exactly what applying will do.</p>
+            <p className="mt-1 text-sm text-muted">Nothing has been written yet — this is exactly what applying will do.</p>
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[["Rows", importPreview.rows], ["Will update", importPreview.updates], ["Will add", importPreview.creates], ["Unchanged", importPreview.unchanged]].map(([l, n]) => (
                 <div key={l as string} className="rounded-xl border border-line p-3 text-center">
                   <div className="font-display text-2xl font-semibold text-navy">{n as number}</div>
-                  <div className="text-[11px] text-ink/55">{l}</div>
+                  <div className="text-[11px] text-muted">{l}</div>
                 </div>
               ))}
             </div>
 
             {importPreview.errorCount > 0 && (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+              <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
                 <strong>{importPreview.errorCount} row{importPreview.errorCount === 1 ? "" : "s"} with problems</strong> (import is blocked until fixed):
                 <ul className="mt-1 list-inside list-disc">
                   {importPreview.errors.map((e, i) => <li key={i}>{e}</li>)}
@@ -377,13 +377,11 @@ export default function ProductsAdmin({
             )}
 
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => { setImportPreview(null); setImportCsv(null); }}
-                className="rounded-full border border-navy/20 px-5 py-2.5 text-sm">Cancel</button>
-              <button onClick={applyImport}
-                disabled={importBusy || importPreview.errorCount > 0 || (importPreview.updates + importPreview.creates === 0)}
-                className="rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-paper hover:bg-navy-2 disabled:opacity-50">
+              <Button variant="secondary" onClick={() => { setImportPreview(null); setImportCsv(null); }}>Cancel</Button>
+              <Button onClick={applyImport}
+                disabled={importBusy || importPreview.errorCount > 0 || (importPreview.updates + importPreview.creates === 0)}>
                 {importBusy ? "Applying…" : `Apply ${importPreview.updates + importPreview.creates} change${importPreview.updates + importPreview.creates === 1 ? "" : "s"}`}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -426,7 +424,7 @@ function Editor({
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-ink/40 hover:text-ink"><X size={18} /></button>
         </div>
 
-        {error && <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {error && <Notice tone="danger" className="mt-3">{error}</Notice>}
 
         <div className="mt-5 grid gap-4">
           <label className="text-xs font-semibold text-ink/60">Title *
@@ -500,8 +498,8 @@ function Editor({
                 </label>
                 <input value={row.mainImage} onChange={(e) => set("mainImage", e.target.value)}
                   className={`mt-2 ${input} text-xs`} placeholder="…or paste an image URL" />
-                {upErr && <p className="mt-1 text-xs text-red-600">{upErr}</p>}
-                <p className="mt-1 text-[11px] text-ink/40">JPG, PNG, WebP, AVIF or GIF · max 8MB</p>
+                {upErr && <p className="mt-1 text-xs text-danger">{upErr}</p>}
+                <p className="mt-1 text-[11px] text-muted">JPG, PNG, WebP, AVIF or GIF · max 8MB</p>
               </div>
             </div>
           </div>
@@ -518,14 +516,12 @@ function Editor({
           </div>
         </div>
 
-        <p className="mt-4 text-xs text-ink/40">
+        <p className="mt-4 text-xs text-muted">
           Edited fields are locked so a future catalogue re-import won&apos;t overwrite your changes.
         </p>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-full border border-navy/20 px-5 py-2.5 text-sm">Cancel</button>
-          <button onClick={onSave} className="rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-paper hover:bg-navy-2">
-            {isNew ? "Add product" : "Save changes"}
-          </button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={onSave}>{isNew ? "Add product" : "Save changes"}</Button>
         </div>
       </div>
     </div>

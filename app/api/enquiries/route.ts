@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { appendFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getPrisma } from "@/lib/prisma";
+import { notifyEnquiry } from "@/lib/notify";
 import { rateLimit, clientIp, tooMany } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
@@ -37,12 +38,14 @@ export async function POST(req: Request) {
   try {
     const db = await getPrisma();
     const e = await db.enquiry.create({ data: record });
+    await notifyEnquiry(record).catch(() => {}); // alert is best-effort; never blocks the response
     return NextResponse.json({ ok: true, id: e.id, stored: "database" });
   } catch {
     // No database configured — persist to disk so the enquiry still reaches the owner.
     try {
       await mkdir(join(process.cwd(), "data"), { recursive: true });
       await appendFile(FALLBACK, JSON.stringify({ ...record, receivedAt: new Date().toISOString() }) + "\n", "utf8");
+      await notifyEnquiry(record).catch(() => {}); // alert is best-effort; never blocks the response
       return NextResponse.json({ ok: true, stored: "file" });
     } catch (err) {
       console.error("enquiry: could not store", err);

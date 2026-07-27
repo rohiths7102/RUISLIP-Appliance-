@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { loadCatalog } from "@/lib/repo";
 import AdminShell from "@/components/admin/AdminShell";
 import { Sparkline, BarChart, HBar } from "@/components/admin/Charts";
+import { Card, StatTile } from "@/components/admin/ui";
 export const dynamic = "force-dynamic";
 
 const DAY = 86_400_000;
@@ -116,7 +117,7 @@ export default async function AdminOverview() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold">Dashboard</h1>
-          <p className="mt-1 text-sm text-ink/50">
+          <p className="mt-1 text-sm text-muted">
             Live from the shop's own first-party analytics — no cookies, nothing sent to third parties.
           </p>
         </div>
@@ -128,37 +129,28 @@ export default async function AdminOverview() {
       {/* ---- stat cards with sparklines ---- */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((c) => (
-          <div key={c.label} className="rounded-2xl border border-line bg-white p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="font-display text-4xl font-semibold text-navy">{c.value}</div>
-                <div className="mt-1 text-[12.5px] text-ink/60">{c.label}</div>
-              </div>
-              <Sparkline points={c.series} />
-            </div>
-            <div className="mt-2 text-[11px] font-medium text-blue-deep">{c.note}</div>
-          </div>
+          <StatTile key={c.label} label={c.label} value={c.value} hint={c.note}>
+            <div className="mt-2"><Sparkline points={c.series} /></div>
+          </StatTile>
         ))}
-        <div className="rounded-2xl border border-line bg-white p-5">
-          <div className="font-display text-4xl font-semibold text-navy">{d.newEnquiries}</div>
-          <div className="mt-1 text-[12.5px] text-ink/60">Enquiries awaiting a reply</div>
+        <StatTile label="Enquiries awaiting a reply" value={d.newEnquiries}>
           <Link href="/admin/enquiries" className="mt-3 inline-block rounded-full bg-navy px-4 py-1.5 text-xs font-bold text-paper hover:bg-navy-2">
             Open inbox →
           </Link>
-        </div>
+        </StatTile>
       </div>
 
       {/* ---- calls per day + most-called products ---- */}
       <div className="mt-5 grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-        <div className="rounded-2xl border border-line bg-white p-5">
+        <Card className="p-5">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Call clicks per day</h2>
             <span className="text-xs text-ink/45">last 14 days · {d.totals.calls14} total</span>
           </div>
           <BarChart data={d.d14.map((day, i) => ({ label: day.label.split(" ")[0], value: d!.callSeries[i] }))} />
-        </div>
+        </Card>
 
-        <div className="rounded-2xl border border-line bg-white p-5">
+        <Card className="p-5">
           <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Most called-about products</h2>
           {d.topCalled.length ? (
             <ul className="mt-3 divide-y divide-line">
@@ -177,16 +169,16 @@ export default async function AdminOverview() {
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-ink/50">
+            <p className="mt-3 text-sm text-muted">
               As soon as visitors press &quot;Call&quot; on a product, the products driving calls appear here.
             </p>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* ---- postcode demand + latest enquiries ---- */}
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl border border-line bg-white p-5">
+        <Card className="p-5">
           <div className="mb-1 flex items-baseline justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Where customers are</h2>
             <span className="text-xs text-ink/45">
@@ -204,11 +196,11 @@ export default async function AdminOverview() {
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-ink/50">Postcodes entered in the &quot;Do we deliver to you?&quot; prompt land here — your demand map.</p>
+            <p className="mt-3 text-sm text-muted">Postcodes entered in the &quot;Do we deliver to you?&quot; prompt land here — your demand map.</p>
           )}
-        </div>
+        </Card>
 
-        <div className="rounded-2xl border border-line bg-white p-5">
+        <Card className="p-5">
           <div className="mb-1 flex items-baseline justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Latest enquiries</h2>
             <Link href="/admin/enquiries" className="text-xs font-semibold text-blue hover:underline">View all →</Link>
@@ -231,28 +223,28 @@ export default async function AdminOverview() {
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-ink/50">Contact-form and product enquiries appear here.</p>
+            <p className="mt-3 text-sm text-muted">Contact-form and product enquiries appear here.</p>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* ---- catalogue health + audit trail ---- */}
       <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.4fr]">
-        <div className="rounded-2xl border border-line bg-white p-5">
+        <Card className="p-5">
           <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Catalogue</h2>
           <ul className="mt-3 space-y-2 text-sm">
-            <li className="flex justify-between"><span className="text-ink/60">Products live</span><strong>{d.counts.products.toLocaleString("en-GB")}</strong></li>
-            <li className="flex justify-between"><span className="text-ink/60">Categories</span><strong>{d.counts.categories}</strong></li>
-            <li className="flex justify-between"><span className="text-ink/60">Brands</span><strong>{d.counts.brands}</strong></li>
-            <li className="flex justify-between"><span className="text-ink/60">Missing prices</span><strong className={d.missingPrices ? "text-amber-700" : ""}>{d.missingPrices}</strong></li>
-            <li className="flex justify-between"><span className="text-ink/60">Missing images</span><strong className={d.missingImages ? "text-amber-700" : ""}>{d.missingImages}</strong></li>
+            <li className="flex justify-between"><span className="text-muted">Products live</span><strong>{d.counts.products.toLocaleString("en-GB")}</strong></li>
+            <li className="flex justify-between"><span className="text-muted">Categories</span><strong>{d.counts.categories}</strong></li>
+            <li className="flex justify-between"><span className="text-muted">Brands</span><strong>{d.counts.brands}</strong></li>
+            <li className="flex justify-between"><span className="text-muted">Missing prices</span><strong className={d.missingPrices ? "text-amber-700" : ""}>{d.missingPrices}</strong></li>
+            <li className="flex justify-between"><span className="text-muted">Missing images</span><strong className={d.missingImages ? "text-amber-700" : ""}>{d.missingImages}</strong></li>
           </ul>
           <Link href="/admin/products" className="mt-4 inline-block rounded-full border border-line px-4 py-1.5 text-xs font-semibold hover:border-blue hover:text-blue-deep">
             Manage products →
           </Link>
-        </div>
+        </Card>
 
-        <div className="rounded-2xl border border-line bg-white p-5">
+        <Card className="p-5">
           <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Recent changes</h2>
           {d.audit.length ? (
             <ul className="mt-3 divide-y divide-line text-sm">
@@ -260,7 +252,7 @@ export default async function AdminOverview() {
                 <li key={i} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
                   <span>
                     <strong className="font-semibold">{a.action}</strong>{" "}
-                    <span className="text-ink/60">{a.entityType}{a.entityId.startsWith("bulk") ? ` (${a.entityId.split(":")[1]} items)` : ""}</span>{" "}
+                    <span className="text-muted">{a.entityType}{a.entityId.startsWith("bulk") ? ` (${a.entityId.split(":")[1]} items)` : ""}</span>{" "}
                     <span className="text-ink/40">— {Array.isArray(a.changedFields) ? (a.changedFields as string[]).join(", ") : ""}</span>
                   </span>
                   <span className="font-mono text-[10.5px] text-ink/40">
@@ -270,9 +262,9 @@ export default async function AdminOverview() {
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-ink/50">Changes you make are logged here with who and when.</p>
+            <p className="mt-3 text-sm text-muted">Changes you make are logged here with who and when.</p>
           )}
-        </div>
+        </Card>
       </div>
     </AdminShell>
   );

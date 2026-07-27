@@ -30,6 +30,16 @@
   --color-ink: #0f1b2d;
   --color-muted: #5b6b80;
   --color-line: #dde6f0;
+
+  /* semantic status — soft = tinted background, base = text/icon/border */
+  --color-success: #167a3d;
+  --color-success-soft: #e9f7ee;
+  --color-warning: #9a6a00;
+  --color-warning-soft: #fdf4e0;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fdecea;
+  --color-info: #0b4a8d;
+  --color-info-soft: #e8f1fb;
 }
 
 html { scroll-behavior: smooth; }

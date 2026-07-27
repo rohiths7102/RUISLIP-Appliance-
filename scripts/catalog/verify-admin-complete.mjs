@@ -12,7 +12,16 @@ const BASE = process.argv[2] || "http://localhost:3005";
 
 let cookie = "";
 const api = async (path, opts = {}) => {
-  const r = await fetch(BASE + path, { ...opts, headers: { ...(opts.headers || {}), ...(cookie ? { cookie } : {}) }, redirect: "manual" });
+  let r = await fetch(BASE + path, { ...opts, headers: { ...(opts.headers || {}), ...(cookie ? { cookie } : {}) }, redirect: "manual" });
+  // The admin-write limiter (120/min) is a product feature, not a test subject.
+  // When this suite runs inside the verify:all chain, earlier suites share the
+  // budget — honour Retry-After once so ordering can't produce false failures.
+  if (r.status === 429) {
+    const wait = Math.min(Number(r.headers.get("retry-after")) || 30, 65);
+    console.log(`  (429 on ${path} — rate window shared with earlier suites; waiting ${wait}s and retrying once)`);
+    await new Promise((res) => setTimeout(res, wait * 1000));
+    r = await fetch(BASE + path, { ...opts, headers: { ...(opts.headers || {}), ...(cookie ? { cookie } : {}) }, redirect: "manual" });
+  }
   const sc = r.headers.get("set-cookie");
   if (sc) cookie = sc.split(";")[0];
   return r;

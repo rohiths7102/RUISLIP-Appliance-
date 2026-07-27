@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Button, Notice, PageTitle } from "@/components/admin/ui";
 export default function BusinessSettings({ initial }: { initial: any }) {
   const [f, setF] = useState<any>(initial);
   const [msg, setMsg] = useState(""); const [saving, setSaving] = useState(false);
@@ -13,7 +14,7 @@ export default function BusinessSettings({ initial }: { initial: any }) {
   }
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center justify-between"><h1 className="font-display text-2xl font-semibold">Business settings</h1>{msg && <span className="text-sm text-blue">{msg}</span>}</div>
+      <PageTitle actions={msg ? <Notice tone={msg === "Saved ✓" ? "success" : "danger"}>{msg}</Notice> : undefined}>Business settings</PageTitle>
       <div className="mt-6 grid gap-4 text-sm">
         <div className="grid grid-cols-2 gap-3">
           <label>Business name<input value={f.businessName} onChange={(e) => set("businessName", e.target.value)} className="mt-1 w-full rounded border border-line px-2 py-1.5" /></label>
@@ -33,11 +34,11 @@ export default function BusinessSettings({ initial }: { initial: any }) {
           <div className="font-medium">Opening hours</div>
           <div className="mt-2 grid gap-2">
             {Object.keys(f.openingHours || {}).map((d) => (
-              <div key={d} className="grid grid-cols-3 items-center gap-2"><span className="capitalize text-ink/60">{d}</span><input value={f.openingHours[d]} onChange={(e) => setHours(d, e.target.value)} className="col-span-2 rounded border border-line px-2 py-1.5" /></div>
+              <div key={d} className="grid grid-cols-3 items-center gap-2"><span className="capitalize text-muted">{d}</span><input value={f.openingHours[d]} onChange={(e) => setHours(d, e.target.value)} className="col-span-2 rounded border border-line px-2 py-1.5" /></div>
             ))}
           </div>
         </div>
-        <div><button onClick={save} disabled={saving} className="rounded-full bg-navy px-5 py-2.5 font-medium text-paper disabled:opacity-50">{saving ? "Saving…" : "Save changes"}</button></div>
+        <div><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button></div>
       </div>
     </div>
   );
