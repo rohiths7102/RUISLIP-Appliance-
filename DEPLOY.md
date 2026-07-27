@@ -35,8 +35,10 @@ Create a **private** repository and push this project to it. `.gitignore` alread
 ## 3) Import into Vercel
 
 In Vercel: **Add New → Project → import the GitHub repo**. The framework (Next.js) is
-auto-detected — leave build settings alone. Before pressing **Deploy**, add these
-environment variables (Settings → Environment Variables, apply to all environments):
+auto-detected — leave build settings alone, including **Root Directory**: the app sits at
+the repo root (`app/`, `lib/`, `prisma/` are top-level), so it must stay the default.
+Before pressing **Deploy**, add these environment variables (Settings → Environment
+Variables, apply to all environments):
 
 | Variable | Value |
 |---|---|
