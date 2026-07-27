@@ -50,13 +50,19 @@ const url = process.env.DATABASE_URL || "";
 const isPg = (u) => /^postgres(ql)?:\/\//.test(u);
 
 if (mode === "generate") {
+  // `prisma generate` only reads the schema, but it still refuses to run when the
+  // datasource's env var is undefined. A CI/Vercel build with DATABASE_URL not yet
+  // set must not fail for that reason alone — the client it emits is identical.
+  const placeholder = url ? {} : { DATABASE_URL: "file:./dev.db" };
+  if (!url) console.log("engine: DATABASE_URL not set — generating the sqlite client with a placeholder URL (set it in the host's env for runtime)");
+
   if (isPg(url)) {
     const schema = writePgSchema();
     console.log("engine: postgresql (DATABASE_URL) — generating client");
-    run("npx", ["prisma", "generate", "--schema", schema]);
+    run("npx", ["prisma", "generate", "--schema", schema], placeholder);
   } else {
-    console.log("engine: sqlite (local dev) — generating client");
-    run("npx", ["prisma", "generate"]);
+    console.log("engine: sqlite — generating client");
+    run("npx", ["prisma", "generate"], placeholder);
   }
 } else if (mode === "deploy") {
   // Push schema + seed into Postgres. Accepts SUPABASE_DB_URL (preferred locally,
