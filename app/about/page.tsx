@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Phone, Users, Wrench, Package } from "lucide-react";
 import { getBusiness } from "@/lib/repo";
 import { telHref } from "@/lib/format";
+import ShowroomTour from "@/components/ShowroomTour";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export const metadata: Metadata = {
@@ -65,6 +66,15 @@ export default async function AboutPage() {
               <Phone size={16} /> {business.phone}
             </a>
           </div>
+        </div>
+
+        {/* The strongest proof we have: the actual showroom, walkable in 3D. */}
+        <div className="mb-16">
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— See for yourself</p>
+          <h2 className="mb-5 font-display text-[34px] font-normal leading-tight">
+            Walk around the showroom before you visit
+          </h2>
+          <ShowroomTour />
         </div>
 
         <div className="grid gap-[18px] md:grid-cols-3">

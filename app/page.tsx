@@ -9,6 +9,7 @@ import ShowroomReel from "@/components/ShowroomReel";
 import ProductSlideshow, { type Slide } from "@/components/ProductSlideshow";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
+import ShowroomTour from "@/components/ShowroomTour";
 export const revalidate = 300;
 
 // A real background video ships with the site: a 4K (3840×2160) cinematic loop
@@ -257,6 +258,15 @@ export default async function Home() {
             </a>
           </div>
         </div>
+      </section>
+
+      {/* ------- SHOWROOM TOUR — the real shop, walkable (proof, not claims) ------- */}
+      <section className="container-x max-w-[1080px] pb-24">
+        <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The real shop</p>
+        <h2 className="mb-5 font-display text-[44px] font-normal leading-[1.08]">
+          Walk around our showroom, from your sofa
+        </h2>
+        <ShowroomTour />
       </section>
 
       {/* ---------------- CONTACT CTA ---------------- */}
