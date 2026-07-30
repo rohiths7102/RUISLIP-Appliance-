@@ -25,7 +25,7 @@
     "rag:test": "tsx scripts/rag/testRetrieval.ts",
     "rag:sync": "tsx scripts/rag/syncProductToRag.ts",
     "chat:test": "tsx scripts/chat/testChat.ts",
-    "test": "tsx tests/run-unit.ts",
+    "test": "tsx tests/run-unit.ts && tsx tests/db-url.test.ts",
     "test:e2e": "playwright test",
     "verify:admin": "node scripts/catalog/verify-admin.mjs",
     "verify:auth": "node scripts/catalog/verify-admin-auth.mjs",
