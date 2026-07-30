@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Phone, Menu, X } from "lucide-react";
 import { telHref } from "@/lib/format";
+import OpenNow from "@/components/OpenNow";
 import type { Business } from "@/lib/types";
 
 const NAV = [
@@ -37,11 +38,15 @@ export default function Header({ business }: { business: Business }) {
         </nav>
 
         <div className="flex items-center gap-3">
-          {/* min-h-11 = 44px: this is the primary action on a phone-first shop. */}
-          <a href={telHref(business.phone)} className="flex min-h-11 items-center gap-2 rounded-sm bg-blue px-4 py-2.5 text-[13px] font-bold text-navy transition-colors hover:bg-sky">
-            <Phone size={15} strokeWidth={2.2} />
-            <span className="hidden sm:inline">{business.phone}</span>
-          </a>
+          <div className="flex flex-col items-end gap-1">
+            {/* min-h-11 = 44px: this is the primary action on a phone-first shop. */}
+            <a href={telHref(business.phone)} className="flex min-h-11 items-center gap-2 rounded-sm bg-blue px-4 py-2.5 text-[13px] font-bold text-navy transition-colors hover:bg-sky">
+              <Phone size={15} strokeWidth={2.2} />
+              <span className="hidden sm:inline">{business.phone}</span>
+            </a>
+            {/* live open/closed line — desktop only, phones keep the header tight */}
+            <OpenNow business={business} tone="dark" className="hidden sm:flex" />
+          </div>
           <button
             className="flex h-[42px] w-[42px] items-center justify-center rounded-sm border border-paper/20 bg-paper/5 text-paper lg:hidden"
             onClick={() => setOpen(!open)}

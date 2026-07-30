@@ -20,10 +20,16 @@ const spaceMono = Space_Mono({
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
-import PostcodePrompt from "@/components/PostcodePrompt";
+import UspStrip from "@/components/UspStrip";
 import CallTracker from "@/components/CallTracker";
 import ConsentAnalytics from "@/components/ConsentAnalytics";
 import { getBusiness } from "@/lib/repo";
+import reviewsRaw from "@/data/reviews.json";
+import type { ReviewsData } from "@/components/GoogleReviews";
+
+// Proof-not-claims: real Google figures (or nothing). Cast because the empty
+// seed file narrows rating to `null`, which would kill the populated branch.
+const reviews = reviewsRaw as ReviewsData;
 
 const AREAS_SERVED = [
   "Ruislip", "South Ruislip", "Ruislip Manor", "Eastcote", "Northolt",
@@ -125,6 +131,11 @@ function LocalBusinessSchema({ business }: { business: any }) {
       { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], opens: "09:00", closes: "17:30" },
     ],
     sameAs: (business.socialLinks || []).map((s: any) => s.url),
+    // aggregateRating only once real review figures land in data/reviews.json —
+    // Google penalises schema ratings with no visible on-page source.
+    ...(reviews.rating !== null && reviews.count > 0
+      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: reviews.rating, reviewCount: reviews.count } }
+      : {}),
   };
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
 }
@@ -141,10 +152,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <LocalBusinessSchema business={business} />
         <BrandSchema business={business} />
         <Header business={business} />
+        <UspStrip />
         <main className="min-h-[60vh]">{children}</main>
         <Footer business={business} />
         <ChatWidget phone={business.phone} />
-        <PostcodePrompt phone={business.phone} />
         <CallTracker />
         <ConsentAnalytics />
       </body>

@@ -7,6 +7,8 @@ import HeroVideo from "@/components/HeroVideo";
 import Reveal from "@/components/Reveal";
 import ShowroomReel from "@/components/ShowroomReel";
 import ProductSlideshow, { type Slide } from "@/components/ProductSlideshow";
+import PostcodeCheck from "@/components/PostcodeCheck";
+import GoogleReviews from "@/components/GoogleReviews";
 export const revalidate = 300;
 
 // A real background video ships with the site: a 4K (3840×2160) cinematic loop
@@ -95,6 +97,11 @@ export default async function Home() {
             </div>
           </div>
 
+          {/* honest inline coverage check — replaces the old auto-opening modal */}
+          <div className="reveal">
+            <PostcodeCheck phone={business.phone} />
+          </div>
+
           {/* the slideshow, front and centre over the video — calm 6s cadence */}
           <ProductSlideshow slides={slides} intervalMs={6000} className="reveal" />
         </div>
@@ -116,6 +123,9 @@ export default async function Home() {
           ))}
         </div>
       </div>
+
+      {/* real Google reviews only — renders nothing until genuine data exists */}
+      <GoogleReviews />
 
       {/* ---------------- SHOWROOM REEL (the design movement) ---------------- */}
       <ShowroomReel products={reelProducts} />

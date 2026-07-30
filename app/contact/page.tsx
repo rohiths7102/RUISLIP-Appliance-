@@ -5,6 +5,7 @@ import { getBusiness } from "@/lib/repo";
 import { telHref } from "@/lib/format";
 import PageHead from "@/components/PageHead";
 import ContactForm from "@/components/ContactForm";
+import OpenNow from "@/components/OpenNow";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export const metadata: Metadata = {
@@ -40,7 +41,11 @@ export default async function ContactPage() {
                 <Icon size={17} className="mt-0.5 shrink-0 text-blue-deep" />
                 <div>
                   <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-blue-deep">{label}</p>
-                  <p className="text-[15px] font-medium leading-snug text-ink">{value}</p>
+                  <p className="text-[15px] font-medium leading-snug text-ink">
+                    {value}
+                    {/* live "open now / closed" beside the printed hours */}
+                    {label === "Opening hours" && <OpenNow business={business} className="ml-3 align-middle" />}
+                  </p>
                 </div>
               </div>
             ))}
