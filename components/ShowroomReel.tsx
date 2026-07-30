@@ -1,4 +1,8 @@
+import Link from "next/link";
 import type { Product } from "@/lib/types";
+import { slugOf } from "@/lib/select";
+
+const EDGE_FADE = "linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)";
 
 /**
  * The "design movement" from the reference: two rows of real product shots
@@ -26,7 +30,8 @@ export default function ShowroomReel({ products }: { products: Product[] }) {
         <p className="hidden font-mono text-[11px] tracking-[0.12em] text-[#8ea6c4] sm:block">the full range ↓</p>
       </div>
 
-      <div className="flex flex-col gap-3.5">
+      {/* group => hovering anywhere over the reel pauses both rows; mask fades the edges */}
+      <div className="group flex flex-col gap-3.5" style={{ maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE }}>
         <Row items={triple(top)} dir="reel-right" />
         <Row items={triple(bottom)} dir="reel-left" />
       </div>
@@ -36,12 +41,13 @@ export default function ShowroomReel({ products }: { products: Product[] }) {
 
 function Row({ items, dir }: { items: Product[]; dir: "reel-right" | "reel-left" }) {
   return (
-    <div className={`flex w-max gap-3.5 ${dir}`} style={{ willChange: "transform" }}>
+    <div className={`flex w-max gap-3.5 group-hover:[animation-play-state:paused] ${dir}`} style={{ willChange: "transform" }}>
       {items.map((p, i) => (
-        <div key={`${p.id}-${i}`} className="flex h-[200px] w-[300px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white">
+        <Link key={`${p.id}-${i}`} href={`/products/${slugOf(p)}`} title={p.title} tabIndex={i < items.length / 3 ? 0 : -1}
+          className="flex h-[200px] w-[300px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white transition-[border-color] duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] hover:border-sky/60">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={p.image} alt={p.title} loading="lazy" className="h-full w-full object-contain p-6" />
-        </div>
+        </Link>
       ))}
     </div>
   );

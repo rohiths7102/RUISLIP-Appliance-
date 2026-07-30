@@ -5,11 +5,18 @@ import { Phone } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
 import { gbp, availabilityDot, telHref, STORE_PHONE } from "@/lib/format";
+import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
 
-export default function ProductCard({ p }: { p: Product }) {
+const TONE_BG = { success: "bg-success", warning: "bg-warning", danger: "bg-danger" } as const;
+
+export default function ProductCard({ p, energyClass }: { p: Product; energyClass?: EnergyClass | null }) {
   const slug = slugOf(p);
+  // Grid DTOs pass the class pre-computed; full-Product callers fall back to specs.
+  const energy = energyClass ?? energyClassOf(p.specifications);
+  const save = p.saving !== null && p.priceWas !== null && p.priceNow !== null && p.priceWas > p.priceNow
+    ? Math.round(p.saving) : 0;
   return (
-    <div className="card-lift flex h-full flex-col overflow-hidden rounded-[5px] border border-ink/10 bg-card">
+    <div className="card-lift group flex h-full flex-col overflow-hidden rounded-[5px] border border-ink/10 bg-card">
       <Link href={`/products/${slug}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-white to-paper-2">
           {p.image ? (
@@ -18,15 +25,22 @@ export default function ProductCard({ p }: { p: Product }) {
             <Image src={p.image} alt={p.title} fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
               onLoad={(e) => { e.currentTarget.dataset.loaded = "true"; }}
-              className="shot object-contain p-[18px] opacity-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(.2,.8,.2,1)] data-[loaded]:opacity-100 hover:scale-[1.06]" />
+              className="shot object-contain p-[18px] opacity-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(.2,.8,.2,1)] data-[loaded]:opacity-100 group-hover:scale-[1.03]" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-navy-2 to-navy">
               <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-sky">{p.subcategory}</span>
             </div>
           )}
-          {p.saving ? (
-            <span className="absolute left-3 top-3 rounded-sm bg-blue px-2.5 py-1 text-[11px] font-bold text-navy">
-              Save {gbp(p.saving)}
+          {save > 0 ? (
+            <span className="absolute left-3 top-3 rounded-sm bg-danger-soft px-2.5 py-1 text-[11px] font-bold text-danger">
+              Save £{save.toLocaleString("en-GB")}
+            </span>
+          ) : null}
+          {energy ? (
+            // EU-label indicator arrow: rounded rect with a left-pointing tip.
+            <span aria-label={`Energy rating ${energy}`}
+              className={`absolute bottom-3 left-3 rounded-r-sm py-1 pl-3.5 pr-2 text-[11px] font-bold leading-none text-white ${TONE_BG[energyTone(energy)]} [clip-path:polygon(0_50%,9px_0,100%_0,100%_100%,9px_100%)]`}>
+              {energy}
             </span>
           ) : null}
         </div>
@@ -38,7 +52,7 @@ export default function ProductCard({ p }: { p: Product }) {
               {p.availability || "Call to confirm"}
             </span>
           </div>
-          <h3 className="mb-2.5 line-clamp-2 min-h-[48px] font-display text-[21px] font-medium leading-tight text-ink">
+          <h3 className="mb-2.5 line-clamp-2 min-h-[48px] font-display text-[21px] font-medium leading-tight text-ink transition-colors duration-300 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:text-blue-deep">
             {p.title}
           </h3>
           <p className="mb-3.5 font-mono text-[10px] tracking-[0.06em] text-ink/50">Code {p.productCode}</p>

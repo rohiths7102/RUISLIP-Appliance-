@@ -1,7 +1,18 @@
 import type { AvailabilityNormalised } from "./types";
 
+/** Canonical price formatter — whole pounds drop the ".00" (£1,299), real pence keep it (£123.45). */
+export const formatPrice = (n: number) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency", currency: "GBP",
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+
+/** Unpriced items: a label, not a number — callers style it distinctly from real prices. */
+export const PRICE_ON_APPLICATION = "Price on application";
+
 export const gbp = (n: number | null) =>
-  n === null || Number.isNaN(n) ? "Call for price" : new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n);
+  n === null || Number.isNaN(n) ? "Call for price" : formatPrice(n);
 
 /**
  * Phone-first wording. These states come from the manufacturer's own catalogue,

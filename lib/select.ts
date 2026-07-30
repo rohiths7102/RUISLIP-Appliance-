@@ -1,5 +1,19 @@
 import type { Product, Category, Brand } from "./types";
+import { energyClassOf } from "./energy";
 export const slugOf = (p: Product) => p.newSlug.replace(/^\/products\//, "");
+/**
+ * Card-only DTO for grid routes — descriptionHtml/specs/features are ~90% of the
+ * serialised RSC payload and the browser grid never reads them. energyClass is
+ * pre-computed here so ProductBrowser can build its filter row and chips without
+ * shipping the specs array to the client.
+ */
+export const toCardItem = (p: Product) => ({
+  id: p.id, newSlug: p.newSlug, title: p.title, brand: p.brand, productCode: p.productCode,
+  category: p.category, subcategory: p.subcategory, image: p.image,
+  priceNow: p.priceNow, priceWas: p.priceWas, saving: p.saving,
+  availability: p.availability, availabilityNormalised: p.availabilityNormalised,
+  energyClass: energyClassOf(p.specifications),
+});
 export const getProduct = (ps: Product[], slug: string) => ps.find((p) => slugOf(p) === slug);
 export const topCategories = (cs: Category[]) => cs.filter((c) => !c.parentCategory);
 export const childCategories = (cs: Category[], parentId: string) => cs.filter((c) => c.parentCategory === parentId);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Phone, MessageCircle, Check } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { getProduct, relatedFor } from "@/lib/select";
-import { gbp, availabilityLabel, availabilityDot, telHref } from "@/lib/format";
+import { gbp, formatPrice, PRICE_ON_APPLICATION, availabilityLabel, availabilityDot, telHref } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
@@ -73,7 +73,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.2em] text-blue-deep">
             {p.brand} · {p.subcategory}
           </p>
-          <h1 className="mb-4 font-display text-[clamp(28px,4vw,40px)] font-normal leading-[1.08]">{p.title}</h1>
+          <h1 className="mb-4 font-display text-display-2 font-normal leading-[1.08] text-balance">{p.title}</h1>
 
           <div className="mb-2 flex flex-wrap items-center gap-3.5">
             <span className="inline-flex items-center gap-2 text-[12.5px] font-semibold">
@@ -84,10 +84,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           <div className="my-4 flex flex-wrap items-end gap-3.5">
-            <span className="font-display text-[42px] font-semibold leading-none">{gbp(p.priceNow)}</span>
-            {p.priceWas ? <span className="mb-1.5 text-lg text-ink/40 line-through">{gbp(p.priceWas)}</span> : null}
+            {p.priceNow !== null ? (
+              <span className="font-display text-display-2 font-semibold leading-none tabular-nums">{formatPrice(p.priceNow)}</span>
+            ) : (
+              <span className="text-lg font-semibold text-muted">{PRICE_ON_APPLICATION}</span>
+            )}
+            {p.priceWas ? <span className="mb-1.5 text-lg text-muted line-through tabular-nums">{formatPrice(p.priceWas)}</span> : null}
             {p.saving ? (
-              <span className="mb-1.5 rounded-sm bg-blue px-2.5 py-1.5 text-xs font-bold text-navy">Save {gbp(p.saving)}</span>
+              <span className="mb-1.5 rounded-sm bg-success-soft px-2.5 py-1.5 text-xs font-bold text-success tabular-nums">Save {formatPrice(p.saving)}</span>
             ) : null}
           </div>
           <p className="mb-6 text-xs text-ink/50">Price shown excludes optional delivery &amp; installation</p>
@@ -123,7 +127,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       {p.specifications.length > 0 && (
         <section className="container-x mt-16">
-          <h2 className="mb-5 font-display text-[34px] font-normal">Specification</h2>
+          <h2 className="mb-5 font-display text-display-3 font-normal">Specification</h2>
           <div className="max-w-4xl overflow-hidden rounded-[4px] border border-ink/10 bg-card">
             <table className="w-full text-sm">
               <tbody>
@@ -140,7 +144,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       )}
 
       <section className="container-x mt-16">
-        <h2 className="mb-5 font-display text-[34px] font-normal">Delivery &amp; services</h2>
+        <h2 className="mb-5 font-display text-display-3 font-normal">Delivery &amp; services</h2>
         <p className="mb-6 max-w-3xl text-[14.5px] leading-relaxed text-[#44586f]">
           Delivery available to selected local areas. Please call to confirm availability, delivery cost and
           date — we&apos;ll arrange everything directly with you over the phone.
@@ -161,7 +165,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       {related.length > 0 && (
         <section className="container-x mt-20">
-          <h2 className="mb-7 font-display text-[34px] font-normal">You might also like</h2>
+          <h2 className="mb-7 font-display text-display-3 font-normal">You might also like</h2>
           <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
             {related.map((r) => <ProductCard key={r.id} p={r} />)}
           </div>

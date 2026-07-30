@@ -4,6 +4,7 @@ import { loadCatalog } from "@/lib/repo";
 import { topCategories, slugOf } from "@/lib/select";
 import { telHref } from "@/lib/format";
 import HeroVideo from "@/components/HeroVideo";
+import Reveal from "@/components/Reveal";
 import ShowroomReel from "@/components/ShowroomReel";
 import ProductSlideshow, { type Slide } from "@/components/ProductSlideshow";
 export const revalidate = 300;
@@ -83,8 +84,9 @@ export default async function Home() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/products"
-                className="rounded-full bg-[linear-gradient(118deg,#3f9df0_0%,#1173d4_46%,#0b4a8d_100%)] px-7 py-[14px] text-sm font-bold tracking-[0.03em] text-white shadow-[0_16px_42px_-14px_rgba(17,115,212,.7)]">
+                className="group inline-flex items-center gap-2 rounded-full bg-[linear-gradient(118deg,#3f9df0_0%,#1173d4_46%,#0b4a8d_100%)] px-7 py-[14px] text-sm font-bold tracking-[0.03em] text-white shadow-[0_16px_42px_-14px_rgba(17,115,212,.7)] transition-[transform,box-shadow] duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] hover:-translate-y-0.5 hover:shadow-[0_22px_54px_-12px_rgba(17,115,212,.85)] active:translate-y-0">
                 Browse {products.length.toLocaleString("en-GB")} appliances
+                <ArrowRight size={16} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] group-hover:translate-x-[3px]" />
               </Link>
               <a href={telHref(business.phone)}
                 className="inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/5 px-6 py-[14px] text-sm font-semibold text-paper backdrop-blur-sm transition-colors hover:border-sky hover:text-sky">
@@ -106,11 +108,11 @@ export default async function Home() {
             [String(brands.length), "trusted appliance brands"],
             ["1977", "serving Ruislip since"],
             ["Own van", "local delivery & fitting"],
-          ].map(([big, label]) => (
-            <div key={label} className="px-3">
+          ].map(([big, label], i) => (
+            <Reveal key={label} delay={i * 70} className="px-3">
               <div className="font-display text-[clamp(34px,4vw,52px)] font-semibold leading-none text-navy">{big}</div>
               <div className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.16em] text-blue-deep">{label}</div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -120,7 +122,7 @@ export default async function Home() {
 
       {/* ---------------- CATEGORIES ---------------- */}
       <section className="container-x pb-10 pt-24">
-        <div className="mb-11 flex items-end justify-between gap-4">
+        <Reveal className="mb-11 flex items-end justify-between gap-4">
           <div>
             <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Departments</p>
             <h2 className="font-display text-[44px] font-normal leading-[1.05]">Browse by category</h2>
@@ -128,24 +130,26 @@ export default async function Home() {
           <Link href="/products" className="hidden shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep sm:block">
             View all appliances →
           </Link>
-        </div>
+        </Reveal>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {cats.map((c) => (
-            <Link key={c.id} href={`/categories/${c.id}`}
-              className="card-lift group relative block aspect-[3/4] overflow-hidden rounded-[4px] bg-navy-2">
-              {c.image ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={c.image} alt="" aria-hidden loading="lazy"
-                  className="absolute inset-0 h-full w-full object-contain p-8 opacity-90 transition-transform duration-700 group-hover:scale-105" />
-              ) : null}
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,24,48,.15)_30%,rgba(4,24,48,.9))]" />
-              <div className="absolute inset-x-0 bottom-0 p-[22px]">
-                <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-sky">
-                  {c.productCount} models
-                </p>
-                <h3 className="font-display text-[25px] font-medium leading-[1.05] text-paper">{c.name}</h3>
-              </div>
-            </Link>
+          {cats.map((c, i) => (
+            <Reveal key={c.id} delay={(i % 4) * 70}>
+              <Link href={`/categories/${c.id}`}
+                className="card-lift group relative block aspect-[3/4] overflow-hidden rounded-[4px] bg-navy-2">
+                {c.image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={c.image} alt="" aria-hidden loading="lazy"
+                    className="absolute inset-0 h-full w-full object-contain p-8 opacity-90 transition-transform duration-700 group-hover:scale-105" />
+                ) : null}
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,24,48,.15)_30%,rgba(4,24,48,.9))]" />
+                <div className="absolute inset-x-0 bottom-0 p-[22px]">
+                  <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-sky">
+                    {c.productCount} models
+                  </p>
+                  <h3 className="font-display text-[25px] font-medium leading-[1.05] text-paper">{c.name}</h3>
+                </div>
+              </Link>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -165,18 +169,18 @@ export default async function Home() {
 
       {/* ---------------- HOW IT WORKS ---------------- */}
       <section className="container-x py-16">
-        <div className="mb-14 text-center">
+        <Reveal className="mb-14 text-center">
           <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Simple &amp; clear</p>
           <h2 className="font-display text-[44px] font-normal">How it works</h2>
-        </div>
+        </Reveal>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(([num, title, body]) => (
-            <div key={num} className="px-1">
+          {STEPS.map(([num, title, body], i) => (
+            <Reveal key={num} delay={i * 70} className="px-1">
               <div className="mb-4 font-mono text-[13px] tracking-[0.1em] text-blue">{num}</div>
               <div className="mb-5 h-px w-full bg-[linear-gradient(90deg,var(--color-blue),rgba(63,157,240,.1))]" />
               <h3 className="mb-2.5 font-display text-2xl font-medium">{title}</h3>
               <p className="text-sm leading-relaxed text-muted">{body}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -184,21 +188,23 @@ export default async function Home() {
       {/* ---------------- BRAND GRID — real logos, like the reference site ---------------- */}
       <section className="border-y border-line bg-paper-2 py-16">
         <div className="container-x">
-          <div className="mb-9 text-center">
+          <Reveal className="mb-9 text-center">
             <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The brands we stock</p>
             <h2 className="font-display text-[40px] font-normal">{brands.length} trusted appliance brands</h2>
-          </div>
+          </Reveal>
           <div className="mx-auto grid max-w-[1180px] grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
-            {[...brands].sort((a, b) => b.productCount - a.productCount).map((b) => (
-              <Link key={b.id} href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
-                className="card-lift flex h-[72px] items-center justify-center rounded-lg border border-line bg-white px-5">
-                {b.logo ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={b.logo} alt={`${b.name} logo`} loading="lazy" className="max-h-[38px] max-w-[80%] object-contain" />
-                ) : (
-                  <span className="text-center text-[15px] font-bold uppercase tracking-[0.08em] text-navy">{b.name}</span>
-                )}
-              </Link>
+            {[...brands].sort((a, b) => b.productCount - a.productCount).map((b, i) => (
+              <Reveal key={b.id} delay={(i % 7) * 70}>
+                <Link href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
+                  className="card-lift flex h-[72px] items-center justify-center rounded-lg border border-line bg-white px-5">
+                  {b.logo ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={b.logo} alt={`${b.name} logo`} loading="lazy" className="max-h-[38px] max-w-[80%] object-contain" />
+                  ) : (
+                    <span className="text-center text-[15px] font-bold uppercase tracking-[0.08em] text-navy">{b.name}</span>
+                  )}
+                </Link>
+              </Reveal>
             ))}
           </div>
           <div className="mt-8 text-center">
@@ -260,8 +266,9 @@ export default async function Home() {
             delivery or installation — all in one call.
           </p>
           <a href={telHref(business.phone)}
-            className="inline-flex items-center gap-3 rounded-full bg-[linear-gradient(118deg,#3f9df0_0%,#1173d4_46%,#0b4a8d_100%)] px-10 py-5 text-[17px] font-bold text-white shadow-[0_18px_44px_-14px_rgba(11,74,141,.55)]">
+            className="group inline-flex items-center gap-3 rounded-full bg-[linear-gradient(118deg,#3f9df0_0%,#1173d4_46%,#0b4a8d_100%)] px-10 py-5 text-[17px] font-bold text-white shadow-[0_18px_44px_-14px_rgba(11,74,141,.55)] transition-[transform,box-shadow] duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] hover:-translate-y-0.5 hover:shadow-[0_24px_58px_-12px_rgba(17,115,212,.7)] active:translate-y-0">
             <Phone size={19} /> {business.phone}
+            <ArrowRight size={18} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] group-hover:translate-x-[3px]" />
           </a>
         </div>
       </section>

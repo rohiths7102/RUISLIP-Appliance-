@@ -2,16 +2,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import type { Product } from "@/lib/types";
+import { energyLetter, type EnergyClass } from "@/lib/energy";
 import ProductCard from "./ProductCard";
 
 /**
  * Card-only slice of Product — the grid never reads specs/description/gallery,
- * which are ~90% of the serialised payload. Full Product still satisfies it,
- * so category/brand pages can keep passing whole records.
+ * which are ~90% of the serialised payload. All grid routes map through
+ * lib/select's toCardItem, which pre-computes energyClass server-side
+ * (optional so a full Product still satisfies the type).
  */
 export type ProductCardItem = Pick<Product,
   "id" | "newSlug" | "title" | "brand" | "productCode" | "category" | "subcategory" |
-  "image" | "priceNow" | "priceWas" | "saving" | "availability" | "availabilityNormalised">;
+  "image" | "priceNow" | "priceWas" | "saving" | "availability" | "availabilityNormalised"> &
+  { energyClass?: EnergyClass | null };
 
 const PER_PAGE = 24;
 
@@ -36,8 +39,17 @@ export default function ProductBrowser({
   const [brand, setBrand] = useState("all");
   const [cat, setCat] = useState(initialCategory);
   const [avail, setAvail] = useState("all");
+  const [energy, setEnergy] = useState("all");
   const [sort, setSort] = useState("featured");
   const [page, setPage] = useState(1);
+
+  // Letters actually present in this grid (legacy A+/A++/A+++ group under A);
+  // the chip row hides itself on grids with no rated stock.
+  const energyLetters = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of items) if (p.energyClass) seen.add(energyLetter(p.energyClass));
+    return [..."ABCDEFG"].filter((l) => seen.has(l));
+  }, [items]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -46,22 +58,24 @@ export default function ProductBrowser({
       if (brand !== "all" && p.brand !== brand) return false;
       if (cat !== "all" && p.category !== cat && p.subcategory !== cat) return false;
       if (avail !== "all" && p.availabilityNormalised !== avail) return false;
+      if (energy !== "all" && (!p.energyClass || energyLetter(p.energyClass) !== energy)) return false;
       return true;
     });
     if (sort === "price-asc") list = [...list].sort((a, b) => (a.priceNow ?? 1e9) - (b.priceNow ?? 1e9));
     else if (sort === "price-desc") list = [...list].sort((a, b) => (b.priceNow ?? -1) - (a.priceNow ?? -1));
     else if (sort === "brand") list = [...list].sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
-    else list = [...list].sort((a, b) => Number(!!b.image) - Number(!!a.image) || Number(b.priceNow !== null) - Number(a.priceNow !== null));
+    // Featured = best-merchandised first: photographed, priced, energy-labelled.
+    else list = [...list].sort((a, b) => Number(!!b.image) - Number(!!a.image) || Number(b.priceNow !== null) - Number(a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
     return list;
-  }, [items, q, brand, cat, avail, sort]);
+  }, [items, q, brand, cat, avail, energy, sort]);
 
   // Any filter change invalidates the current page number.
-  useEffect(() => { setPage(1); }, [q, brand, cat, avail, sort]);
+  useEffect(() => { setPage(1); }, [q, brand, cat, avail, energy, sort]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const current = Math.min(page, pages);
   const shown = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
-  const dirty = q !== "" || brand !== "all" || cat !== initialCategory || avail !== "all";
+  const dirty = q !== "" || brand !== "all" || cat !== initialCategory || avail !== "all" || energy !== "all";
 
   const select = "rounded-sm border border-ink/15 bg-white px-3 py-2.5 text-[13px] outline-none focus:border-blue";
 
@@ -101,9 +115,23 @@ export default function ProductBrowser({
             <option value="price-desc">Price: high to low</option>
             <option value="brand">Brand A–Z</option>
           </select>
+          {energyLetters.length > 0 && (
+            <div role="group" aria-label="Energy rating" className="flex items-center gap-1.5">
+              <span className="pl-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Energy</span>
+              {energyLetters.map((l) => (
+                <button key={l} onClick={() => setEnergy((cur) => (cur === l ? "all" : l))}
+                  aria-pressed={energy === l}
+                  className={`min-h-[41px] min-w-[36px] rounded-sm px-2 font-mono text-[12.5px] font-bold transition-colors ${
+                    energy === l ? "bg-navy text-sky" : "border border-ink/15 bg-white hover:border-blue"
+                  }`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          )}
           {dirty && (
             <button
-              onClick={() => { setQ(""); setBrand("all"); setCat(initialCategory); setAvail("all"); }}
+              onClick={() => { setQ(""); setBrand("all"); setCat(initialCategory); setAvail("all"); setEnergy("all"); }}
               className="inline-flex items-center gap-1.5 rounded-sm px-3 py-2.5 text-[12px] font-semibold text-blue-deep hover:underline"
             >
               <X size={13} /> Clear filters
@@ -121,7 +149,7 @@ export default function ProductBrowser({
       {shown.length > 0 ? (
         <div className="mt-5 grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {/* safe cast: ProductCard only reads ProductCardItem fields */}
-          {shown.map((p) => <ProductCard key={p.id} p={p as Product} />)}
+          {shown.map((p) => <ProductCard key={p.id} p={p as Product} energyClass={p.energyClass} />)}
         </div>
       ) : (
         <div className="mt-8 rounded-[4px] border border-dashed border-ink/20 p-20 text-center">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { loadCatalog } from "@/lib/repo";
-import { getBrandBySlug, productsForBrand } from "@/lib/select";
+import { getBrandBySlug, productsForBrand, toCardItem } from "@/lib/select";
 import PageHead from "@/components/PageHead";
 import ProductBrowser from "@/components/ProductBrowser";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
@@ -25,7 +25,8 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
   const b = getBrandBySlug(brands, slug);
   if (!b) notFound();
 
-  const items = productsForBrand(products, b.name);
+  // Card-only DTO (see toCardItem) — keeps specs out of the payload, chips wired.
+  const items = productsForBrand(products, b.name).map(toCardItem);
   const catNames = [...new Set(items.map((p) => p.category))].sort();
 
   return (
