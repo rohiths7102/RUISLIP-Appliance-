@@ -50,8 +50,28 @@ const ctOf = (p) => CT[p.slice(p.lastIndexOf(".")).toLowerCase()] || "applicatio
 const mb = (b) => (b / 1048576).toFixed(1) + " MB";
 
 const db = new PrismaClient();
-const products = await db.product.findMany({ select: { id: true, slug: true, mainImage: true, galleryImages: true } });
-const cats = await db.category.findMany({ select: { id: true, slug: true, image: true } });
+let products, cats;
+try {
+  products = await db.product.findMany({ select: { id: true, slug: true, mainImage: true, galleryImages: true } });
+  cats = await db.category.findMany({ select: { id: true, slug: true, image: true } });
+} catch (e) {
+  // The generated client is bound to ONE provider. Pointing this script at the
+  // production Postgres while the sqlite client is generated (the state
+  // `pg:deploy` leaves behind) fails validation before a single byte is read.
+  const msg = String(e?.message || e);
+  if (/provider|datasource|the URL must start with the protocol/i.test(msg)) {
+    console.error(
+      `\n✗ The generated Prisma client doesn't match DATABASE_URL.\n` +
+      `  Targeting production Postgres? Generate that client first:\n` +
+      `      npx prisma generate --schema prisma/schema.postgres.prisma\n` +
+      `  …then re-run, and restore the local client afterwards with:\n` +
+      `      npx prisma generate\n`
+    );
+    await db.$disconnect();
+    process.exit(1);
+  }
+  throw e;
+}
 
 // ---- 1. collect the unique set of local files we must upload ----
 const need = new Set();
