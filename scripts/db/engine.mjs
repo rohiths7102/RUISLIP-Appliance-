@@ -77,19 +77,27 @@ const url = process.env.DATABASE_URL || "";
 const isPg = (u) => /^postgres(ql)?:\/\//.test(u);
 
 if (mode === "generate") {
-  // `prisma generate` only reads the schema, but it still refuses to run when the
-  // datasource's env var is undefined. A CI/Vercel build with DATABASE_URL not yet
-  // set must not fail for that reason alone — the client it emits is identical.
-  const placeholder = url ? {} : { DATABASE_URL: "file:./dev.db" };
-  if (!url) console.log("engine: DATABASE_URL not set — generating the sqlite client with a placeholder URL (set it in the host's env for runtime)");
+  // The generated client is bound to ONE provider, so this choice must match what
+  // lib/db-url.ts will resolve at runtime — otherwise the deployed app builds a
+  // sqlite client, is handed a postgres:// URL, and every query fails.
+  //
+  // An explicit DATABASE_URL always wins (that is how local dev pins sqlite).
+  // Otherwise fall back to the same discovery the runtime uses, because hosts
+  // publish the connection string under their own names (Vercel + Supabase gives
+  // DATABASE_POSTGRES_PRISMA_URL and never a plain DATABASE_URL).
+  const explicit = url || "";
+  const discovered = explicit ? null : findPgUrl();
+  const usePg = isPg(explicit) || !!discovered;
+  const generateUrl = explicit || discovered?.url || "file:./dev.db";
 
-  if (isPg(url)) {
+  if (usePg) {
     const schema = writePgSchema();
-    console.log("engine: postgresql (DATABASE_URL) — generating client");
-    run("npx", ["prisma", "generate", "--schema", schema], placeholder);
+    console.log(`engine: postgresql (${explicit ? "DATABASE_URL" : discovered.key}) — generating client`);
+    run("npx", ["prisma", "generate", "--schema", schema], { DATABASE_URL: generateUrl });
   } else {
+    if (!explicit) console.log("engine: no database configured — generating the sqlite client with a placeholder URL");
     console.log("engine: sqlite — generating client");
-    run("npx", ["prisma", "generate"], placeholder);
+    run("npx", ["prisma", "generate"], { DATABASE_URL: generateUrl });
   }
 } else if (mode === "deploy") {
   // Push schema + seed into Postgres, using whichever env var actually holds the URL.
