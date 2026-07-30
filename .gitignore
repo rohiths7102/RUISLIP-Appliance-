@@ -27,3 +27,6 @@ prisma/schema.postgres.prisma
 
 # TypeScript incremental build cache
 tsconfig.tsbuildinfo
+
+.vercel
+.env*

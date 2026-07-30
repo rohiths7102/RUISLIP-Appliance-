@@ -30,9 +30,15 @@ for (const f of [".env.local", ".env"]) {
 // Hosting integrations name the Postgres URL differently depending on which
 // provider and prefix you picked when connecting (Vercel+Supabase, Neon, Railway…).
 // Accept any of them for `deploy` so a naming mismatch can't block the migration.
+// Order matters and is the OPPOSITE of the runtime order in lib/db-url.ts:
+// `prisma db push` and the seed issue DDL and long transactions, which a
+// transaction pooler (pgbouncer, port 6543) does not support — so prefer the
+// DIRECT connection here. The app itself wants the pooled URL at runtime.
 const PG_VARS = [
-  "SUPABASE_DB_URL", "DATABASE_URL", "POSTGRES_URL", "POSTGRES_PRISMA_URL",
-  "POSTGRES_URL_NON_POOLING", "STORAGE_URL", "DATABASE_POSTGRES_URL", "DB_URL",
+  "DATABASE_POSTGRES_URL_NON_POOLING", "POSTGRES_URL_NON_POOLING",
+  "SUPABASE_DB_URL", "DATABASE_URL", "DATABASE_POSTGRES_URL", "POSTGRES_URL",
+  "STORAGE_URL", "DB_URL",
+  "DATABASE_POSTGRES_PRISMA_URL", "POSTGRES_PRISMA_URL", // pooled — last resort
 ];
 const isPgUrl = (u) => /^postgres(ql)?:\/\//.test(u || "");
 /** First env var holding a real Postgres URL, with its name (for logging). */
@@ -57,7 +63,12 @@ function writePgSchema() {
 }
 
 function run(cmd, args, extraEnv = {}) {
-  const r = spawnSync(cmd, args, { stdio: "inherit", shell: process.platform === "win32", env: { ...process.env, ...extraEnv } });
+  // Windows needs shell:true to find `npx`, but a shell concatenates argv without
+  // escaping — so any path containing a space (e.g. "D:\website APP\…") is split
+  // into two arguments. Quote them ourselves.
+  const useShell = process.platform === "win32";
+  const finalArgs = useShell ? args.map((a) => (/\s/.test(a) && !/^".*"$/.test(a) ? `"${a}"` : a)) : args;
+  const r = spawnSync(cmd, finalArgs, { stdio: "inherit", shell: useShell, env: { ...process.env, ...extraEnv } });
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
