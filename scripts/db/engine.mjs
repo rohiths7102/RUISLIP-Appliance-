@@ -27,6 +27,22 @@ for (const f of [".env.local", ".env"]) {
   }
 }
 
+// Hosting integrations name the Postgres URL differently depending on which
+// provider and prefix you picked when connecting (Vercel+Supabase, Neon, Railway…).
+// Accept any of them for `deploy` so a naming mismatch can't block the migration.
+const PG_VARS = [
+  "SUPABASE_DB_URL", "DATABASE_URL", "POSTGRES_URL", "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL_NON_POOLING", "STORAGE_URL", "DATABASE_POSTGRES_URL", "DB_URL",
+];
+const isPgUrl = (u) => /^postgres(ql)?:\/\//.test(u || "");
+/** First env var holding a real Postgres URL, with its name (for logging). */
+function findPgUrl() {
+  for (const k of PG_VARS) if (isPgUrl(process.env[k])) return { key: k, url: process.env[k] };
+  // last resort: any *_URL that looks like Postgres (covers custom prefixes)
+  for (const [k, v] of Object.entries(process.env)) if (/_URL$/.test(k) && isPgUrl(v)) return { key: k, url: v };
+  return null;
+}
+
 const SQLITE_SCHEMA = join(ROOT, "prisma", "schema.prisma");
 const PG_SCHEMA = join(ROOT, "prisma", "schema.postgres.prisma");
 
@@ -65,13 +81,17 @@ if (mode === "generate") {
     run("npx", ["prisma", "generate"], placeholder);
   }
 } else if (mode === "deploy") {
-  // Push schema + seed into Postgres. Accepts SUPABASE_DB_URL (preferred locally,
-  // keeps sqlite DATABASE_URL untouched) or an already-postgres DATABASE_URL.
-  const pg = process.env.SUPABASE_DB_URL || (isPg(url) ? url : "");
-  if (!pg) {
-    console.error("✗ No Postgres URL. Put SUPABASE_DB_URL=postgresql://... in .env.local (Supabase → Connect → Transaction pooler URI).");
+  // Push schema + seed into Postgres, using whichever env var actually holds the URL.
+  const found = findPgUrl();
+  if (!found) {
+    console.error("✗ No Postgres URL found in the environment or .env.local.");
+    console.error(`  Looked for: ${PG_VARS.join(", ")} (and any *_URL holding a postgres:// value).`);
+    console.error("  Fix: connect the database in Vercel and run `npx vercel env pull .env.local`,");
+    console.error("       or paste SUPABASE_DB_URL=postgresql://... into .env.local yourself.");
     process.exit(1);
   }
+  const pg = found.url;
+  console.log(`engine: using ${found.key} → ${pg.replace(/:\/\/[^@]*@/, "://***:***@")}`);
   const schema = writePgSchema();
   console.log("engine: postgresql — pushing schema to Supabase…");
   run("npx", ["prisma", "db", "push", "--schema", schema, "--accept-data-loss"], { DATABASE_URL: pg });
