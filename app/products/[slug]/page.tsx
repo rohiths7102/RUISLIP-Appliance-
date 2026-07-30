@@ -8,7 +8,7 @@ import { gbp, availabilityLabel, availabilityDot, telHref } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

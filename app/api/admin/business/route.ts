@@ -3,6 +3,7 @@ import { getAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncBusinessToRag } from "@/lib/rag/index";
+import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 const EDITABLE = ["businessName", "tradingName", "phone", "email", "deliveryRadius", "deliveryNotes", "mapQuery", "googleMapsEmbedUrl", "googleMapsDirectionsUrl", "address", "openingHours", "socialLinks"];
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
@@ -17,6 +18,8 @@ export async function PATCH(req: Request) {
     const updated = await db.businessInfo.update({ where: { id: "business" }, data });
     await writeAudit(db, { entityType: "business", entityId: "business", action: "update", changedFields: changed, previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email });
     try { await syncBusinessToRag(db); } catch { /* reindex best-effort */ }
+    // Business details render on every storefront page (header/contact/about).
+    revalidateStorefront(["/about", "/contact", "/delivery-services"]);
     return NextResponse.json(updated);
   } catch (e) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

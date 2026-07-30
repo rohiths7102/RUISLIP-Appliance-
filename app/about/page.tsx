@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Phone, Users, Wrench, Package } from "lucide-react";
 import { getBusiness } from "@/lib/repo";
 import { telHref } from "@/lib/format";
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export const metadata: Metadata = {
   title: "About Us",

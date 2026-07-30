@@ -5,7 +5,7 @@ import { getBusiness } from "@/lib/repo";
 import { telHref } from "@/lib/format";
 import PageHead from "@/components/PageHead";
 import ContactForm from "@/components/ContactForm";
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export const metadata: Metadata = {
   title: "Contact & Enquiries",

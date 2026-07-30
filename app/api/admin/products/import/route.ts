@@ -5,6 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { parseCsv } from "@/lib/csv";
 import { AVAILABILITY, SCRAPE_OWNED } from "@/lib/admin-product";
+import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 
 /**
@@ -154,6 +155,7 @@ export async function POST(req: Request) {
       changedFields: ["csv"], previousValue: {}, newValue: { updates: changes.length, creates: creates.length, unchanged },
       changedBy: admin.email,
     });
+    revalidateStorefront();
     return NextResponse.json({ ...summary, applied: true });
   } catch (e) {
     console.error("csv import", e);

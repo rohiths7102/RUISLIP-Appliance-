@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { loadCatalog } from "@/lib/repo";
 import { topCategories } from "@/lib/select";
 import PageHead from "@/components/PageHead";
-import ProductBrowser from "@/components/ProductBrowser";
-export const dynamic = "force-dynamic";
+import ProductBrowser, { type ProductCardItem } from "@/components/ProductBrowser";
+export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export const metadata: Metadata = {
   title: "All Appliances",
@@ -22,6 +22,14 @@ export default async function ProductsPage({
   const { products, categories } = await loadCatalog();
   const brandNames = [...new Set(products.map((p) => p.brand).filter(Boolean))].sort();
   const catNames = topCategories(categories).map((c) => c.name);
+  // Card-only DTO: descriptionHtml/specs/features are ~90% of the ~4.4MB RSC
+  // payload for 1,600 products, and the browser grid never reads them.
+  const items: ProductCardItem[] = products.map((p) => ({
+    id: p.id, newSlug: p.newSlug, title: p.title, brand: p.brand, productCode: p.productCode,
+    category: p.category, subcategory: p.subcategory, image: p.image,
+    priceNow: p.priceNow, priceWas: p.priceWas, saving: p.saving,
+    availability: p.availability, availabilityNormalised: p.availabilityNormalised,
+  }));
   return (
     <>
       <PageHead
@@ -30,7 +38,7 @@ export default async function ProductsPage({
         intro="Check price, product code and availability — then call"
       />
       <div className="container-x py-9">
-        <ProductBrowser items={products} brands={brandNames} categories={catNames} initialQuery={q || ""} />
+        <ProductBrowser items={items} brands={brandNames} categories={catNames} initialQuery={q || ""} />
       </div>
     </>
   );

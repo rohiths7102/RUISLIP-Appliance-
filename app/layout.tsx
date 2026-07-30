@@ -133,6 +133,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const business = await getBusiness();
   return (
     <html lang="en-GB" className={`${cormorant.variable} ${hanken.variable} ${spaceMono.variable}`}>
+      <head>
+        {/* Prod product shots come from Vercel Blob — warm the connection early. */}
+        <link rel="preconnect" href="https://ottod2keltk3fotp.public.blob.vercel-storage.com" />
+      </head>
       <body>
         <LocalBusinessSchema business={business} />
         <BrandSchema business={business} />

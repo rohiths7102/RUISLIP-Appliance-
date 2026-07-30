@@ -4,6 +4,15 @@ import { Search, X } from "lucide-react";
 import type { Product } from "@/lib/types";
 import ProductCard from "./ProductCard";
 
+/**
+ * Card-only slice of Product — the grid never reads specs/description/gallery,
+ * which are ~90% of the serialised payload. Full Product still satisfies it,
+ * so category/brand pages can keep passing whole records.
+ */
+export type ProductCardItem = Pick<Product,
+  "id" | "newSlug" | "title" | "brand" | "productCode" | "category" | "subcategory" |
+  "image" | "priceNow" | "priceWas" | "saving" | "availability" | "availabilityNormalised">;
+
 const PER_PAGE = 24;
 
 /**
@@ -17,7 +26,7 @@ export default function ProductBrowser({
   initialCategory = "all",
   initialQuery = "",
 }: {
-  items: Product[];
+  items: ProductCardItem[];
   brands: string[];
   categories?: string[];
   initialCategory?: string;
@@ -111,7 +120,8 @@ export default function ProductBrowser({
 
       {shown.length > 0 ? (
         <div className="mt-5 grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shown.map((p) => <ProductCard key={p.id} p={p} />)}
+          {/* safe cast: ProductCard only reads ProductCardItem fields */}
+          {shown.map((p) => <ProductCard key={p.id} p={p as Product} />)}
         </div>
       ) : (
         <div className="mt-8 rounded-[4px] border border-dashed border-ink/20 p-20 text-center">

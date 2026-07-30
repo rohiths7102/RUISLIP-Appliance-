@@ -4,7 +4,7 @@ import { loadCatalog } from "@/lib/repo";
 import { telHref } from "@/lib/format";
 import PageHead from "@/components/PageHead";
 import { faqJsonLd, jsonLdScript } from "@/lib/seo";
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export const metadata: Metadata = {
   title: "Delivery & Services",

@@ -3,6 +3,7 @@ import { getAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncCategoryToRag } from "@/lib/rag/index";
+import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 const EDITABLE = ["name", "image", "description", "seoTitle", "seoDescription", "isVisible", "order"];
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
@@ -19,6 +20,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await db.category.update({ where: { id }, data });
     await writeAudit(db, { entityType: "category", entityId: id, action: "update", changedFields: changed, previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email });
     try { await syncCategoryToRag(db, id); } catch { /* reindex best-effort */ }
+    revalidateStorefront([`/categories/${id}`]);
     return NextResponse.json(updated);
   } catch (e) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

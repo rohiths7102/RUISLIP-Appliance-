@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, ArrowRight, Phone } from "lucide-react";
 
 export type Slide = {
@@ -27,7 +28,7 @@ const gbp = (n: number | null) =>
  */
 export default function ProductSlideshow({
   slides,
-  intervalMs = 5000,
+  intervalMs = 6000,
   className = "",
 }: {
   slides: Slide[];
@@ -48,7 +49,8 @@ export default function ProductSlideshow({
       if (!document.hidden) setIndex((i) => (i + 1) % n);
     }, intervalMs);
     return () => { if (timer.current) clearInterval(timer.current); };
-  }, [n, paused, intervalMs]);
+    // `index` dep restarts the clock on manual nav, keeping the dot's progress fill honest
+  }, [n, paused, intervalMs, index]);
 
   if (!n) return null;
 
@@ -63,18 +65,18 @@ export default function ProductSlideshow({
       onBlurCapture={() => setPaused(false)}
     >
       <div className="overflow-hidden rounded-2xl border border-white/15 bg-[#081c37]/80 shadow-[0_40px_90px_-30px_rgba(2,10,22,.8)] backdrop-blur-xl">
-        {/* track — fast cadence gets a snappier 450ms slide */}
-        <div
-          className={`flex transition-transform [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${intervalMs <= 2500 ? "duration-[450ms]" : "duration-700"}`}
-          style={{ transform: `translateX(-${index * 100}%)` }}
-        >
+        {/* stacked crossfade — every slide shares one grid cell, so looping never
+            "rewinds" through the deck; active slide drifts in 24px and fades up */}
+        <div className="grid">
           {slides.map((s, i) => (
             <Link
               key={s.slug}
               href={`/products/${s.slug}`}
               aria-hidden={i !== index}
               tabIndex={i === index ? 0 : -1}
-              className="group relative grid w-full shrink-0 grid-cols-1 md:grid-cols-[1.05fr_1fr]"
+              className={`group relative col-start-1 row-start-1 grid w-full grid-cols-1 transition-[opacity,transform] duration-700 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] md:grid-cols-[1.05fr_1fr] ${
+                i === index ? "z-[1] translate-x-0 opacity-100" : "pointer-events-none translate-x-6 opacity-0"
+              }`}
             >
               {/* giant watermark numeral, like the reference showcase */}
               <span aria-hidden className="pointer-events-none absolute -top-6 right-6 z-0 font-display text-[150px] font-semibold leading-none text-white/[.05] md:text-[210px]">
@@ -118,15 +120,18 @@ export default function ProductSlideshow({
               <div className="relative z-[1] flex items-center justify-center p-6 md:p-8">
                 <div className="absolute inset-0 m-auto h-[70%] w-[70%] rounded-full bg-[radial-gradient(circle,rgba(63,157,240,.28),transparent_65%)] blur-2xl" />
                 <div className="relative flex h-full min-h-[240px] w-full items-center justify-center overflow-hidden rounded-xl bg-white shadow-[0_24px_60px_-20px_rgba(2,10,22,.7)] md:min-h-[350px]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={s.image}
-                    alt={`${s.brand} ${s.title}`}
-                    loading="eager"
-                    decoding="async"
-                    fetchPriority={i === 0 ? "high" : "auto"}
-                    className={`shot max-h-[86%] max-w-[84%] object-contain transition-transform duration-500 ${i === index ? "scale-100" : "scale-[.9]"}`}
-                  />
+                  {/* fill + object-contain in an 86/84% inset frame — next/image
+                      serves right-sized files; priority preloads only slide one */}
+                  <div className="relative h-[86%] w-[84%]">
+                    <Image
+                      src={s.image}
+                      alt={`${s.brand} ${s.title}`}
+                      fill
+                      priority={i === 0}
+                      sizes="(max-width: 768px) 92vw, 44vw"
+                      className={`shot object-contain transition-transform duration-500 ${i === index ? "scale-100" : "scale-[.9]"}`}
+                    />
+                  </div>
                 </div>
               </div>
             </Link>
@@ -143,8 +148,17 @@ export default function ProductSlideshow({
                 aria-selected={i === index}
                 aria-label={`Slide ${i + 1}: ${s.brand} ${s.title}`}
                 onClick={() => go(i)}
-                className={`h-2 rounded-full transition-all ${i === index ? "w-7 bg-sky" : "w-2 bg-white/25 hover:bg-sky/60"}`}
-              />
+                className={`relative h-2 overflow-hidden rounded-full transition-all ${i === index ? "w-7 bg-white/25" : "w-2 bg-white/25 hover:bg-sky/60"}`}
+              >
+                {/* progress pill — remounts on index change so the fill restarts in step with the timer */}
+                {i === index ? (
+                  <span
+                    key={index}
+                    className="dot-fill absolute inset-0 rounded-full bg-sky"
+                    style={{ animationDuration: `${intervalMs}ms`, animationPlayState: paused ? "paused" : "running" }}
+                  />
+                ) : null}
+              </button>
             ))}
           </div>
           <div className="flex items-center gap-2">

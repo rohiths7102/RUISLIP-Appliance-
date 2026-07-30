@@ -15,6 +15,8 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "*.ssl.cf3.rackcdn.com" },
       { protocol: "https", hostname: "www.kitchen-appliances.co.uk" },
+      // Prod catalog shots live on Vercel Blob; dev serves local /catalog paths.
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
     ],
   },
   async redirects() {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { loadCatalog } from "@/lib/repo";
 import { topCategories, childCategories } from "@/lib/select";
 import PageHead from "@/components/PageHead";
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export const metadata: Metadata = {
   title: "Departments",

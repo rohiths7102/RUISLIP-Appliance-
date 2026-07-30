@@ -57,14 +57,19 @@ body {
 
 .container-x { width: 100%; max-width: 1280px; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem; }
 
-/* electric-blue shimmer on the hero's italic line */
+/* electric-blue shimmer on the hero's italic line — one pass, then the headline settles */
 @keyframes blueShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 .shimmer {
   background: linear-gradient(100deg, #7bc0ff 0%, #3f9df0 30%, #1173d4 50%, #3f9df0 70%, #7bc0ff 100%);
   background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  animation: blueShimmer 7s linear infinite;
+  animation: blueShimmer 7s linear 1 forwards;
 }
+
+/* slideshow active dot — scaleX fill over the slide interval (duration set inline)
+   so the auto-advance cadence has a visible affordance */
+@keyframes dotFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.dot-fill { transform-origin: left; animation: dotFill linear both; }
 
 /* the reel — "design movement" from the reference, both directions */
 @keyframes reelRight { 0% { transform: translate3d(-33.333%,0,0); } 100% { transform: translate3d(0,0,0); } }

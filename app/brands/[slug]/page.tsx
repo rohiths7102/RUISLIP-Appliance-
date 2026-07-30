@@ -5,7 +5,7 @@ import { getBrandBySlug, productsForBrand } from "@/lib/select";
 import PageHead from "@/components/PageHead";
 import ProductBrowser from "@/components/ProductBrowser";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

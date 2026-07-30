@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { EDITABLE, coerce, slugify, reconcileSaving, ValidationError } from "@/lib/admin-product";
+import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 
 /** List products for the admin table (search + paginate server-side over ~1,600). */
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
       changedBy: admin.email,
     });
     try { await syncProductToRag(db, created.id); } catch { /* best effort */ }
+    revalidateStorefront([`/products/${created.slug}`]);
     return NextResponse.json(created, { status: 201 });
   } catch (e: any) {
     if (e instanceof ValidationError) return NextResponse.json({ error: e.message }, { status: 400 });

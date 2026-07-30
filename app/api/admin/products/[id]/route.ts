@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { EDITABLE, SCRAPE_OWNED, coerce, reconcileSaving, ValidationError } from "@/lib/admin-product";
+import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
@@ -44,6 +45,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     // Keep the chatbot's answers in step with the catalogue.
     try { await syncProductToRag(db, id); } catch { /* best effort */ }
+    revalidateStorefront([`/products/${updated.slug}`]);
     return NextResponse.json(updated);
   } catch (e: any) {
     if (e instanceof ValidationError) return NextResponse.json({ error: e.message }, { status: 400 });
@@ -69,6 +71,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       previousValue: { title: existing.title, productCode: existing.productCode, priceNow: existing.priceNow },
       newValue: {}, changedBy: admin.email,
     });
+    revalidateStorefront([`/products/${existing.slug}`]);
     return NextResponse.json({ ok: true, deleted: id });
   } catch (e) {
     console.error("admin product DELETE", e);

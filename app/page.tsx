@@ -6,7 +6,7 @@ import { telHref } from "@/lib/format";
 import HeroVideo from "@/components/HeroVideo";
 import ShowroomReel from "@/components/ShowroomReel";
 import ProductSlideshow, { type Slide } from "@/components/ProductSlideshow";
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 // A real background video ships with the site: a 4K (3840×2160) cinematic loop
 // rendered from the brand hero frame, plus a 1080p variant for small screens.
@@ -93,8 +93,8 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* the slideshow, front and centre over the video — 2s cadence */}
-          <ProductSlideshow slides={slides} intervalMs={2000} className="reveal" />
+          {/* the slideshow, front and centre over the video — calm 6s cadence */}
+          <ProductSlideshow slides={slides} intervalMs={6000} className="reveal" />
         </div>
       </section>
 

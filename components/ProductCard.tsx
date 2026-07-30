@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import Image from "next/image";
 import { Phone } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
@@ -11,9 +13,12 @@ export default function ProductCard({ p }: { p: Product }) {
       <Link href={`/products/${slug}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-white to-paper-2">
           {p.image ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={p.image} alt={p.title} loading="lazy"
-              className="shot h-full w-full object-contain p-[18px] transition-transform duration-700 hover:scale-[1.06]" />
+            // fill + object-contain inside the square wrapper; the wrapper's paper
+            // gradient shows as a quiet tile until onLoad flips data-loaded → fade in.
+            <Image src={p.image} alt={p.title} fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
+              onLoad={(e) => { e.currentTarget.dataset.loaded = "true"; }}
+              className="shot object-contain p-[18px] opacity-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(.2,.8,.2,1)] data-[loaded]:opacity-100 hover:scale-[1.06]" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-navy-2 to-navy">
               <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-sky">{p.subcategory}</span>

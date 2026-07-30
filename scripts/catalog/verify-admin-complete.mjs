@@ -22,6 +22,14 @@ const api = async (path, opts = {}) => {
     await new Promise((res) => setTimeout(res, wait * 1000));
     r = await fetch(BASE + path, { ...opts, headers: { ...(opts.headers || {}), ...(cookie ? { cookie } : {}) }, redirect: "manual" });
   }
+  // API routes always answer JSON; an HTML 5xx is the dev server's own error
+  // page — a Windows on-demand-compile race while ISR regeneration (from our
+  // revalidatePath churn) is mid-write. Environmental, so retry once.
+  if (r.status >= 500 && (r.headers.get("content-type") || "").includes("text/html")) {
+    console.log(`  (HTML ${r.status} on ${path} — dev-server compile race; retrying once)`);
+    await new Promise((res) => setTimeout(res, 1500));
+    r = await fetch(BASE + path, { ...opts, headers: { ...(opts.headers || {}), ...(cookie ? { cookie } : {}) }, redirect: "manual" });
+  }
   const sc = r.headers.get("set-cookie");
   if (sc) cookie = sc.split(";")[0];
   return r;
