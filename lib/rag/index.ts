@@ -31,6 +31,13 @@ export async function buildIndex(db: any): Promise<{ indexed: number; embedded: 
 export async function syncProductToRag(db: any, productId: string): Promise<boolean> {
   const r = await db.product.findUnique({ where: { id: productId } });
   if (!r) return false;
+  // A product the owner has hidden from the storefront must not survive in the
+  // chatbot's context either — the bot would otherwise recommend (and leak the
+  // price of) something the shop chose not to show.
+  if (!r.isVisible) {
+    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: productId } }).catch(() => {});
+    return true;
+  }
   const p: any = { title: r.title, productCode: r.productCode, brand: r.brand, category: r.category, subcategory: r.subcategory, priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, warranty: r.warranty, shortDescription: r.shortDescription, specifications: r.specifications || [], features: r.features || [], image: r.mainImage, newSlug: `/products/${r.slug}` };
   await upsertDoc(db, productDoc(p));
   return true;
