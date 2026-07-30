@@ -1,5 +1,22 @@
 import type { Metadata } from "next";
+import { Cormorant_Garamond, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
+
+// Self-hosted at build time — zero requests to Google at runtime, no FOUT jump.
+// Weights trimmed to what the site actually uses (audited: 400/500/600/700 sans,
+// 400–600 + italic display, 400/700 mono).
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"],
+  variable: "--font-cormorant", display: "swap",
+});
+const hanken = Hanken_Grotesk({
+  subsets: ["latin"], weight: ["400", "500", "600", "700"],
+  variable: "--font-hanken", display: "swap",
+});
+const spaceMono = Space_Mono({
+  subsets: ["latin"], weight: ["400", "700"],
+  variable: "--font-space-mono", display: "swap",
+});
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
@@ -115,7 +132,7 @@ function LocalBusinessSchema({ business }: { business: any }) {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const business = await getBusiness();
   return (
-    <html lang="en-GB">
+    <html lang="en-GB" className={`${cormorant.variable} ${hanken.variable} ${spaceMono.variable}`}>
       <body>
         <LocalBusinessSchema business={business} />
         <BrandSchema business={business} />

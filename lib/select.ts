@@ -7,5 +7,34 @@ export const getCategoryById = (cs: Category[], id: string) => cs.find((c) => c.
 export const productsInCategory = (ps: Product[], name: string) => ps.filter((p) => p.category === name || p.subcategory === name);
 export const getBrandBySlug = (bs: Brand[], slug: string) => bs.find((b) => b.slug === slug || b.id === slug);
 export const productsForBrand = (ps: Product[], name: string) => ps.filter((p) => p.brand.toLowerCase() === name.toLowerCase());
-export const relatedFor = (ps: Product[], p: Product, n = 4) =>
-  ps.filter((x) => x.productCode !== p.productCode && (x.category === p.category || x.brand === p.brand)).slice(0, n);
+/**
+ * Related products, scored — not "first four in array order", which showed every
+ * Cooking customer the same set of spare parts next to a £1,099 oven.
+ * Same subcategory beats same category; photographed beats unphotographed; a
+ * price within ±40% beats a wild mismatch. Accessories never accompany real
+ * appliances (test strips are not an upsell), and a per-product hash tiebreak
+ * gives each page a distinct-but-stable set.
+ */
+export const relatedFor = (ps: Product[], p: Product, n = 4) => {
+  const ACCESSORIES = "Accessories & Spare Parts";
+  const srcIsAccessory = p.category === ACCESSORIES;
+  const seed = [...p.productCode].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return ps
+    .filter((x) =>
+      x.productCode !== p.productCode &&
+      (srcIsAccessory || x.category !== ACCESSORIES) &&
+      (x.subcategory === p.subcategory || x.category === p.category || x.brand === p.brand))
+    .map((x) => {
+      let s = 0;
+      if (x.subcategory && x.subcategory === p.subcategory) s += 3;
+      else if (x.category === p.category) s += 1;
+      if (x.image) s += 1;
+      if (p.priceNow && x.priceNow && Math.abs(x.priceNow - p.priceNow) / p.priceNow <= 0.4) s += 2;
+      // stable per-source-product shuffle so pages differ without churning on reload
+      const jitter = ((seed ^ [...x.productCode].reduce((h, c) => (h * 33 + c.charCodeAt(0)) >>> 0, 5)) % 1000) / 1000;
+      return { x, s: s + jitter };
+    })
+    .sort((a, b) => b.s - a.s)
+    .slice(0, n)
+    .map((r) => r.x);
+};
