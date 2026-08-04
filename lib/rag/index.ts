@@ -33,13 +33,18 @@ export async function syncProductToRag(db: any, productId: string): Promise<bool
   if (!r) return false;
   // A product the owner has hidden from the storefront must not survive in the
   // chatbot's context either — the bot would otherwise recommend (and leak the
-  // price of) something the shop chose not to show.
+  // price of) something the shop chose not to show. Product docs are keyed by
+  // productCode (see productDoc), NOT the DB id.
   if (!r.isVisible) {
-    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: productId } }).catch(() => {});
+    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: r.productCode } }).catch(() => {});
     return true;
   }
+  // Call-for-price category -> the doc must not carry a number the bot could quote.
+  const poaHit = await db.category.count({
+    where: { priceOnApplication: true, name: { in: [r.category, r.subcategory].filter(Boolean) } },
+  });
   const p: any = { title: r.title, productCode: r.productCode, brand: r.brand, category: r.category, subcategory: r.subcategory, priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, warranty: r.warranty, shortDescription: r.shortDescription, specifications: r.specifications || [], features: r.features || [], image: r.mainImage, newSlug: `/products/${r.slug}` };
-  await upsertDoc(db, productDoc(p));
+  await upsertDoc(db, productDoc(p, { omitPrice: poaHit > 0 }));
   return true;
 }
 

@@ -4,8 +4,10 @@ import { MapPin, Phone, CheckCircle2 } from "lucide-react";
 import { telHref } from "@/lib/format";
 
 // Genuine own-van reach only (HA4 0QP shop). Wider prefixes go via the phone —
-// we'd sooner say "call us" than promise a van we can't send.
-const LOCAL = ["HA", "UB", "WD", "TW"];
+// we'd sooner say "call us" than promise a van we can't send. Owner (Aug 2026):
+// "we deliver to certain WD, SL postcodes as well" — SL added; exact street is
+// still confirmed on the phone, which the result copy already says.
+const LOCAL = ["HA", "UB", "WD", "TW", "SL"];
 const outward = (pc: string) => pc.toUpperCase().replace(/\s+/g, "").match(/^[A-Z]{1,2}/)?.[0] || "";
 
 /** Inline hero postcode checker — dark-glass pill that sits on the navy video hero. */

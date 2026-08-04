@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
 import { Button, Card, PageTitle } from "@/components/admin/ui";
-type Row = { id: string; name: string; slug: string; image: string; description: string; seoTitle: string; seoDescription: string; productCount: number; isVisible: boolean; order: number; parentId: string | null };
+type Row = { id: string; name: string; slug: string; image: string; description: string; seoTitle: string; seoDescription: string; productCount: number; isVisible: boolean; order: number; parentId: string | null; priceOnApplication: boolean };
 export default function CategoriesAdmin({ initial }: { initial: Row[] }) {
   const [rows, setRows] = useState(initial); const [sel, setSel] = useState<Row | null>(null); const [msg, setMsg] = useState(""); const [saving, setSaving] = useState(false);
   const upd = (k: keyof Row, v: any) => setSel((s) => (s ? { ...s, [k]: v } : s));
   async function save() {
     if (!sel) return; setSaving(true); setMsg("");
-    const r = await fetch(`/api/admin/categories/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: sel.name, image: sel.image, description: sel.description, seoTitle: sel.seoTitle, seoDescription: sel.seoDescription, isVisible: sel.isVisible, order: Number(sel.order) }) });
+    const r = await fetch(`/api/admin/categories/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: sel.name, image: sel.image, description: sel.description, seoTitle: sel.seoTitle, seoDescription: sel.seoDescription, isVisible: sel.isVisible, order: Number(sel.order), priceOnApplication: !!sel.priceOnApplication }) });
     setSaving(false);
     if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === u.id ? { ...x, ...u } : x))); setSel(null); setMsg("Saved ✓"); } else setMsg("Save failed — is the database running?");
   }
@@ -31,6 +31,10 @@ export default function CategoriesAdmin({ initial }: { initial: Row[] }) {
               <label>SEO title<input value={sel.seoTitle} onChange={(e) => upd("seoTitle", e.target.value)} className="mt-1 w-full rounded border border-line px-2 py-1.5" /></label>
               <label>SEO description<textarea rows={2} value={sel.seoDescription} onChange={(e) => upd("seoDescription", e.target.value)} className="mt-1 w-full rounded border border-line px-2 py-1.5" /></label>
               <div className="flex items-center gap-4"><label className="flex items-center gap-2"><input type="checkbox" checked={sel.isVisible} onChange={(e) => upd("isVisible", e.target.checked)} /> Visible</label><label className="flex items-center gap-2">Order <input type="number" value={sel.order} onChange={(e) => upd("order", Number(e.target.value))} className="w-20 rounded border border-line px-2 py-1" /></label></div>
+              <label className="flex items-start gap-2 rounded-lg border border-line bg-paper-2 p-3">
+                <input type="checkbox" checked={!!sel.priceOnApplication} onChange={(e) => upd("priceOnApplication", e.target.checked)} className="mt-0.5" />
+                <span><span className="font-medium">Call for price</span> — hide prices for every product in this category; customers are asked to phone instead. They also leave the Google Shopping feed.</span>
+              </label>
             </div>
             <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setSel(null)}>Cancel</Button><Button variant="primary" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button></div>
           </div>

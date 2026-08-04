@@ -5,7 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { syncBrandToRag } from "@/lib/rag/index";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
-const EDITABLE = ["logo", "description", "isVisible"];
+const EDITABLE = ["logo", "description", "isVisible", "order"];
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getAdmin(); if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -2,20 +2,25 @@ import type { Product, Category, Brand, Business, Service } from "../types";
 
 export interface RagDoc { sourceType: string; sourceId: string; title: string; content: string; metadata: Record<string, any>; }
 
-export function productDoc(p: Product): RagDoc {
-  const price = p.priceNow != null ? `£${p.priceNow}` : "price on request — call to confirm";
+export function productDoc(p: Product, opts: { omitPrice?: boolean } = {}): RagDoc {
+  // Call-for-price categories: the bot must never quote a number the owner
+  // deliberately doesn't publish — the doc says "priced by phone" instead.
+  const price = opts.omitPrice
+    ? "priced by phone — call the store to ask"
+    : p.priceNow != null ? `£${p.priceNow}` : "price on request — call to confirm";
   const specs = (p.specifications || []).slice(0, 8).map((s) => `${s.label}: ${s.value}`).join("; ");
   const content = [
     `${p.title} (product code ${p.productCode}) by ${p.brand}.`,
     p.category ? `Category: ${[p.category, p.subcategory].filter(Boolean).join(" > ")}.` : "",
-    `Price: ${price}${p.priceWas ? `, was £${p.priceWas}` : ""}${p.saving ? `, save £${p.saving}` : ""}. Availability must be confirmed by calling the store.`,
+    `Price: ${price}${!opts.omitPrice && p.priceWas ? `, was £${p.priceWas}` : ""}${!opts.omitPrice && p.saving ? `, save £${p.saving}` : ""}. Availability must be confirmed by calling the store.`,
     p.warranty ? `Warranty: ${p.warranty}.` : "",
     p.shortDescription || "",
     specs ? `Specifications: ${specs}.` : "",
     (p.features || []).length ? `Features: ${p.features.join(", ")}.` : "",
   ].filter(Boolean).join(" ");
   return { sourceType: "product", sourceId: p.productCode, title: p.title,
-    content, metadata: { productCode: p.productCode, brand: p.brand, category: p.category, subcategory: p.subcategory, priceNow: p.priceNow, priceWas: p.priceWas, url: p.newSlug, image: p.image } };
+    content, metadata: { productCode: p.productCode, brand: p.brand, category: p.category, subcategory: p.subcategory,
+      ...(opts.omitPrice ? {} : { priceNow: p.priceNow, priceWas: p.priceWas }), url: p.newSlug, image: p.image } };
 }
 export function categoryDoc(c: Category): RagDoc {
   return { sourceType: "category", sourceId: c.id, title: c.name, content: `${c.name} category. ${c.description || ""} Browse ${c.name} appliances and call the store to confirm stock.`, metadata: { url: `/categories/${c.id}`, productCount: c.productCount } };
@@ -45,8 +50,10 @@ export function faqDocs(b: Business): RagDoc[] {
   ];
 }
 export function buildDocuments(cat: { products: Product[]; categories: Category[]; brands: Brand[]; business: Business; services: Service[] }): RagDoc[] {
+  const poa = new Set(cat.categories.filter((c) => c.priceOnApplication).map((c) => c.name));
   return [
-    ...cat.products.map(productDoc), ...cat.categories.map(categoryDoc), ...cat.brands.map(brandDoc),
+    ...cat.products.map((p) => productDoc(p, { omitPrice: poa.has(p.category) || poa.has(p.subcategory) })),
+    ...cat.categories.map(categoryDoc), ...cat.brands.map(brandDoc),
     ...cat.services.map(serviceDoc), ...businessDocs(cat.business), ...faqDocs(cat.business),
   ];
 }

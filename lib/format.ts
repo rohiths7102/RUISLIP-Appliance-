@@ -9,7 +9,8 @@ export const formatPrice = (n: number) =>
   }).format(n);
 
 /** Unpriced items: a label, not a number — callers style it distinctly from real prices. */
-export const PRICE_ON_APPLICATION = "Price on application";
+// The owner's own words ("just call to ask", "call for price in this section").
+export const PRICE_ON_APPLICATION = "Call for price";
 
 export const gbp = (n: number | null) =>
   n === null || Number.isNaN(n) ? "Call for price" : formatPrice(n);

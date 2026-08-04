@@ -65,7 +65,8 @@ function mapProduct(r: any): Product {
 }
 function mapCategory(r: any): Category {
   return { id: r.id, name: r.name, slug: r.slug, sourceUrl: r.sourceUrl, parentCategory: r.parentId || "",
-    children: [], description: r.description, productCount: r.productCount, image: r.image, seoTitle: r.seoTitle, seoDescription: r.seoDescription };
+    children: [], description: r.description, productCount: r.productCount, image: r.image, seoTitle: r.seoTitle, seoDescription: r.seoDescription,
+    priceOnApplication: !!r.priceOnApplication };
 }
 
 export interface Catalog { products: Product[]; categories: Category[]; brands: Brand[]; business: Business; services: Service[]; source: "database" | "seed"; }
@@ -77,7 +78,9 @@ export async function loadCatalog(): Promise<Catalog> {
   try {
     const [prod, cats, brds, biz, svcs] = await Promise.all([
       db.product.findMany({ where: { isVisible: true }, orderBy: { title: "asc" } }),
-      db.category.findMany({ where: { isVisible: true } }), db.brand.findMany({ where: { isVisible: true }, orderBy: { name: "asc" } }),
+      db.category.findMany({ where: { isVisible: true } }),
+      // Owner's main brands pin first (order asc), then alphabetical.
+      db.brand.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }] }),
       db.businessInfo.findUnique({ where: { id: "business" } }), db.serviceAddOn.findMany(),
     ]);
     if (!prod.length) return fallback;

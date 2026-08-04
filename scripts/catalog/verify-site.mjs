@@ -9,9 +9,12 @@ import { readFileSync } from "node:fs";
 
 const BASE = process.argv[2] || "http://localhost:3005";
 const PHONE = "0208 864 5763";
-const products = JSON.parse(readFileSync("data/products.json", "utf8"));
+// The JSON is the raw catalogue; the LIVE site hides owner-retired brands
+// (Ninja/Shark, Aug 2026) whose PDPs correctly 404 — sample visible stock only.
+const RETIRED = new Set(["Ninja", "Shark"]);
+const products = JSON.parse(readFileSync("data/products.json", "utf8")).filter((p) => !RETIRED.has(p.brand));
 const categories = JSON.parse(readFileSync("data/categories.json", "utf8"));
-const brands = JSON.parse(readFileSync("data/brands.json", "utf8"));
+const brands = JSON.parse(readFileSync("data/brands.json", "utf8")).filter((b) => !RETIRED.has(b.name));
 
 const fails = [];
 let checked = 0;

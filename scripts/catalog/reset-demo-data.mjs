@@ -23,11 +23,14 @@ try {
   };
 
   // scratch products first (also drop their RAG docs)
-  const scratch = await db.product.findMany({ where: { OR: [{ productCode: { startsWith: "AUDIT-" } }, { productCode: { startsWith: "COLDSTART" } }] }, select: { id: true } });
+  const scratch = await db.product.findMany({ where: { OR: [{ productCode: { startsWith: "AUDIT-" } }, { productCode: { startsWith: "COLDSTART" } }] }, select: { id: true, productCode: true } });
   for (const p of scratch) {
-    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: p.id } }).catch(() => {});
+    // Product RAG docs are keyed by productCode, not DB id.
+    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: p.productCode } }).catch(() => {});
     await db.product.delete({ where: { id: p.id } });
   }
+  // Sweep any doc orphaned by the old id-keyed cleanup (scratch codes only).
+  await db.rAGDocument.deleteMany({ where: { sourceType: "product", OR: [{ sourceId: { startsWith: "AUDIT-" } }, { sourceId: { startsWith: "COLDSTART" } }] } }).catch(() => {});
 
   const e = await db.enquiry.deleteMany({});
   const t = await db.trackedEvent.deleteMany({});

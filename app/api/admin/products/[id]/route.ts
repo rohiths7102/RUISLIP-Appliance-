@@ -65,7 +65,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     await db.product.delete({ where: { id } });
-    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: id } }).catch(() => {});
+    // Product RAG docs are keyed by productCode (see lib/rag/documents.ts), not DB id.
+    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: existing.productCode } }).catch(() => {});
     await writeAudit(db, {
       entityType: "product", entityId: id, action: "delete", changedFields: ["*"],
       previousValue: { title: existing.title, productCode: existing.productCode, priceNow: existing.priceNow },

@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
 import { Card, Button, PageTitle } from "@/components/admin/ui";
-type Row = { id: string; name: string; slug: string; logo: string; description: string; productCount: number; isVisible: boolean };
+type Row = { id: string; name: string; slug: string; logo: string; description: string; productCount: number; isVisible: boolean; order?: number };
 export default function BrandsAdmin({ initial }: { initial: Row[] }) {
   const [rows, setRows] = useState(initial); const [sel, setSel] = useState<Row | null>(null); const [msg, setMsg] = useState(""); const [saving, setSaving] = useState(false);
   const upd = (k: keyof Row, v: any) => setSel((s) => (s ? { ...s, [k]: v } : s));
   async function save() {
     if (!sel) return; setSaving(true); setMsg("");
-    const r = await fetch(`/api/admin/brands/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logo: sel.logo, description: sel.description, isVisible: sel.isVisible }) });
+    const r = await fetch(`/api/admin/brands/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logo: sel.logo, description: sel.description, isVisible: sel.isVisible, order: Number(sel.order ?? 100) }) });
     setSaving(false);
     if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === u.id ? { ...x, ...u } : x))); setSel(null); setMsg("Saved ✓"); } else setMsg("Save failed — is the database running?");
   }
@@ -31,6 +31,7 @@ export default function BrandsAdmin({ initial }: { initial: Row[] }) {
               <label>Logo URL<input value={sel.logo} onChange={(e) => upd("logo", e.target.value)} className="mt-1 w-full rounded border border-line px-2 py-1.5" /></label>
               <label>Description<textarea rows={3} value={sel.description} onChange={(e) => upd("description", e.target.value)} className="mt-1 w-full rounded border border-line px-2 py-1.5" /></label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={sel.isVisible} onChange={(e) => upd("isVisible", e.target.checked)} /> Visible</label>
+              <label className="flex items-center gap-2">Front-page rank <input type="number" value={sel.order ?? 100} onChange={(e) => upd("order", Number(e.target.value))} className="w-20 rounded border border-line px-2 py-1" /> <span className="text-xs text-muted">(low = first on /brands; 100 = alphabetical)</span></label>
             </div>
             <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setSel(null)}>Cancel</Button><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button></div>
           </div>

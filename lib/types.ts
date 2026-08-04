@@ -19,9 +19,13 @@ export interface Category {
   id: string; name: string; slug: string; sourceUrl: string; parentCategory: string;
   children: string[]; description: string; productCount: number; image: string;
   seoTitle: string; seoDescription: string;
+  /** Owner-set: products here show "Call for price" instead of a price. */
+  priceOnApplication?: boolean;
 }
 export interface Brand {
   id: string; name: string; slug: string; sourceUrl: string; logo: string; productCount: number;
+  /** Display rank on /brands — the owner's main brands pin first (low = first). */
+  order?: number;
 }
 export interface Business {
   businessName: string; tradingName: string; phone: string; email: string;

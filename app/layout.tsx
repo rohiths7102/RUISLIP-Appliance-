@@ -59,7 +59,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website", siteName: business.tradingName, locale: "en_GB",
       title: `${business.tradingName} — Kitchen & Home Appliances in Ruislip`,
       description: `1,500+ appliances from ${business.tradingName}, the family-run appliance shop in South Ruislip since 1977. Call ${business.phone}.`,
-      images: [{ url: "/og.jpg", width: 1200, height: 630, alt: `${business.tradingName} — premium kitchen appliances` }],
+      images: [{ url: "/og.jpg", width: 1200, height: 630, alt: `${business.tradingName} — big-brand kitchen appliances at honest local prices` }],
     },
     twitter: { card: "summary_large_image", title: `${business.tradingName} | Appliances in Ruislip`, images: ["/og.jpg"] },
     formatDetection: { telephone: true },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { loadCatalog } from "@/lib/repo";
-import { getBrandBySlug, productsForBrand, toCardItem } from "@/lib/select";
+import { getBrandBySlug, productsForBrand, toCardItem, poaNamesFrom } from "@/lib/select";
 import PageHead from "@/components/PageHead";
 import ProductBrowser from "@/components/ProductBrowser";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
@@ -21,12 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { products, brands } = await loadCatalog();
+  const { products, brands, categories } = await loadCatalog();
   const b = getBrandBySlug(brands, slug);
   if (!b) notFound();
 
   // Card-only DTO (see toCardItem) — keeps specs out of the payload, chips wired.
-  const items = productsForBrand(products, b.name).map(toCardItem);
+  const poaSet = poaNamesFrom(categories);
+  const items = productsForBrand(products, b.name).map((p) => toCardItem(p, poaSet));
   const catNames = [...new Set(items.map((p) => p.category))].sort();
 
   return (

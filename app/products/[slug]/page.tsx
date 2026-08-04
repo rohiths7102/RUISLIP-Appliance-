@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Phone, MessageCircle, Check } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
-import { getProduct, relatedFor } from "@/lib/select";
+import { getProduct, relatedFor, toCardItem, poaNamesFrom } from "@/lib/select";
 import { gbp, formatPrice, PRICE_ON_APPLICATION, availabilityLabel, availabilityDot, telHref } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
@@ -25,10 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { products, business } = await loadCatalog();
+  const { products, business, categories } = await loadCatalog();
   const p = getProduct(products, slug);
   if (!p) notFound();
 
+  // Owner-flagged "call for price" category — no price anywhere on this page.
+  const poaSet = poaNamesFrom(categories);
+  const poa = poaSet.has(p.category) || poaSet.has(p.subcategory);
   const related = relatedFor(products, p);
   const enquiryHref = `/contact?product=${encodeURIComponent(p.title)}&code=${encodeURIComponent(p.productCode)}`;
   const catId = String(p.meta?.leaf || "");
@@ -41,7 +44,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     brand: { "@type": "Brand", name: p.brand },
     image: p.image ? [p.image] : [],
     description: p.shortDescription || p.title,
-    ...(p.priceNow !== null && {
+    ...(p.priceNow !== null && !poa && {
       offers: {
         "@type": "Offer", priceCurrency: "GBP", price: p.priceNow,
         availability: "https://schema.org/InStoreOnly",
@@ -84,13 +87,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           <div className="my-4 flex flex-wrap items-end gap-3.5">
-            {p.priceNow !== null ? (
+            {p.priceNow !== null && !poa ? (
               <span className="font-display text-display-2 font-semibold leading-none tabular-nums">{formatPrice(p.priceNow)}</span>
             ) : (
-              <span className="text-lg font-semibold text-muted">{PRICE_ON_APPLICATION}</span>
+              <span className="inline-flex items-center gap-2 text-lg font-semibold text-blue-deep">
+                <Phone size={16} strokeWidth={2.4} /> {PRICE_ON_APPLICATION}
+              </span>
             )}
-            {p.priceWas ? <span className="mb-1.5 text-lg text-muted line-through tabular-nums">{formatPrice(p.priceWas)}</span> : null}
-            {p.saving ? (
+            {!poa && p.priceWas ? <span className="mb-1.5 text-lg text-muted line-through tabular-nums">{formatPrice(p.priceWas)}</span> : null}
+            {!poa && p.saving ? (
               <span className="mb-1.5 rounded-sm bg-success-soft px-2.5 py-1.5 text-xs font-bold text-success tabular-nums">Save {formatPrice(p.saving)}</span>
             ) : null}
           </div>
@@ -167,7 +172,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <section className="container-x mt-20">
           <h2 className="mb-7 font-display text-display-3 font-normal">You might also like</h2>
           <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
-            {related.map((r) => <ProductCard key={r.id} p={r} />)}
+            {related.map((r) => <ProductCard key={r.id} p={toCardItem(r, poaSet) as never} />)}
           </div>
         </section>
       )}
@@ -178,7 +183,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-paper">{p.title}</p>
             <p className="font-mono text-[10.5px] tracking-[0.06em] text-sky">
-              {p.productCode} · {gbp(p.priceNow)}
+              {p.productCode} · {poa || p.priceNow === null ? PRICE_ON_APPLICATION : gbp(p.priceNow)}
             </p>
           </div>
           <a href={telHref(business.phone)}

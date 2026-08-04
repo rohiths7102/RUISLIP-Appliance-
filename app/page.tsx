@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Phone, ArrowRight } from "lucide-react";
+import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
-import { topCategories, slugOf } from "@/lib/select";
+import { topCategories, slugOf, toCardItem, poaNamesFrom } from "@/lib/select";
 import { telHref } from "@/lib/format";
 import HeroVideo from "@/components/HeroVideo";
 import Reveal from "@/components/Reveal";
@@ -10,6 +10,7 @@ import ProductSlideshow, { type Slide } from "@/components/ProductSlideshow";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
+import ProductCard from "@/components/ProductCard";
 export const revalidate = 300;
 
 // A real background video ships with the site: a 4K (3840×2160) cinematic loop
@@ -37,16 +38,28 @@ export default async function Home() {
   const cats = topCategories(categories);
 
   // One flagship (dearest, photographed) per real appliance department, so the
-  // shelf reads as a showroom rather than a bin of filters.
+  // shelf reads as a showroom rather than a bin of filters. Call-for-price
+  // categories are excluded — the slideshow leads with the price.
+  const poaSet = poaNamesFrom(categories);
   const realCats = cats.filter((c) => c.name !== ACCESSORIES);
   const featured = realCats
     .map((c) =>
       products
-        .filter((p) => p.category === c.name && p.image && p.priceNow !== null)
+        .filter((p) => p.category === c.name && p.image && p.priceNow !== null &&
+          !poaSet.has(p.category) && !poaSet.has(p.subcategory))
         .sort((a, b) => (b.priceNow ?? 0) - (a.priceNow ?? 0))[0]
     )
     .filter(Boolean)
     .slice(0, 8);
+
+  // Best offers — real was/now savings, dearest saving first. The owner asked
+  // for value over "premium": lead with what people actually save.
+  const offers = products
+    .filter((p) => p.image && p.priceNow !== null && p.priceWas !== null && (p.saving ?? 0) > 0 &&
+      !poaSet.has(p.category) && !poaSet.has(p.subcategory))
+    .sort((a, b) => (b.saving ?? 0) - (a.saving ?? 0))
+    .slice(0, 8)
+    .map((p) => toCardItem(p, poaSet));
 
   const reelProducts = featured.concat(
     products.filter((p) => p.image && p.priceNow !== null && !featured.includes(p)).slice(0, 20)
@@ -82,7 +95,7 @@ export default async function Home() {
                 <span className="h-1.5 w-1.5 rounded-full bg-sky" /> Euronics Ruislip · South Ruislip · since 1977
               </p>
               <h1 className="font-display text-[clamp(30px,4vw,52px)] font-normal leading-[1.05] tracking-[-0.015em] text-[#f4f9ff]">
-                Premium kitchen appliances, <em className="shimmer not-italic font-normal italic">real local service.</em>
+                Big-brand appliances, <em className="shimmer not-italic font-normal italic">honest local prices.</em>
               </h1>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -124,6 +137,55 @@ export default async function Home() {
           ))}
         </div>
       </div>
+
+      {/* ------- BEST OFFERS — value first, real was/now savings only ------- */}
+      {offers.length >= 4 && (
+        <section className="container-x py-20">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Best offers</p>
+              <h2 className="font-display text-[clamp(30px,3.6vw,44px)] font-normal leading-[1.08]">
+                Real savings on big brands
+              </h2>
+            </div>
+            <Link href="/products" className="text-sm font-semibold text-blue-deep hover:text-blue">
+              Browse everything →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-[14px] md:grid-cols-3 lg:grid-cols-4">
+            {offers.map((o, i) => (
+              <Reveal key={o.id} delay={i * 60}>
+                <ProductCard p={o as never} energyClass={o.energyClass} />
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ------- SERVICES — installation, fitting, recycling, front and centre
+                 (owner: "make the installation fitting recycling more prominent") ------- */}
+      <section className="border-y border-line bg-card">
+        <div className="container-x grid gap-[18px] py-14 md:grid-cols-3">
+          {[
+            [Wrench, "Installation & fitting", "Freestanding and built-in appliances installed, tested, and your old one disconnected."],
+            [Recycle, "Removal & recycling", "We take the old appliance and every scrap of packaging away with us."],
+            [Truck, "Own-van local delivery", "Our own crew delivers around Ruislip — same-day possible, arranged on the phone."],
+          ].map(([Icon, title, body], i) => (
+            <Reveal key={title as string} delay={i * 70} className="flex items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue/10">
+                <Icon size={21} className="text-blue-deep" />
+              </span>
+              <div>
+                <h3 className="mb-1 font-display text-[22px] font-medium leading-tight">{title as string}</h3>
+                <p className="text-[13.5px] leading-relaxed text-muted">{body as string}</p>
+                <Link href="/delivery-services" className="mt-1.5 inline-block text-[12.5px] font-semibold text-blue-deep hover:text-blue">
+                  How it works →
+                </Link>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
 
       {/* real Google reviews only — renders nothing until genuine data exists */}
       <GoogleReviews />

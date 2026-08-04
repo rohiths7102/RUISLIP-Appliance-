@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadCatalog } from "@/lib/repo";
-import { getCategoryById, childCategories, productsInCategory, toCardItem } from "@/lib/select";
+import { getCategoryById, childCategories, productsInCategory, toCardItem, poaNamesFrom } from "@/lib/select";
 import PageHead from "@/components/PageHead";
 import ProductBrowser from "@/components/ProductBrowser";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
@@ -27,7 +27,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   if (!c) notFound();
 
   // Card-only DTO (see toCardItem) — keeps specs out of the payload, chips wired.
-  const items = productsInCategory(products, c.name).map(toCardItem);
+  const poaSet = poaNamesFrom(categories);
+  const items = productsInCategory(products, c.name).map((p) => toCardItem(p, poaSet));
   const brandNames = [...new Set(items.map((p) => p.brand).filter(Boolean))].sort();
   const kids = childCategories(categories, c.id);
   const subNames = kids.map((k) => k.name);

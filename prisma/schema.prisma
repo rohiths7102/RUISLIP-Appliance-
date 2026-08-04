@@ -72,6 +72,9 @@ model Category {
   productCount   Int        @default(0)
   order          Int        @default(0)
   isVisible      Boolean    @default(true)
+  // Owner-set: products in this category show "Call for price" instead of the
+  // price (e.g. accessories Bosch sell at his cost price, coffee machines).
+  priceOnApplication Boolean @default(false)
   seoTitle       String     @default("")
   seoDescription String     @default("")
   products       Product[]
@@ -86,6 +89,8 @@ model Brand {
   description  String  @default("")
   productCount Int     @default(0)
   isVisible    Boolean @default(true)
+  // Display rank on /brands — the owner's main brands pin first (low = first).
+  order        Int     @default(100)
   requiresLogoPermissionReview Boolean @default(true)
 }
 

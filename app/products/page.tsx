@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { loadCatalog } from "@/lib/repo";
-import { topCategories, toCardItem } from "@/lib/select";
+import { topCategories, toCardItem, poaNamesFrom } from "@/lib/select";
 import PageHead from "@/components/PageHead";
 import ProductBrowser, { type ProductCardItem } from "@/components/ProductBrowser";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
@@ -24,7 +24,8 @@ export default async function ProductsPage({
   const catNames = topCategories(categories).map((c) => c.name);
   // Card-only DTO: descriptionHtml/specs/features are ~90% of the ~4.4MB RSC
   // payload for 1,600 products, and the browser grid never reads them.
-  const items: ProductCardItem[] = products.map(toCardItem);
+  const poaSet = poaNamesFrom(categories);
+  const items: ProductCardItem[] = products.map((p) => toCardItem(p, poaSet));
   return (
     <>
       <PageHead

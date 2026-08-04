@@ -22,12 +22,17 @@ export async function GET() {
 
   try {
     const db = await getPrisma();
+    // Call-for-price categories never enter the feed: Google requires the shown
+    // price to be honoured, and the owner deliberately doesn't publish these.
+    const poaCats = await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } });
+    const poaNames = poaCats.map((c: { name: string }) => c.name);
     const rows = await db.product.findMany({
       where: {
         isVisible: true,
         priceNow: { not: null },
         mainImage: { not: "" },
         availabilityNormalised: { in: ["in_stock", "limited"] },
+        ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }),
       },
       select: {
         productCode: true, title: true, brand: true, slug: true, priceNow: true,

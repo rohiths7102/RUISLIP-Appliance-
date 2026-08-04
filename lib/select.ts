@@ -7,13 +7,20 @@ export const slugOf = (p: Product) => p.newSlug.replace(/^\/products\//, "");
  * pre-computed here so ProductBrowser can build its filter row and chips without
  * shipping the specs array to the client.
  */
-export const toCardItem = (p: Product) => ({
+export const toCardItem = (p: Product, poaNames?: Set<string>) => ({
   id: p.id, newSlug: p.newSlug, title: p.title, brand: p.brand, productCode: p.productCode,
   category: p.category, subcategory: p.subcategory, image: p.image,
   priceNow: p.priceNow, priceWas: p.priceWas, saving: p.saving,
   availability: p.availability, availabilityNormalised: p.availabilityNormalised,
   energyClass: energyClassOf(p.specifications),
+  // Owner-flagged "call for price" categories (accessories at cost price, coffee
+  // machines) — the card shows no price at all, per the owner's instruction.
+  poa: !!poaNames && (poaNames.has(p.category) || poaNames.has(p.subcategory)),
 });
+
+/** Names of every category the owner flagged price-on-application. */
+export const poaNamesFrom = (cs: Category[]) =>
+  new Set(cs.filter((c) => c.priceOnApplication).map((c) => c.name));
 export const getProduct = (ps: Product[], slug: string) => ps.find((p) => slugOf(p) === slug);
 export const topCategories = (cs: Category[]) => cs.filter((c) => !c.parentCategory);
 export const childCategories = (cs: Category[], parentId: string) => cs.filter((c) => c.parentCategory === parentId);

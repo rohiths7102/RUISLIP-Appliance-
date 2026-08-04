@@ -13,7 +13,10 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
   const slug = slugOf(p);
   // Grid DTOs pass the class pre-computed; full-Product callers fall back to specs.
   const energy = energyClass ?? energyClassOf(p.specifications);
-  const save = p.saving !== null && p.priceWas !== null && p.priceNow !== null && p.priceWas > p.priceNow
+  // Owner-flagged category (accessories at cost price, coffee machines): no price
+  // on the card at all — "call for price" replaces it, and no save badge either.
+  const poa = (p as { poa?: boolean }).poa === true;
+  const save = !poa && p.saving !== null && p.priceWas !== null && p.priceNow !== null && p.priceWas > p.priceNow
     ? Math.round(p.saving) : 0;
   return (
     <div className="card-lift group flex h-full flex-col overflow-hidden rounded-[5px] border border-ink/10 bg-card">
@@ -56,10 +59,16 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
             {p.title}
           </h3>
           <p className="mb-3.5 font-mono text-[10px] tracking-[0.06em] text-ink/50">Code {p.productCode}</p>
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-display text-[27px] font-semibold text-ink">{gbp(p.priceNow)}</span>
-            {p.priceWas ? <span className="text-sm text-ink/40 line-through">{gbp(p.priceWas)}</span> : null}
-          </div>
+          {poa ? (
+            <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue-deep">
+              <Phone size={13} strokeWidth={2.4} /> Call for price
+            </span>
+          ) : (
+            <div className="flex items-baseline gap-2.5">
+              <span className="font-display text-[27px] font-semibold text-ink">{gbp(p.priceNow)}</span>
+              {p.priceWas ? <span className="text-sm text-ink/40 line-through">{gbp(p.priceWas)}</span> : null}
+            </div>
+          )}
         </div>
       </Link>
       {/* min-h-11 = 44px tap targets; most of this shop's traffic is on a phone. */}
