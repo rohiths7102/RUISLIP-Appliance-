@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Phone, Menu, X } from "lucide-react";
+import { Phone, Menu, X, Star } from "lucide-react";
 import { telHref } from "@/lib/format";
 import OpenNow from "@/components/OpenNow";
 import SearchBar from "@/components/SearchBar";
@@ -29,6 +30,7 @@ const UTILITY = [
 
 export default function Header({ business }: { business: Business }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   return (
     <header className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
       {/* ---- white bar: name · member mark · search · phone ---- */}
@@ -41,14 +43,18 @@ export default function Header({ business }: { business: Business }) {
             </span>
           </Link>
 
-          {/* member-of mark — the badge keeps the star lockup legible on white */}
+          {/* member-of mark — the 512px badge tile is illegible at header scale,
+              so the lockup is rebuilt in HTML at a size that actually reads */}
           <span className="hidden items-center gap-2 border-l border-line pl-4 md:flex">
             <span className="text-[10.5px] leading-tight text-muted">A member of</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/euronics-badge.png" alt="Euronics" width={30} height={30} className="h-[30px] w-[30px] rounded-[7px]" />
+            <span role="img" aria-label="Euronics — the home of electricals"
+              className="flex items-center gap-1 rounded-lg bg-[#1e80c6] px-2.5 py-[7px]">
+              <Star size={12} className="fill-[#ffd200] text-[#ffd200]" aria-hidden />
+              <span className="text-[14px] font-bold lowercase leading-none tracking-tight text-white">euronics</span>
+            </span>
           </span>
 
-          <SearchBar className="mx-auto hidden w-full max-w-[380px] lg:flex" />
+          <SearchBar className="mx-auto hidden w-full max-w-[440px] lg:flex" />
 
           <div className="ml-auto flex shrink-0 items-center gap-3">
             <div className="flex flex-col items-end gap-1">
@@ -71,22 +77,30 @@ export default function Header({ business }: { business: Business }) {
         </div>
       </div>
 
-      {/* ---- blue department nav — the "same colours" row ---- */}
-      <nav aria-label="Departments" className="hidden bg-blue lg:block">
+      {/* ---- blue department nav — the "same colours" row, with the site's
+              signature gradient (blue -> blue-deep keeps white text AA) and an
+              eased sliding underline; the current section stays underlined ---- */}
+      <nav aria-label="Departments" className="hidden bg-[linear-gradient(118deg,#1173d4_0%,#0b4a8d_100%)] lg:block">
         <div className="container-x flex items-center gap-6 overflow-x-auto whitespace-nowrap">
-          {DEPARTMENTS.map(([slug, label]) => (
-            <Link key={slug} href={`/categories/${slug}`}
-              className="border-b-2 border-transparent py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white transition-colors hover:border-white hover:text-white">
-              {label}
-            </Link>
-          ))}
+          {DEPARTMENTS.map(([slug, label]) => {
+            const current = pathname === `/categories/${slug}`;
+            return (
+              <Link key={slug} href={`/categories/${slug}`} aria-current={current ? "page" : undefined}
+                className={`relative py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
+                {label}
+              </Link>
+            );
+          })}
           <span className="mx-1 h-4 w-px shrink-0 bg-white/25" aria-hidden />
-          {UTILITY.map((u) => (
-            <Link key={u.href} href={u.href}
-              className="border-b-2 border-transparent py-2.5 text-[12px] font-medium text-white/85 transition-colors hover:border-white hover:text-white">
-              {u.label}
-            </Link>
-          ))}
+          {UTILITY.map((u) => {
+            const current = pathname === u.href;
+            return (
+              <Link key={u.href} href={u.href} aria-current={current ? "page" : undefined}
+                className={`relative py-2.5 text-[12px] font-medium text-white after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
+                {u.label}
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
