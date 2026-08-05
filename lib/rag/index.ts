@@ -61,6 +61,39 @@ export async function syncCategoryToRag(db: any, id: string): Promise<boolean> {
   await upsertDoc(db, categoryDoc({ id: r.id, name: r.name, slug: r.slug, sourceUrl: r.sourceUrl, parentCategory: r.parentId || "", children: [], description: r.description, productCount: r.productCount, image: r.image, seoTitle: r.seoTitle, seoDescription: r.seoDescription } as any));
   return true;
 }
+
+/**
+ * Rewrite the product docs of a category whose call-for-price flag flipped, so
+ * the admin checkbox alone keeps its promise ("hide prices for every product in
+ * this category") without a manual rag:build. Embeddings are deliberately NOT
+ * recomputed — one API call per product would stall the admin write for
+ * hundreds of accessories. Only the price sentence changes, so the stale vector
+ * stays a fine retrieval key; needsReindex marks the docs for the next
+ * rag:build. Writes go out in chunked transactions (one round trip apiece).
+ */
+export async function syncCategoryProductsToRag(db: any, categoryId: string): Promise<number> {
+  const c = await db.category.findUnique({ where: { id: categoryId } });
+  if (!c) return 0;
+  const rows = await db.product.findMany({ where: { isVisible: true, OR: [{ category: c.name }, { subcategory: c.name }] } });
+  if (!rows.length) return 0;
+  // Recompute against ALL flagged categories: a product this category reaches by
+  // name may still be covered by its other (category|subcategory) name.
+  const poaNames = new Set(
+    (await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } })).map((x: { name: string }) => x.name),
+  );
+  const writes = rows.map((r: any) => {
+    const p: any = { title: r.title, productCode: r.productCode, brand: r.brand, category: r.category, subcategory: r.subcategory, priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, warranty: r.warranty, shortDescription: r.shortDescription, specifications: r.specifications || [], features: r.features || [], image: r.mainImage, newSlug: `/products/${r.slug}` };
+    const d = productDoc(p, { omitPrice: poaNames.has(r.category) || poaNames.has(r.subcategory) });
+    // updateMany: a product the index hasn't met yet (empty/partial index) is a
+    // no-op here, not an error — buildIndex owns creation.
+    return db.rAGDocument.updateMany({
+      where: { id: docId(d.sourceType, d.sourceId) },
+      data: { title: d.title, content: d.content, metadata: d.metadata, needsReindex: embeddingsEnabled() },
+    });
+  });
+  for (let i = 0; i < writes.length; i += 250) await db.$transaction(writes.slice(i, i + 250));
+  return rows.length;
+}
 export async function syncBrandToRag(db: any, id: string): Promise<boolean> {
   const r = await db.brand.findUnique({ where: { id } }); if (!r) return false;
   await upsertDoc(db, brandDoc({ id: r.id, name: r.name, slug: r.slug, sourceUrl: r.sourceUrl, logo: r.logo, productCount: r.productCount } as any));

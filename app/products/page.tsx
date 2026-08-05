@@ -34,7 +34,11 @@ export default async function ProductsPage({
         intro="Check price, product code and availability — then call"
       />
       <div className="container-x py-9">
-        <ProductBrowser items={items} brands={brandNames} categories={catNames} initialQuery={q || ""} />
+        {/* key: a second header search lands on /products?q=… while this page is
+            already mounted — initialQuery alone would be ignored by the browser's
+            useState, leaving the old results on screen. Remounting on q resets
+            every filter to match the new search, like a fresh landing. */}
+        <ProductBrowser key={q || "all"} items={items} brands={brandNames} categories={catNames} initialQuery={q || ""} />
       </div>
     </>
   );

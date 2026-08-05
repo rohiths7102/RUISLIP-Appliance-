@@ -7,16 +7,22 @@ export const slugOf = (p: Product) => p.newSlug.replace(/^\/products\//, "");
  * pre-computed here so ProductBrowser can build its filter row and chips without
  * shipping the specs array to the client.
  */
-export const toCardItem = (p: Product, poaNames?: Set<string>) => ({
-  id: p.id, newSlug: p.newSlug, title: p.title, brand: p.brand, productCode: p.productCode,
-  category: p.category, subcategory: p.subcategory, image: p.image,
-  priceNow: p.priceNow, priceWas: p.priceWas, saving: p.saving,
-  availability: p.availability, availabilityNormalised: p.availabilityNormalised,
-  energyClass: energyClassOf(p.specifications),
+export const toCardItem = (p: Product, poaNames?: Set<string>) => {
   // Owner-flagged "call for price" categories (accessories at cost price, coffee
   // machines) — the card shows no price at all, per the owner's instruction.
-  poa: !!poaNames && (poaNames.has(p.category) || poaNames.has(p.subcategory)),
-});
+  // The numbers are nulled, not just hidden: a price the owner doesn't publish
+  // must not ride along in the RSC payload where View Source would reveal it
+  // (it would also silently drive the price sort).
+  const poa = !!poaNames && (poaNames.has(p.category) || poaNames.has(p.subcategory));
+  return {
+    id: p.id, newSlug: p.newSlug, title: p.title, brand: p.brand, productCode: p.productCode,
+    category: p.category, subcategory: p.subcategory, image: p.image,
+    priceNow: poa ? null : p.priceNow, priceWas: poa ? null : p.priceWas, saving: poa ? null : p.saving,
+    availability: p.availability, availabilityNormalised: p.availabilityNormalised,
+    energyClass: energyClassOf(p.specifications),
+    poa,
+  };
+};
 
 /** Names of every category the owner flagged price-on-application. */
 export const poaNamesFrom = (cs: Category[]) =>

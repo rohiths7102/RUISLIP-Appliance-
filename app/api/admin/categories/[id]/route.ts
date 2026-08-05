@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { syncCategoryToRag } from "@/lib/rag/index";
+import { syncCategoryToRag, syncCategoryProductsToRag } from "@/lib/rag/index";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
+// A call-for-price flip rewrites the RAG doc of every product in the category
+// (839 for the accessories department) — give the write room beyond the 10s default.
+export const maxDuration = 60;
 const EDITABLE = ["name", "image", "description", "seoTitle", "seoDescription", "isVisible", "order", "priceOnApplication"];
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +23,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await db.category.update({ where: { id }, data });
     await writeAudit(db, { entityType: "category", entityId: id, action: "update", changedFields: changed, previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email });
     try { await syncCategoryToRag(db, id); } catch { /* reindex best-effort */ }
+    // The flag governs what the chatbot may quote for every product in the
+    // category — their docs must follow the toggle, not wait for a rag:build.
+    if (changed.includes("priceOnApplication")) {
+      try { await syncCategoryProductsToRag(db, id); } catch { /* reindex best-effort */ }
+    }
     revalidateStorefront([`/categories/${id}`]);
     return NextResponse.json(updated);
   } catch (e) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
