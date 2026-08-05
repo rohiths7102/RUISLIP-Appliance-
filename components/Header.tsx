@@ -4,11 +4,23 @@ import { useState } from "react";
 import { Phone, Menu, X } from "lucide-react";
 import { telHref } from "@/lib/format";
 import OpenNow from "@/components/OpenNow";
+import SearchBar from "@/components/SearchBar";
 import type { Business } from "@/lib/types";
 
-const NAV = [
-  { href: "/products", label: "Appliances" },
-  { href: "/categories", label: "Departments" },
+/**
+ * The owner's requested format — his official Euronics storefront's header,
+ * "with my name and search bar and same colours": a white bar carrying the
+ * Jyotsna Electrical name, the member-of-Euronics mark and a search box, over
+ * a solid blue department nav. Phone stays the loudest action (phone-first).
+ */
+
+// Stable department slugs (same set the footer links); Brands/Delivery ride the blue row too.
+const DEPARTMENTS = [
+  ["laundry", "Laundry"], ["refrigeration", "Refrigeration"], ["dishwashers", "Dishwashers"],
+  ["cooking", "Cooking"], ["tv-audio", "TV & Audio"], ["floorcare", "Floorcare"],
+  ["small-appliances", "Small Appliances"], ["accessories-parts", "Accessories"],
+] as const;
+const UTILITY = [
   { href: "/brands", label: "Brands" },
   { href: "/delivery-services", label: "Delivery & Services" },
   { href: "/about", label: "About" },
@@ -18,57 +30,85 @@ const NAV = [
 export default function Header({ business }: { business: Business }) {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-50 border-b border-blue/20 bg-navy/95 backdrop-blur-md">
-      <div className="container-x flex h-[74px] items-center justify-between gap-6">
-        <Link href="/" className="flex items-center gap-3.5" onClick={() => setOpen(false)} aria-label="Euronics Ruislip — home">
-          {/* White-lettered Euronics lockup (transparent PNG) sits directly on the navy header. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/euronics-logo.png" alt="Euronics Ruislip" width={290} height={74} className="h-10 w-auto" />
-          <span className="hidden flex-col gap-0.5 border-l border-paper/15 pl-3.5 sm:flex">
-            <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-blue">Est. 1977 · South Ruislip</span>
+    <header className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
+      {/* ---- white bar: name · member mark · search · phone ---- */}
+      <div className="border-b border-line bg-paper">
+        <div className="container-x flex h-[72px] items-center gap-4">
+          <Link href="/" onClick={() => setOpen(false)} aria-label="Jyotsna Electrical — Euronics Ruislip, home" className="flex shrink-0 items-center gap-3">
+            <span className="flex flex-col leading-none">
+              <span className="font-display text-[22px] font-semibold tracking-tight text-navy">Jyotsna Electrical</span>
+              <span className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.22em] text-blue-deep">Est. 1977 · South Ruislip</span>
+            </span>
+          </Link>
+
+          {/* member-of mark — the badge keeps the star lockup legible on white */}
+          <span className="hidden items-center gap-2 border-l border-line pl-4 md:flex">
+            <span className="text-[10.5px] leading-tight text-muted">A member of</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/euronics-badge.png" alt="Euronics" width={30} height={30} className="h-[30px] w-[30px] rounded-[7px]" />
           </span>
-        </Link>
 
-        <nav className="hidden items-center gap-8 lg:flex">
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-paper/80 transition-colors hover:text-sky">
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+          <SearchBar className="mx-auto hidden w-full max-w-[380px] lg:flex" />
 
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end gap-1">
-            {/* min-h-11 = 44px: this is the primary action on a phone-first shop. */}
-            <a href={telHref(business.phone)} className="flex min-h-11 items-center gap-2 rounded-sm bg-blue px-4 py-2.5 text-[13px] font-bold text-navy transition-colors hover:bg-sky">
-              <Phone size={15} strokeWidth={2.2} />
-              <span className="hidden sm:inline">{business.phone}</span>
-            </a>
-            {/* live open/closed line — desktop only, phones keep the header tight */}
-            <OpenNow business={business} tone="dark" className="hidden sm:flex" />
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            <div className="flex flex-col items-end gap-1">
+              {/* min-h-11 = 44px: the primary action on a phone-first shop. */}
+              <a href={telHref(business.phone)} className="flex min-h-11 items-center gap-2 rounded-full bg-blue px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-blue-deep">
+                <Phone size={15} strokeWidth={2.2} />
+                <span className="hidden sm:inline">{business.phone}</span>
+              </a>
+              <OpenNow business={business} tone="light" className="hidden sm:flex" />
+            </div>
+            <button
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-ink/15 text-navy lg:hidden"
+              onClick={() => setOpen(!open)}
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+            >
+              {open ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
-          <button
-            className="flex h-[42px] w-[42px] items-center justify-center rounded-sm border border-paper/20 bg-paper/5 text-paper lg:hidden"
-            onClick={() => setOpen(!open)}
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
         </div>
       </div>
 
+      {/* ---- blue department nav — the "same colours" row ---- */}
+      <nav aria-label="Departments" className="hidden bg-blue lg:block">
+        <div className="container-x flex items-center gap-6 overflow-x-auto whitespace-nowrap">
+          {DEPARTMENTS.map(([slug, label]) => (
+            <Link key={slug} href={`/categories/${slug}`}
+              className="border-b-2 border-transparent py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white transition-colors hover:border-white hover:text-white">
+              {label}
+            </Link>
+          ))}
+          <span className="mx-1 h-4 w-px shrink-0 bg-white/25" aria-hidden />
+          {UTILITY.map((u) => (
+            <Link key={u.href} href={u.href}
+              className="border-b-2 border-transparent py-2.5 text-[12px] font-medium text-white/85 transition-colors hover:border-white hover:text-white">
+              {u.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+
+      {/* ---- mobile panel: search + everything ---- */}
       {open && (
-        <nav className="border-t border-blue/20 bg-navy-3/98 lg:hidden">
-          <div className="container-x flex flex-col py-2">
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} onClick={() => setOpen(false)}
-                className="border-b border-paper/10 py-4 text-sm uppercase tracking-[0.1em] text-paper/80 last:border-0">
-                {n.label}
+        <div className="border-b border-line bg-paper lg:hidden">
+          <div className="container-x flex flex-col gap-1 py-3">
+            <SearchBar className="mb-2" />
+            {DEPARTMENTS.map(([slug, label]) => (
+              <Link key={slug} href={`/categories/${slug}`} onClick={() => setOpen(false)}
+                className="border-b border-line py-3 text-sm font-medium text-ink">
+                {label}
+              </Link>
+            ))}
+            {UTILITY.map((u) => (
+              <Link key={u.href} href={u.href} onClick={() => setOpen(false)}
+                className="border-b border-line py-3 text-sm text-muted last:border-0">
+                {u.label}
               </Link>
             ))}
           </div>
-        </nav>
+        </div>
       )}
     </header>
   );
