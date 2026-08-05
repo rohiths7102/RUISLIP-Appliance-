@@ -291,6 +291,24 @@ export const ACCESSORY_RULES = [
  */
 export const GLOBAL_PRE = [
   [/descaling tablet|cleaning tablet|descaler\b|descaling (agent|solution|powder)/i, "cleaning-products"],
+
+  // Aug 2026 catalogue drop: records titled "Brand CODE" whose descriptions never
+  // name the appliance type. Each pattern is deliberately narrow (guarded with
+  // model-family or exact phrasing) so it cannot re-file existing stock.
+  [/recirculating kit|carbon filter\b.*\bfor D/i, "cooker-hood-accessories"], // Bosch DWZ* hood kits
+  [/\bbox design\b/i, "cooker-hoods"],                        // Bosch DWB* wall hoods
+  [/\belica fold\b|\bfold (grey|black|white) \d0\b/i, "cooker-hoods"],
+  [/roasterzone|\b\d (?:induction )?zones\b.*power/i, "hobs"],
+  [/dishwashw/i, "integrated-dishwashers"],                   // feed's own typo "Dishwashwasher"
+  [/side trims? and handle|trim kit\b/i, "cooking-accessories"],
+  [/blast chiller/i, "freezers"],
+  [/upright cleaner|\bepower\b/i, "vacuum-cleaners"],
+  [/pedestal (?:cooling )?fan|\bcooling fan\b.*oscillat/i, "coolers"],
+  [/dehumidifier/i, "coolers"],
+  [/bluetooth turntable|vinyl turntable/i, "soundbars-speakers"],
+  [/outdoor tv\b/i, "televisions"],
+  [/waste ?disposal|multigrind/i, "food-prep"],
+  [/quooker (pro|flex|fusion|front|classic|combi)/i, "kettles"], // boiling-water taps (SCR descaler stays under cleaning)
 ];
 
 /**
