@@ -5,6 +5,8 @@ import { topCategories, slugOf, toCardItem, poaNamesFrom } from "@/lib/select";
 import { telHref } from "@/lib/format";
 import HeroVideo from "@/components/HeroVideo";
 import Reveal from "@/components/Reveal";
+import RotatingWord from "@/components/RotatingWord";
+import CountUp from "@/components/CountUp";
 import ShowroomReel from "@/components/ShowroomReel";
 import ProductSlideshow, { type Slide } from "@/components/ProductSlideshow";
 import PostcodeCheck from "@/components/PostcodeCheck";
@@ -29,6 +31,13 @@ const STEPS = [
 ];
 
 const AREAS = ["Ruislip", "South Ruislip", "Eastcote", "Northolt", "Pinner", "Ickenham", "Ruislip Manor"];
+
+// The hero headline rolls through the real departments — merchandising in the
+// H1 itself. Assistive tech and crawlers read the static "appliances" instead.
+const HERO_WORDS = [
+  "washing machines", "fridge freezers", "ovens & hobs", "dishwashers",
+  "coffee machines", "TVs & soundbars", "vacuum cleaners", "appliances",
+];
 
 /** Never front the shop with a spare part — a water-hardness test strip is not a showcase. */
 const ACCESSORIES = "Accessories & Spare Parts";
@@ -95,7 +104,8 @@ export default async function Home() {
                 <span className="h-1.5 w-1.5 rounded-full bg-sky" /> Euronics Ruislip · South Ruislip · since 1977
               </p>
               <h1 className="font-display text-[clamp(30px,4vw,52px)] font-normal leading-[1.05] tracking-[-0.015em] text-[#f4f9ff]">
-                Big-brand appliances, <em className="shimmer not-italic font-normal italic">honest local prices.</em>
+                Big-brand <RotatingWord words={HERO_WORDS} fallback="appliances" className="text-sky" />,{" "}
+                <em className="shimmer not-italic font-normal italic">honest local prices.</em>
               </h1>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -121,15 +131,15 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ------- marketing stats band — every number is real ------- */}
+      {/* ------- marketing stats band — every number is real, and counts up ------- */}
       <div className="border-b border-line bg-white">
         <div className="container-x grid grid-cols-2 gap-y-8 py-11 text-center md:grid-cols-4">
-          {[
-            [products.length.toLocaleString("en-GB"), "appliances in the catalogue"],
-            [String(brands.length), "trusted appliance brands"],
+          {([
+            [<CountUp key="p" to={products.length} />, "appliances in the catalogue"],
+            [<CountUp key="b" to={brands.length} />, "trusted appliance brands"],
             ["1977", "serving Ruislip since"],
             ["Own van", "local delivery & fitting"],
-          ].map(([big, label], i) => (
+          ] as const).map(([big, label], i) => (
             <Reveal key={label} delay={i * 70} className="px-3">
               <div className="font-display text-[clamp(34px,4vw,52px)] font-semibold leading-none text-navy">{big}</div>
               <div className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.16em] text-blue-deep">{label}</div>

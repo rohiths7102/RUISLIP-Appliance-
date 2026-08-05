@@ -16,10 +16,14 @@ const USPS = [
 export default function UspStrip() {
   return (
     <div className="border-b border-line bg-paper-2">
-      <div className="container-x flex items-center justify-between gap-4 overflow-x-auto py-2">
+      <div className="container-x flex items-center justify-between gap-5 overflow-x-auto py-2">
+        {/* Navy sentence-case text with icon chips — this bar carries the shop's
+            four best claims and must read as information, not decoration. */}
         {USPS.map(([Icon, label]) => (
-          <span key={label} className="flex shrink-0 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-blue-deep">
-            <Icon size={13} strokeWidth={2.2} className="text-blue" aria-hidden />
+          <span key={label} className="flex shrink-0 items-center gap-2.5 text-[12px] font-semibold tracking-[0.01em] text-navy">
+            <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-blue/10">
+              <Icon size={12.5} strokeWidth={2.4} className="text-blue-deep" aria-hidden />
+            </span>
             {label}
           </span>
         ))}
