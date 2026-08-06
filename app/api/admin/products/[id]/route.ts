@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { EDITABLE, SCRAPE_OWNED, coerce, reconcileSaving, ValidationError } from "@/lib/admin-product";
+import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     // Keep the chatbot's answers in step with the catalogue.
     try { await syncProductToRag(db, id); } catch { /* best effort */ }
+    // Brand/category/visibility moves change the counts those pages display.
+    if (changed.some((k) => ["brand", "category", "subcategory", "isVisible"].includes(k))) {
+      try {
+        if (changed.includes("brand")) await ensureBrand(db, updated.brand);
+        await recomputeCounts(db, {
+          brands: [existing.brand, updated.brand],
+          categories: [existing.category, existing.subcategory, updated.category, updated.subcategory],
+        });
+      } catch { /* counts are best effort */ }
+    }
     revalidateStorefront([`/products/${updated.slug}`]);
     return NextResponse.json(updated);
   } catch (e: any) {
@@ -72,6 +83,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       previousValue: { title: existing.title, productCode: existing.productCode, priceNow: existing.priceNow },
       newValue: {}, changedBy: admin.email,
     });
+    try { await recomputeCounts(db, { brands: [existing.brand], categories: [existing.category, existing.subcategory] }); } catch { /* best effort */ }
     revalidateStorefront([`/products/${existing.slug}`]);
     return NextResponse.json({ ok: true, deleted: id });
   } catch (e) {

@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { EDITABLE, coerce, slugify, reconcileSaving, ValidationError } from "@/lib/admin-product";
+import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,11 @@ export async function POST(req: Request) {
       changedBy: admin.email,
     });
     try { await syncProductToRag(db, created.id); } catch { /* best effort */ }
+    // A brand-new brand gets its page; the counts the storefront shows follow.
+    try {
+      await ensureBrand(db, created.brand);
+      await recomputeCounts(db, { brands: [created.brand], categories: [created.category, created.subcategory] });
+    } catch { /* best effort */ }
     revalidateStorefront([`/products/${created.slug}`]);
     return NextResponse.json(created, { status: 201 });
   } catch (e: any) {

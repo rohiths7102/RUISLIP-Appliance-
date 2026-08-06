@@ -48,7 +48,9 @@ export async function GET() {
       const image = /^https?:\/\//.test(p.mainImage) ? p.mainImage : `${base}${p.mainImage.startsWith("/") ? "" : "/"}${p.mainImage}`;
       return [
         "    <item>",
-        `      <g:id>${esc(p.productCode)}</g:id>`,
+        // slug, not productCode: g:id must be unique per feed, and 8 codes are
+        // shared across brands (e.g. Bosch + Neff sell the same OEM part).
+        `      <g:id>${esc(p.slug)}</g:id>`,
         `      <title>${title}</title>`,
         `      <description>${desc}</description>`,
         `      <link>${esc(`${base}/products/${p.slug}`)}</link>`,

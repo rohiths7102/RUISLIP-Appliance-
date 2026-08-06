@@ -5,6 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { parseCsv } from "@/lib/csv";
 import { AVAILABILITY, SCRAPE_OWNED } from "@/lib/admin-product";
+import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 
@@ -150,6 +151,16 @@ export async function POST(req: Request) {
       }});
       try { await syncProductToRag(db, created.id); } catch {}
     }
+    // New brands get their pages; every count the storefront shows gets retrued.
+    try {
+      const touched = [...changes.map((c) => c.data), ...creates.map((c) => c.data)];
+      for (const d of creates.map((c) => c.data)) if (d.brand) await ensureBrand(db, d.brand);
+      const affected = await db.product.findMany({ where: { id: { in: changes.map((c) => c.id) } }, select: { brand: true, category: true, subcategory: true } });
+      await recomputeCounts(db, {
+        brands: [...touched.map((d) => d.brand), ...affected.map((a: any) => a.brand)],
+        categories: [...touched.flatMap((d) => [d.category, d.subcategory]), ...affected.flatMap((a: any) => [a.category, a.subcategory])],
+      });
+    } catch { /* counts are best effort */ }
     await writeAudit(db, {
       entityType: "product", entityId: `csv-import:${changes.length + creates.length}`, action: "csv-import",
       changedFields: ["csv"], previousValue: {}, newValue: { updates: changes.length, creates: creates.length, unchanged },

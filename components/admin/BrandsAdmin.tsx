@@ -1,19 +1,21 @@
 "use client";
 import { useState } from "react";
-import { Card, Button, PageTitle } from "@/components/admin/ui";
+import { Card, Button, Notice, PageTitle } from "@/components/admin/ui";
 type Row = { id: string; name: string; slug: string; logo: string; description: string; productCount: number; isVisible: boolean; order?: number };
 export default function BrandsAdmin({ initial }: { initial: Row[] }) {
   const [rows, setRows] = useState(initial); const [sel, setSel] = useState<Row | null>(null); const [msg, setMsg] = useState(""); const [saving, setSaving] = useState(false);
+  // Failure renders INSIDE the modal (a header flash hides behind the overlay).
+  const [modalErr, setModalErr] = useState("");
   const upd = (k: keyof Row, v: any) => setSel((s) => (s ? { ...s, [k]: v } : s));
   async function save() {
-    if (!sel) return; setSaving(true); setMsg("");
+    if (!sel) return; setSaving(true); setMsg(""); setModalErr("");
     const r = await fetch(`/api/admin/brands/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logo: sel.logo, description: sel.description, isVisible: sel.isVisible, order: Number(sel.order ?? 100) }) });
     setSaving(false);
-    if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === u.id ? { ...x, ...u } : x))); setSel(null); setMsg("Saved ✓"); } else setMsg("Save failed — is the database running?");
+    if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === u.id ? { ...x, ...u } : x))); setSel(null); setMsg("Saved ✓"); } else setModalErr("Save failed — is the database running?");
   }
   return (
     <div>
-      <PageTitle count={rows.length} actions={msg && <span className="text-sm text-blue">{msg}</span>}>Brands</PageTitle>
+      <PageTitle count={rows.length} actions={msg && <span className="text-sm font-medium text-success">{msg}</span>}>Brands</PageTitle>
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {rows.map((r) => (
           <Card key={r.id} className="p-4 text-center">
@@ -33,6 +35,7 @@ export default function BrandsAdmin({ initial }: { initial: Row[] }) {
               <label className="flex items-center gap-2"><input type="checkbox" checked={sel.isVisible} onChange={(e) => upd("isVisible", e.target.checked)} /> Visible</label>
               <label className="flex items-center gap-2">Front-page rank <input type="number" value={sel.order ?? 100} onChange={(e) => upd("order", Number(e.target.value))} className="w-20 rounded border border-line px-2 py-1" /> <span className="text-xs text-muted">(low = first on /brands; 100 = alphabetical)</span></label>
             </div>
+            {modalErr && <Notice tone="danger" className="mt-4">{modalErr}</Notice>}
             <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setSel(null)}>Cancel</Button><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button></div>
           </div>
         </div>

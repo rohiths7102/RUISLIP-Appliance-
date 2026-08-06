@@ -12,10 +12,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { brands } = await loadCatalog();
   const b = getBrandBySlug(brands, slug);
   if (!b) return { title: "Brand not found" };
+  const description = `${b.name} appliances at Euronics Ruislip. Call 0208 864 5763 to confirm price and availability.`;
   return {
     title: `${b.name} Appliances`,
-    description: `${b.name} appliances at Euronics Ruislip. Call 0208 864 5763 to confirm price and availability.`,
+    description,
     alternates: { canonical: `/brands/${slug}` },
+    // Without this the page inherits the HOMEPAGE og object from the layout.
+    openGraph: {
+      title: `${b.name} Appliances | Euronics Ruislip`, description,
+      ...(b.logo && { images: [{ url: b.logo }] }),
+    },
   };
 }
 

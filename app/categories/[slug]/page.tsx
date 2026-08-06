@@ -13,10 +13,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { categories } = await loadCatalog();
   const c = getCategoryById(categories, slug);
   if (!c) return { title: "Category not found" };
+  const description = c.seoDescription || `${c.name} at Euronics Ruislip.`;
   return {
     title: c.name,
-    description: c.seoDescription || `${c.name} at Euronics Ruislip.`,
+    description,
     alternates: { canonical: `/categories/${slug}` },
+    // Without this the page inherits the HOMEPAGE og object from the layout.
+    openGraph: {
+      title: `${c.name} | Euronics Ruislip`, description,
+      ...(c.image && { images: [{ url: c.image }] }),
+    },
   };
 }
 

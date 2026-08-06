@@ -31,6 +31,7 @@ export default function SalesAdmin() {
   const [err, setErr] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [selId, setSelId] = useState<string | null>(null);
+  const [patchErr, setPatchErr] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -54,10 +55,15 @@ export default function SalesAdmin() {
   const sel = rows.find((r) => r.id === selId) || null;
 
   const patch = async (id: string, data: Record<string, unknown>) => {
-    const r = await fetch("/api/admin/enquiries", {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...data }),
-    });
-    if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === id ? { ...x, ...u } : x))); return true; }
+    if (!Object.keys(data).length) return true;
+    setPatchErr("");
+    try {
+      const r = await fetch("/api/admin/enquiries", {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...data }),
+      });
+      if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === id ? { ...x, ...u } : x))); return true; }
+    } catch { /* fall through to the error notice */ }
+    setPatchErr("That change didn't save — check the connection and try again.");
     return false;
   };
 
@@ -85,6 +91,8 @@ export default function SalesAdmin() {
       </div>
 
       {err && <Notice tone="warning" className="mt-4">{err} Leads appear here when customers use the enquiry forms.</Notice>}
+      {patchErr && <Notice tone="danger" className="mt-4">{patchErr}</Notice>}
+      {!loaded && <p className="mt-6 text-sm text-muted">Loading leads…</p>}
       {loaded && !rows.length && !err && (
         <div className="mt-4"><EmptyState title="No leads yet." hint="Every enquiry form on the site lands here — with AI reply drafting ready to go." /></div>
       )}

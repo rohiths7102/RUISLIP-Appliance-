@@ -43,6 +43,7 @@ export default function ProductsAdmin({
   const [isNew, setIsNew] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStock, setBulkStock] = useState("in_stock");
   const [bulkPct, setBulkPct] = useState("");
@@ -74,8 +75,13 @@ export default function ProductsAdmin({
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 3500); };
 
   async function save() {
-    if (!editing) return;
+    // The guard + in-flight state stop a double-click on "Add product" from
+    // POSTing twice — the API auto-suffixes slugs, so the duplicate would be
+    // accepted silently and go live.
+    if (!editing || saving) return;
+    setSaving(true);
     setErr("");
+    try {
     const body = {
       title: editing.title, brand: editing.brand, productCode: editing.productCode,
       category: editing.category, subcategory: editing.subcategory,
@@ -93,6 +99,7 @@ export default function ProductsAdmin({
     setEditing(null);
     flash(isNew ? "Product added — it's live on the site now" : "Saved — live on the site now");
     load(q, page);
+    } finally { setSaving(false); }
   }
 
   async function remove(row: Row) {
@@ -320,7 +327,7 @@ export default function ProductsAdmin({
 
       {editing && (
         <Editor
-          row={editing} isNew={isNew} categories={categories} input={input} error={err}
+          row={editing} isNew={isNew} categories={categories} input={input} error={err} saving={saving}
           onChange={setEditing} onClose={() => setEditing(null)} onSave={save}
         />
       )}
@@ -391,9 +398,9 @@ export default function ProductsAdmin({
 }
 
 function Editor({
-  row, isNew, categories, input, error, onChange, onClose, onSave,
+  row, isNew, categories, input, error, saving, onChange, onClose, onSave,
 }: {
-  row: Row; isNew: boolean; categories: { name: string; subs: string[] }[]; input: string; error: string;
+  row: Row; isNew: boolean; categories: { name: string; subs: string[] }[]; input: string; error: string; saving: boolean;
   onChange: (r: Row) => void; onClose: () => void; onSave: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -521,7 +528,7 @@ function Editor({
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={onSave}>{isNew ? "Add product" : "Save changes"}</Button>
+          <Button onClick={onSave} disabled={saving}>{saving ? "Saving…" : isNew ? "Add product" : "Save changes"}</Button>
         </div>
       </div>
     </div>

@@ -24,9 +24,24 @@ export const toCardItem = (p: Product, poaNames?: Set<string>) => {
   };
 };
 
-/** Names of every category the owner flagged price-on-application. */
-export const poaNamesFrom = (cs: Category[]) =>
-  new Set(cs.filter((c) => c.priceOnApplication).map((c) => c.name));
+/**
+ * Names of every category the owner flagged price-on-application.
+ * Defence in depth: if the catalogue in hand carries NO flags at all (a seed
+ * snapshot from before the flags existed, or a partial DB failure), fall back
+ * to the known flagged set — a degraded catalogue must never resurrect prices
+ * the owner withholds. When any flag IS present, the owner's data wins alone.
+ */
+const POA_FALLBACK = [
+  "Accessories & Spare Parts", "Coffee Machines", "Oven & Cooking Accessories",
+  "Hob Accessories", "Hood Filters & Accessories", "Laundry Accessories",
+  "Refrigeration Accessories", "Dishwasher Accessories", "Vacuum Bags & Accessories",
+  "Coffee Machine Accessories", "Kitchen Machine Accessories", "Kitchen Utensils",
+  "Cleaning & Care Products", "Spare Parts",
+];
+export const poaNamesFrom = (cs: Category[]) => {
+  const flagged = cs.filter((c) => c.priceOnApplication).map((c) => c.name);
+  return new Set(flagged.length ? flagged : POA_FALLBACK);
+};
 export const getProduct = (ps: Product[], slug: string) => ps.find((p) => slugOf(p) === slug);
 export const topCategories = (cs: Category[]) => cs.filter((c) => !c.parentCategory);
 export const childCategories = (cs: Category[], parentId: string) => cs.filter((c) => c.parentCategory === parentId);

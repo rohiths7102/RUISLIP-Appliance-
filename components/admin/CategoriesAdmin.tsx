@@ -1,19 +1,21 @@
 "use client";
 import { useState } from "react";
-import { Button, Card, PageTitle } from "@/components/admin/ui";
+import { Button, Card, Notice, PageTitle } from "@/components/admin/ui";
 type Row = { id: string; name: string; slug: string; image: string; description: string; seoTitle: string; seoDescription: string; productCount: number; isVisible: boolean; order: number; parentId: string | null; priceOnApplication: boolean };
 export default function CategoriesAdmin({ initial }: { initial: Row[] }) {
   const [rows, setRows] = useState(initial); const [sel, setSel] = useState<Row | null>(null); const [msg, setMsg] = useState(""); const [saving, setSaving] = useState(false);
+  // Failure renders INSIDE the modal (a header flash hides behind the overlay).
+  const [modalErr, setModalErr] = useState("");
   const upd = (k: keyof Row, v: any) => setSel((s) => (s ? { ...s, [k]: v } : s));
   async function save() {
-    if (!sel) return; setSaving(true); setMsg("");
+    if (!sel) return; setSaving(true); setMsg(""); setModalErr("");
     const r = await fetch(`/api/admin/categories/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: sel.name, image: sel.image, description: sel.description, seoTitle: sel.seoTitle, seoDescription: sel.seoDescription, isVisible: sel.isVisible, order: Number(sel.order), priceOnApplication: !!sel.priceOnApplication }) });
     setSaving(false);
-    if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === u.id ? { ...x, ...u } : x))); setSel(null); setMsg("Saved ✓"); } else setMsg("Save failed — is the database running?");
+    if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === u.id ? { ...x, ...u } : x))); setSel(null); setMsg("Saved ✓"); } else setModalErr("Save failed — is the database running?");
   }
   return (
     <div>
-      <PageTitle count={rows.length} actions={msg ? <span className="text-sm text-blue">{msg}</span> : undefined}>Categories</PageTitle>
+      <PageTitle count={rows.length} actions={msg ? <span className="text-sm font-medium text-success">{msg}</span> : undefined}>Categories</PageTitle>
       <Card className="mt-4 overflow-x-auto"><table className="w-full text-sm">
         <thead className="bg-paper-2 text-left text-muted"><tr><th className="p-3">Name</th><th className="p-3">Products</th><th className="p-3">Visible</th><th className="p-3">Order</th><th className="p-3"></th></tr></thead>
         <tbody>{rows.map((r) => (
@@ -36,6 +38,7 @@ export default function CategoriesAdmin({ initial }: { initial: Row[] }) {
                 <span><span className="font-medium">Call for price</span> — hide prices for every product in this category; customers are asked to phone instead. They also leave the Google Shopping feed.</span>
               </label>
             </div>
+            {modalErr && <Notice tone="danger" className="mt-4">{modalErr}</Notice>}
             <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setSel(null)}>Cancel</Button><Button variant="primary" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button></div>
           </div>
         </div>

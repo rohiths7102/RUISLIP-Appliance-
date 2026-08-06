@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { AVAILABILITY } from "@/lib/admin-product";
+import { recomputeCounts } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,18 @@ export async function POST(req: Request) {
       changedFields: [action], previousValue: { ids }, newValue: { value: body.value, updated, skipped },
       changedBy: admin.email,
     });
-    if (updated) revalidateStorefront();
+    if (updated) {
+      // set_visible moves products in/out of the counts every listing shows.
+      if (action === "set_visible") {
+        try {
+          await recomputeCounts(db, {
+            brands: rows.map((r: any) => r.brand),
+            categories: rows.flatMap((r: any) => [r.category, r.subcategory]),
+          });
+        } catch { /* best effort */ }
+      }
+      revalidateStorefront();
+    }
     return NextResponse.json({ ok: true, updated, skipped });
   } catch (e) {
     console.error("bulk products", e);

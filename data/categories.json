@@ -295,7 +295,8 @@
     "productCount": 20,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/CEG7304X/01.jpg",
     "seoTitle": "Coffee Machines",
-    "seoDescription": "Bean-to-cup, filter, pod machines and grinders."
+    "seoDescription": "Bean-to-cup, filter, pod machines and grinders.",
+    "priceOnApplication": true
   },
   {
     "id": "bean-to-cup",
@@ -625,7 +626,8 @@
     "productCount": 813,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17004034/01.webp",
     "seoTitle": "Accessories & Spare Parts",
-    "seoDescription": "Genuine accessories, filters, cleaning products and spare parts to order."
+    "seoDescription": "Genuine accessories, filters, cleaning products and spare parts to order.",
+    "priceOnApplication": true
   },
   {
     "id": "cooking-accessories",
@@ -638,7 +640,8 @@
     "productCount": 136,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/00577538/01.webp",
     "seoTitle": "Oven & Cooking Accessories",
-    "seoDescription": "Oven & Cooking Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Oven & Cooking Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "hob-accessories",
@@ -651,7 +654,8 @@
     "productCount": 18,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17007160/01.webp",
     "seoTitle": "Hob Accessories",
-    "seoDescription": "Hob Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Hob Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "cooker-hood-accessories",
@@ -664,7 +668,8 @@
     "productCount": 223,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17004034/01.webp",
     "seoTitle": "Hood Filters & Accessories",
-    "seoDescription": "Hood Filters & Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Hood Filters & Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "laundry-accessories",
@@ -677,7 +682,8 @@
     "productCount": 26,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/WMZMPF10/01.webp",
     "seoTitle": "Laundry Accessories",
-    "seoDescription": "Laundry Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Laundry Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "refrigeration-accessories",
@@ -690,7 +696,8 @@
     "productCount": 31,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00711335/01.webp",
     "seoTitle": "Refrigeration Accessories",
-    "seoDescription": "Refrigeration Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Refrigeration Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "dishwasher-accessories",
@@ -703,7 +710,8 @@
     "productCount": 17,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/00681729/01.webp",
     "seoTitle": "Dishwasher Accessories",
-    "seoDescription": "Dishwasher Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Dishwasher Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "vacuum-accessories",
@@ -716,7 +724,8 @@
     "productCount": 63,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17006570/01.webp",
     "seoTitle": "Vacuum Bags & Accessories",
-    "seoDescription": "Vacuum Bags & Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Vacuum Bags & Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "coffee-accessories",
@@ -729,7 +738,8 @@
     "productCount": 19,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00717187/01.webp",
     "seoTitle": "Coffee Machine Accessories",
-    "seoDescription": "Coffee Machine Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Coffee Machine Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "kitchen-machine-accessories",
@@ -742,7 +752,8 @@
     "productCount": 47,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00572476/01.webp",
     "seoTitle": "Kitchen Machine Accessories",
-    "seoDescription": "Kitchen Machine Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Kitchen Machine Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "kitchen-utensils",
@@ -755,7 +766,8 @@
     "productCount": 56,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17001251/01.webp",
     "seoTitle": "Kitchen Utensils",
-    "seoDescription": "Kitchen Utensils at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Kitchen Utensils at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "cleaning-products",
@@ -768,7 +780,8 @@
     "productCount": 70,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00312485/01.webp",
     "seoTitle": "Cleaning & Care Products",
-    "seoDescription": "Cleaning & Care Products at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Cleaning & Care Products at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   },
   {
     "id": "spare-parts",
@@ -781,6 +794,7 @@
     "productCount": 107,
     "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/00774442/01.webp",
     "seoTitle": "Spare Parts",
-    "seoDescription": "Spare Parts at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
+    "seoDescription": "Spare Parts at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
+    "priceOnApplication": true
   }
 ]

@@ -21,11 +21,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     for (const k of EDITABLE) if (k in body && body[k] !== (existing as any)[k]) { data[k] = body[k]; changed.push(k); }
     if (!changed.length) return NextResponse.json(existing);
     const updated = await db.category.update({ where: { id }, data });
+    // Products join categories by NAME string — a rename must carry them along
+    // or the department page empties and call-for-price suppression silently
+    // stops matching in the chatbot.
+    if (changed.includes("name")) {
+      await db.product.updateMany({ where: { category: existing.name }, data: { category: updated.name } });
+      await db.product.updateMany({ where: { subcategory: existing.name }, data: { subcategory: updated.name } });
+      const where = updated.parentId ? { subcategory: updated.name, isVisible: true } : { category: updated.name, isVisible: true };
+      await db.category.update({ where: { id }, data: { productCount: await db.product.count({ where }) } });
+    }
     await writeAudit(db, { entityType: "category", entityId: id, action: "update", changedFields: changed, previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email });
     try { await syncCategoryToRag(db, id); } catch { /* reindex best-effort */ }
     // The flag governs what the chatbot may quote for every product in the
     // category — their docs must follow the toggle, not wait for a rag:build.
-    if (changed.includes("priceOnApplication")) {
+    // A rename re-keys the same lookup, so it needs the resync too.
+    if (changed.includes("priceOnApplication") || changed.includes("name")) {
       try { await syncCategoryProductsToRag(db, id); } catch { /* reindex best-effort */ }
     }
     revalidateStorefront([`/categories/${id}`]);

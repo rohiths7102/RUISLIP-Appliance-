@@ -254,15 +254,17 @@ export default function QuickAdd({ brands, departments }: { brands: string[]; de
                 {i === 0 && (
                   <span className="absolute left-1 top-1 rounded-full bg-navy px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Main</span>
                 )}
+                {/* Always visible on touch (the owner photographs stock on his
+                    phone); hover-reveal is desktop-only polish. */}
                 <span className="absolute right-1 top-1 flex gap-1">
                   {i !== 0 && (
-                    <button type="button" title="Make main photo" onClick={() => makeMain(i)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-ink opacity-0 shadow transition-opacity group-hover:opacity-100">
+                    <button type="button" title="Make main photo" aria-label="Make main photo" onClick={() => makeMain(i)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-ink shadow transition-opacity focus-visible:opacity-100 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100">
                       <Star size={12} />
                     </button>
                   )}
-                  <button type="button" title="Remove" onClick={() => removeShot(i)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-danger opacity-0 shadow transition-opacity group-hover:opacity-100">
+                  <button type="button" title="Remove" aria-label="Remove photo" onClick={() => removeShot(i)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-danger shadow transition-opacity focus-visible:opacity-100 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100">
                     <X size={12} />
                   </button>
                 </span>

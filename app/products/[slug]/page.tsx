@@ -7,7 +7,7 @@ import { getProduct, relatedFor, toCardItem, poaNamesFrom } from "@/lib/select";
 import { gbp, formatPrice, PRICE_ON_APPLICATION, availabilityLabel, availabilityDot, telHref } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
-import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
+import { breadcrumbJsonLd, jsonLdScript, SITE } from "@/lib/seo";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -34,7 +34,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const poa = poaSet.has(p.category) || poaSet.has(p.subcategory);
   const related = relatedFor(products, p);
   const enquiryHref = `/contact?product=${encodeURIComponent(p.title)}&code=${encodeURIComponent(p.productCode)}`;
-  const catId = String(p.meta?.leaf || "");
+  // DB rows carry meta: {} — resolve the category page from the catalogue by
+  // name (subcategory first) so the breadcrumb and back-link never point at
+  // the bare /categories index.
+  const catRow = categories.find((c) => c.name === p.subcategory) || categories.find((c) => c.name === p.category);
+  const catId = catRow?.id || String(p.meta?.leaf || "");
 
   // Availability is InStoreOnly on purpose: there is no online checkout, and the
   // shop confirms real stock by phone.
@@ -42,7 +46,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     "@context": "https://schema.org", "@type": "Product",
     name: p.title, sku: p.productCode, mpn: p.productCode,
     brand: { "@type": "Brand", name: p.brand },
-    image: p.image ? [p.image] : [],
+    // Google requires fully-qualified image URLs in structured data; catalogue
+    // images are already absolute (Blob), uploads are root-relative.
+    image: p.image ? [/^https?:\/\//.test(p.image) ? p.image : SITE() + p.image] : [],
     description: p.shortDescription || p.title,
     ...(p.priceNow !== null && !poa && {
       offers: {

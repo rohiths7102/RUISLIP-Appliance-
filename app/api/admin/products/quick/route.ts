@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { coerce, slugify, reconcileSaving, ValidationError, AVAILABILITY } from "@/lib/admin-product";
+import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 import { classify, LEAF } from "../../../../../scripts/catalog/taxonomy.mjs";
 export const dynamic = "force-dynamic";
@@ -94,26 +95,9 @@ export async function POST(req: Request) {
       },
     });
 
-    // ---- brand row: new brands appear on /brands without anyone asking
-    let brandCreated = false;
-    const brandRow = await db.brand.findFirst({ where: { name: brand } });
-    if (!brandRow) {
-      await db.brand.create({ data: { name: brand, slug: slugify(brand), productCount: 1 } });
-      brandCreated = true;
-    } else {
-      await db.brand.update({
-        where: { id: brandRow.id },
-        data: { productCount: await db.product.count({ where: { brand, isVisible: true } }) },
-      });
-    }
-
-    // ---- category counts follow the new arrival
-    for (const name of [category, subcategory].filter(Boolean)) {
-      const c = await db.category.findFirst({ where: { name } });
-      if (!c) continue;
-      const where = c.parentId ? { subcategory: name, isVisible: true } : { category: name, isVisible: true };
-      await db.category.update({ where: { id: c.id }, data: { productCount: await db.product.count({ where }) } });
-    }
+    // ---- brand row + counts: shared implementation with every other mutation path
+    const brandCreated = await ensureBrand(db, brand);
+    await recomputeCounts(db, { brands: [brand], categories: [category, subcategory] });
 
     await writeAudit(db, {
       entityType: "product", entityId: created.id, action: "create",
