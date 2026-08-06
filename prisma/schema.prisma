@@ -193,7 +193,15 @@ model Enquiry {
   phone        String   @default("")
   message      String
   source       String   @default("product") // product|contact
-  status       String   @default("new")      // new|contacted|closed
+  // Sales pipeline: new -> contacted -> quoted -> won|lost ("closed" is the
+  // legacy pre-pipeline value; the UI reads it as won).
+  status       String   @default("new")
+  notes        String   @default("")   // the owner's own words, never AI-written
+  quotedPrice  Float?                  // what the owner offered — powers pipeline value
+  lastEmailedAt DateTime?
+  // Last AI-drafted email, cached so a half-edited draft survives a page reload.
+  aiDraftSubject String @default("")
+  aiDraftBody    String @default("")
   createdAt    DateTime @default(now())
 
   @@index([status])

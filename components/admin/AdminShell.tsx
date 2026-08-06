@@ -33,8 +33,8 @@ const GROUPS: { title: string; items: [string, string, LucideIcon][] }[] = [
     title: "Grow",
     items: [
       ["ads", "Google Ads", Megaphone],
+      ["enquiries", "Sales & Leads", Inbox],
       ["chatbot", "Chatbot", MessageCircle],
-      ["enquiries", "Enquiries", Inbox],
     ],
   },
   {

@@ -59,6 +59,12 @@ async function dashboard() {
     }),
   ]);
 
+  // Sales pipeline snapshot: open leads and what's on the table in quotes.
+  const [openLeads, quotedAgg] = await Promise.all([
+    db.enquiry.count({ where: { status: { in: ["new", "contacted", "quoted"] } } }),
+    db.enquiry.aggregate({ _sum: { quotedPrice: true }, where: { status: { in: ["contacted", "quoted"] } } }),
+  ]);
+
   const d14 = days(14);
   const keys = d14.map((d) => d.key);
   const calls = events.filter((e: any) => e.type === "call_click");
@@ -94,6 +100,8 @@ async function dashboard() {
     lastScrape: lastJob?.finishedAt || lastJob?.startedAt || null,
     audit,
     feedReady,
+    openLeads,
+    quotedValue: quotedAgg._sum.quotedPrice || 0,
   };
 }
 
@@ -149,9 +157,13 @@ export default async function AdminOverview() {
             <div className="mt-2"><Sparkline points={c.series} /></div>
           </StatTile>
         ))}
-        <StatTile label="Enquiries awaiting a reply" value={d.newEnquiries}>
+        <StatTile
+          label={`Open pipeline · ${d.newEnquiries} awaiting first reply`}
+          value={d.openLeads}
+          hint={d.quotedValue ? `£${d.quotedValue.toLocaleString("en-GB")} out in quotes` : undefined}
+        >
           <Link href="/admin/enquiries" className="mt-3 inline-block rounded-full bg-navy px-4 py-1.5 text-xs font-bold text-paper hover:bg-navy-2">
-            Open inbox →
+            Open Sales &amp; Leads →
           </Link>
         </StatTile>
       </div>
