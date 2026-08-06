@@ -12,10 +12,31 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const q = (new URL(req.url).searchParams.get("q") || "").trim().toLowerCase();
-  if (q.length < 2) return NextResponse.json({ items: [], total: 0 });
+  if (q.length < 2) return NextResponse.json({ suggestions: [], items: [], total: 0 });
 
-  const { products, categories } = await loadCatalog();
+  const { products, categories, brands } = await loadCatalog();
   const poa = poaNamesFrom(categories);
+
+  // Department / brand rows above the products — name matches only, prefix
+  // matches first, two of each so the product list stays the star.
+  const byName = (name: string) => {
+    const n = name.toLowerCase();
+    return n.startsWith(q) ? 2 : n.includes(q) ? 1 : 0;
+  };
+  const suggestions = [
+    ...categories
+      .map((c) => [byName(c.name), c] as const)
+      .filter(([s, c]) => s > 0 && c.productCount > 0)
+      .sort((a, b) => b[0] - a[0] || b[1].productCount - a[1].productCount)
+      .slice(0, 2)
+      .map(([, c]) => ({ kind: "category" as const, name: c.name, href: `/categories/${c.id}`, count: c.productCount })),
+    ...brands
+      .map((b) => [byName(b.name), b] as const)
+      .filter(([s, b]) => s > 0 && b.productCount > 0)
+      .sort((a, b) => b[0] - a[0] || b[1].productCount - a[1].productCount)
+      .slice(0, 2)
+      .map(([, b]) => ({ kind: "brand" as const, name: b.name, href: `/brands/${b.slug}`, count: b.productCount })),
+  ];
 
   const scored: [number, (typeof products)[number]][] = [];
   for (const p of products) {
@@ -39,7 +60,7 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json(
-    { items, total: scored.length },
+    { suggestions, items, total: scored.length },
     { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
   );
 }
