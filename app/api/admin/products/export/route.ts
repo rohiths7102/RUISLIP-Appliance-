@@ -1,8 +1,7 @@
 import { getAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { csvCell as esc } from "@/lib/csv-safe";
 export const dynamic = "force-dynamic";
-
-const esc = (s: any) => `"${String(s ?? "").replace(/"/g, '""')}"`;
 
 /** Full catalogue as CSV — the owner's backup / spreadsheet bulk-editing path. */
 export async function GET() {

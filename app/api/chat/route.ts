@@ -13,7 +13,9 @@ export async function POST(req: Request) {
   const history: ChatMsg[] = (Array.isArray(body.messages) ? body.messages : [])
     .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .slice(-8).map((m: any) => ({ role: m.role, content: m.content.slice(0, 2000) }));
-  const userMsg = [...history].reverse().find((m) => m.role === "user")?.content || String(body.message || "");
+  // Cap the single-message fallback too: it reaches BM25 retrieval and the paid
+  // Groq API, so an uncapped body.message is an anonymous cost/CPU amplifier.
+  const userMsg = ([...history].reverse().find((m) => m.role === "user")?.content || String(body.message || "")).slice(0, 2000);
   if (!userMsg) return NextResponse.json({ error: "No message provided" }, { status: 400 });
 
   const business = await getBusiness();

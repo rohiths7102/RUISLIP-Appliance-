@@ -7,6 +7,8 @@
  * That's defence in depth, not a substitute: this guarantees the app itself never
  * lets a bot hammer login or the forms even if nothing sits in front of it.
  */
+import { clientIpFromRequest } from "./client-ip";
+
 type Hit = { count: number; resetAt: number };
 const store = new Map<string, Hit>();
 let lastSweep = 0;
@@ -17,11 +19,14 @@ export interface RateResult {
   retryAfter: number; // seconds until the window resets
 }
 
-/** Best-effort client IP from proxy headers, falling back to a constant. */
+/**
+ * Client IP for rate-limit bucketing — from the TRUSTED edge only.
+ * Never the leftmost x-forwarded-for value: that is client-supplied, and
+ * rotating it would defeat every limiter here (login brute-force included).
+ * See lib/client-ip.ts.
+ */
 export function clientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || req.headers.get("cf-connecting-ip") || "local";
+  return clientIpFromRequest(req) || "unknown";
 }
 
 export function rateLimit(bucket: string, ip: string, limit: number, windowMs: number): RateResult {

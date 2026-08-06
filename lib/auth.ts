@@ -3,7 +3,22 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const COOKIE_NAME = "admin_session";
-const SECRET = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD_HASH || "dev-insecure-secret-change-me";
+
+/**
+ * Session-signing key. The dev fallback is a PUBLIC string in this repo — with
+ * it, anyone could mint a valid admin cookie. In production we refuse to fall
+ * back: a deployment missing SESSION_SECRET (and ADMIN_PASSWORD_HASH) fails
+ * loudly at boot instead of silently signing with a known key.
+ */
+const DEV_FALLBACK_SECRET = "dev-insecure-secret-change-me";
+const SECRET = (() => {
+  const configured = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD_HASH;
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET (or ADMIN_PASSWORD_HASH) must be set in production — refusing to sign sessions with the public dev key.");
+  }
+  return DEV_FALLBACK_SECRET;
+})();
 
 export function hashPassword(pw: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -26,7 +41,12 @@ function unsign(token: string): any | null {
   const expect = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
   const s = Buffer.from(sig), e = Buffer.from(expect);
   if (s.length !== e.length || !crypto.timingSafeEqual(s, e)) return null;
-  try { const p = JSON.parse(Buffer.from(body, "base64url").toString()); if (p.exp && p.exp < Date.now() / 1000) return null; return p; } catch { return null; }
+  // An expiry is mandatory — a token without one would never age out.
+  try {
+    const p = JSON.parse(Buffer.from(body, "base64url").toString());
+    if (typeof p?.exp !== "number" || p.exp < Date.now() / 1000) return null;
+    return p;
+  } catch { return null; }
 }
 export const createToken = (email: string) => sign({ email, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
 export const usingDevPassword = () => !process.env.ADMIN_PASSWORD_HASH;

@@ -1,7 +1,7 @@
 import { getAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { csvCell as esc } from "@/lib/csv-safe";
 export const dynamic = "force-dynamic";
-const esc = (s: any) => `"${String(s ?? "").replace(/"/g, '""')}"`;
 export async function GET() {
   if (!(await getAdmin())) return new Response("Unauthorized", { status: 401 });
   const db = await getPrisma();

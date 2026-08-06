@@ -27,15 +27,12 @@ const ALLOWED = (process.env.ADMIN_ALLOWED_IPS || "")
   .split(",").map((s) => s.trim()).filter(Boolean);
 export const ipAllowlistActive = ALLOWED.length > 0;
 
-/** Client IP from the proxy chain (Cloudflare tunnel sets cf-connecting-ip). */
-export function clientIpFrom(headers: Headers): string {
-  return (
-    headers.get("cf-connecting-ip") ||
-    headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    headers.get("x-real-ip") ||
-    ""
-  );
-}
+/**
+ * Client IP from the TRUSTED edge only — the allowlist is documented as the
+ * real gate, so it must never read a header the caller can forge (a spoofed
+ * x-forwarded-for/cf-connecting-ip would have walked straight past it).
+ */
+export { clientIpFromHeaders as clientIpFrom } from "./client-ip";
 
 /** Is this IP on the allowlist? (No allowlist configured → everyone allowed.) */
 export function ipAllowed(ip: string): boolean {
