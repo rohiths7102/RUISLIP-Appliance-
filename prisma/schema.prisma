@@ -175,6 +175,10 @@ model TrackedEvent {
   productSlug String   @default("")
   postcode    String   @default("")
   isLocal     Boolean?
+  // Where the visitor's session came from: "google-ads" when they landed with
+  // gclid/gbraid/wbraid or cpc UTMs, another utm_source verbatim, else "".
+  // Lets the Ads page show which calls the owner's ad spend actually produced.
+  source      String   @default("")
   createdAt   DateTime @default(now())
 
   @@index([type, createdAt])

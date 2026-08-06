@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { MapPin, Phone, CheckCircle2 } from "lucide-react";
 import { telHref } from "@/lib/format";
+import { adSource } from "@/lib/ad-source";
 
 // Genuine own-van reach only (HA4 0QP shop). Wider prefixes go via the phone —
 // we'd sooner say "call us" than promise a van we can't send. Owner (Aug 2026):
@@ -26,7 +27,7 @@ export default function PostcodeCheck({ phone }: { phone: string }) {
     try {
       fetch("/api/track", {
         method: "POST", keepalive: true, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "postcode_check", postcode: pc, isLocal: local, path: location.pathname }),
+        body: JSON.stringify({ type: "postcode_check", postcode: pc, isLocal: local, path: location.pathname, source: adSource() }),
       });
     } catch { /* analytics never blocks the answer */ }
   };

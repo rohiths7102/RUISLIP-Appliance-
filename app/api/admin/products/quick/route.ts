@@ -1,0 +1,139 @@
+import { NextResponse } from "next/server";
+import { getAdmin } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma";
+import { writeAudit } from "@/lib/audit";
+import { syncProductToRag } from "@/lib/rag/index";
+import { coerce, slugify, reconcileSaving, ValidationError, AVAILABILITY } from "@/lib/admin-product";
+import { revalidateStorefront } from "@/lib/revalidate";
+import { classify, LEAF } from "../../../../../scripts/catalog/taxonomy.mjs";
+export const dynamic = "force-dynamic";
+
+/**
+ * The owner's one-minute add: brand + model code + price + photos in, a fully
+ * filed, live product out. Everything a developer used to do happens here —
+ * classification (same taxonomy engine the bulk imports use), slug, brand row,
+ * counts, chatbot doc, cache purge. The owner never sees the words "taxonomy"
+ * or "revalidate"; he sees "filed under Cooking › Ovens" and a live link.
+ */
+export async function POST(req: Request) {
+  const admin = await getAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const b = await req.json().catch(() => ({}));
+
+  const brand = String(b.brand || "").trim();
+  const productCode = String(b.productCode || "").trim();
+  const title = String(b.title || "").trim();
+  const images: string[] = Array.isArray(b.images) ? b.images.filter((u: unknown) => typeof u === "string" && u).slice(0, 8) : [];
+  if (!brand) return NextResponse.json({ error: "Brand is required" }, { status: 400 });
+  if (!productCode) return NextResponse.json({ error: "Model code is required — customers quote it on the phone" }, { status: 400 });
+  if (!title) return NextResponse.json({ error: "Product name is required" }, { status: 400 });
+
+  try {
+    const db = await getPrisma();
+
+    // Same code twice = the same appliance — send the owner to the existing one
+    // instead of silently creating a lookalike listing.
+    const dup = await db.product.findFirst({ where: { productCode }, select: { slug: true, title: true } });
+    if (dup) {
+      return NextResponse.json(
+        { error: `${productCode} is already in the catalogue ("${dup.title}"). Edit it in Products instead.`, slug: dup.slug },
+        { status: 409 },
+      );
+    }
+
+    const priceNow = coerce("priceNow", b.priceNow);
+    const priceWas = coerce("priceWas", b.priceWas);
+    const availability = AVAILABILITY.includes(String(b.availability)) ? String(b.availability) : "in_stock";
+    const shortDescription = String(b.shortDescription || "").trim();
+
+    // ---- classification: the owner's pick wins; otherwise the taxonomy engine
+    // files it from the words he typed (title + description + brand).
+    let category = String(b.category || "").trim();
+    let subcategory = String(b.subcategory || "").trim();
+    let auto = false;
+    if (!category) {
+      try {
+        const { leaf } = classify({
+          name: `${brand} ${title}`,
+          description: shortDescription || title,
+          source: "admin",
+          key: productCode,
+        });
+        const hit = LEAF.get(leaf);
+        if (hit) { category = hit.topName; subcategory = hit.leafName; auto = true; }
+      } catch { /* unclassifiable — created uncategorised, surfaced in the response */ }
+    }
+
+    const data: Record<string, number | null> = { priceNow, priceWas };
+    reconcileSaving(data);
+
+    const base = slugify(`${brand}-${productCode}`) || slugify(title);
+    let slug = base;
+    for (let i = 2; await db.product.findUnique({ where: { slug } }); i++) slug = `${base}-${i}`;
+
+    const created = await db.product.create({
+      data: {
+        slug, title, brand, productCode, category, subcategory,
+        priceNow: data.priceNow, priceWas: data.priceWas, saving: data.saving ?? null,
+        availabilityNormalised: availability,
+        availabilityRaw: availability === "in_stock" ? "In stock" : "",
+        warranty: "", shortDescription,
+        descriptionText: shortDescription || title,
+        mainImage: images[0] || "",
+        galleryImages: images,
+        isVisible: true, featured: false,
+        // Everything the owner types is his — a re-scrape must never overwrite it.
+        adminOverrideFields: ["title", "brand", "productCode", "priceNow", "priceWas", "availabilityNormalised", "shortDescription", "mainImage"],
+        lastUpdatedByAdmin: new Date(),
+        sourceUrl: "", oldUrl: "", currency: "GBP", descriptionHtml: "",
+        breadcrumbs: [category, subcategory].filter(Boolean),
+        specifications: [], features: [], relatedProductCodes: [], serviceAddOns: [],
+        energyLabelUrl: "", deliveryNotes: "",
+        seoTitle: `${brand} ${title}`.trim().slice(0, 68),
+        seoDescription: `${brand} ${title}. Call 0208 864 5763 to confirm price, availability and delivery.`.slice(0, 300),
+      },
+    });
+
+    // ---- brand row: new brands appear on /brands without anyone asking
+    let brandCreated = false;
+    const brandRow = await db.brand.findFirst({ where: { name: brand } });
+    if (!brandRow) {
+      await db.brand.create({ data: { name: brand, slug: slugify(brand), productCount: 1 } });
+      brandCreated = true;
+    } else {
+      await db.brand.update({
+        where: { id: brandRow.id },
+        data: { productCount: await db.product.count({ where: { brand, isVisible: true } }) },
+      });
+    }
+
+    // ---- category counts follow the new arrival
+    for (const name of [category, subcategory].filter(Boolean)) {
+      const c = await db.category.findFirst({ where: { name } });
+      if (!c) continue;
+      const where = c.parentId ? { subcategory: name, isVisible: true } : { category: name, isVisible: true };
+      await db.category.update({ where: { id: c.id }, data: { productCount: await db.product.count({ where }) } });
+    }
+
+    await writeAudit(db, {
+      entityType: "product", entityId: created.id, action: "create",
+      changedFields: ["quick-add", ...(auto ? ["auto-classified"] : [])],
+      previousValue: {}, newValue: { title, productCode, priceNow: data.priceNow, category, subcategory },
+      changedBy: admin.email,
+    });
+
+    // The chatbot learns it, then every cached page forgets the old catalogue.
+    try { await syncProductToRag(db, created.id); } catch { /* best effort */ }
+    revalidateStorefront([`/products/${slug}`]);
+
+    return NextResponse.json({
+      ok: true, slug, url: `/products/${slug}`,
+      classified: category ? { category, subcategory, auto } : null,
+      brandCreated,
+    }, { status: 201 });
+  } catch (e) {
+    if (e instanceof ValidationError) return NextResponse.json({ error: e.message }, { status: 400 });
+    console.error("quick add", e);
+    return NextResponse.json({ error: "Could not create the product. Is the database running?" }, { status: 500 });
+  }
+}

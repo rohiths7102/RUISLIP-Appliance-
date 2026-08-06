@@ -39,7 +39,8 @@ const delta = (series: number[]) => {
 async function dashboard() {
   const db = await getPrisma();
   const since14 = new Date(Date.now() - 14 * DAY);
-  const [events, enquiries14, newEnquiries, latestEnquiries, counts, missing, lastJob, audit] = await Promise.all([
+  const poaNames = (await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } })).map((c: { name: string }) => c.name);
+  const [events, enquiries14, newEnquiries, latestEnquiries, counts, missing, lastJob, audit, feedReady] = await Promise.all([
     db.trackedEvent.findMany({ where: { createdAt: { gte: since14 } }, select: { type: true, productSlug: true, postcode: true, isLocal: true, createdAt: true } }),
     db.enquiry.findMany({ where: { createdAt: { gte: since14 } }, select: { createdAt: true } }),
     db.enquiry.count({ where: { status: "new" } }),
@@ -48,6 +49,14 @@ async function dashboard() {
     db.product.findMany({ select: { priceNow: true, mainImage: true } }),
     db.scrapeJob.findFirst({ orderBy: { startedAt: "desc" } }),
     db.adminAuditLog.findMany({ orderBy: { createdAt: "desc" }, take: 8, select: { action: true, entityType: true, entityId: true, changedFields: true, changedBy: true, createdAt: true } }),
+    // Mirrors the merchant feed's own gate — the number the Ads page explains.
+    db.product.count({
+      where: {
+        isVisible: true, priceNow: { not: null }, mainImage: { not: "" },
+        availabilityNormalised: { in: ["in_stock", "limited"] },
+        ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }),
+      },
+    }),
   ]);
 
   const d14 = days(14);
@@ -84,6 +93,7 @@ async function dashboard() {
     missingImages: missing.filter((p: any) => !p.mainImage).length,
     lastScrape: lastJob?.finishedAt || lastJob?.startedAt || null,
     audit,
+    feedReady,
   };
 }
 
@@ -121,9 +131,15 @@ export default async function AdminOverview() {
             Live from the shop's own first-party analytics — no cookies, nothing sent to third parties.
           </p>
         </div>
-        <span className="font-mono text-[11px] text-ink/40">
-          Last catalogue import: {d.lastScrape ? new Date(d.lastScrape).toLocaleString("en-GB") : "—"}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="hidden font-mono text-[11px] text-ink/40 lg:block">
+            Last catalogue import: {d.lastScrape ? new Date(d.lastScrape).toLocaleString("en-GB") : "—"}
+          </span>
+          <Link href="/admin/products/new"
+            className="rounded-full bg-navy px-5 py-2.5 text-[13px] font-bold text-paper transition-colors hover:bg-navy-2">
+            + Add product
+          </Link>
+        </div>
       </div>
 
       {/* ---- stat cards with sparklines ---- */}
@@ -234,6 +250,10 @@ export default async function AdminOverview() {
           <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Catalogue</h2>
           <ul className="mt-3 space-y-2 text-sm">
             <li className="flex justify-between"><span className="text-muted">Products live</span><strong>{d.counts.products.toLocaleString("en-GB")}</strong></li>
+            <li className="flex justify-between">
+              <span className="text-muted">Ready for Google Ads</span>
+              <Link href="/admin/ads" className="font-bold text-blue-deep hover:underline">{d.feedReady.toLocaleString("en-GB")} →</Link>
+            </li>
             <li className="flex justify-between"><span className="text-muted">Categories</span><strong>{d.counts.categories}</strong></li>
             <li className="flex justify-between"><span className="text-muted">Brands</span><strong>{d.counts.brands}</strong></li>
             <li className="flex justify-between"><span className="text-muted">Missing prices</span><strong className={d.missingPrices ? "text-amber-700" : ""}>{d.missingPrices}</strong></li>

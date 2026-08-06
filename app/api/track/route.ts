@@ -30,6 +30,7 @@ export async function POST(req: Request) {
         productSlug: String(b.productSlug || "").slice(0, 120),
         postcode: String(b.postcode || "").toUpperCase().slice(0, 10),
         isLocal: typeof b.isLocal === "boolean" ? b.isLocal : null,
+        source: String(b.source || "").slice(0, 40),
       },
     });
   } catch { /* analytics never surfaces errors */ }

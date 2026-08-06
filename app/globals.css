@@ -104,6 +104,11 @@ body {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .fade-in { animation: fadeIn .4s ease both; }
 
+/* back-office page entrance — content rises in as sections mount */
+@keyframes adminFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.admin-fade { animation: adminFade .35s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .admin-fade { animation: none; } }
+
 .card-lift { transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease, border-color .45s ease; }
 .card-lift:hover { transform: translateY(-4px); box-shadow: 0 26px 50px -30px rgba(11,74,141,.45); border-color: rgba(17,115,212,.5); }
 

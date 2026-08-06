@@ -56,6 +56,9 @@ export async function POST(req: Request) {
         access: "public",
         contentType: file.type,
         addRandomSuffix: false, // name is already a UUID
+        // Explicit token: `vercel env pull` also brings VERCEL_OIDC_TOKEN, which
+        // the SDK otherwise prefers — and OIDC isn't enabled for local dev.
+        token: process.env.BLOB_READ_WRITE_TOKEN,
       });
       return NextResponse.json({ ok: true, url, bytes: file.size, stored: "blob" });
     } catch (e) {
