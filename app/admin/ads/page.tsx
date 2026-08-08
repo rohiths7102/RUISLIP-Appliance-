@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { poaNamesFromDb } from "@/lib/poa";
 import AdminShell from "@/components/admin/AdminShell";
 import CopyField from "@/components/admin/CopyField";
 import { Card, StatTile, Badge, EmptyState } from "@/components/admin/ui";
@@ -21,20 +22,19 @@ const DAY = 86_400_000;
  */
 async function adsData() {
   const db = await getPrisma();
-  const [products, poaCats, events30] = await Promise.all([
+  const [products, poa, events30] = await Promise.all([
     db.product.findMany({
       select: {
         title: true, brand: true, productCode: true, slug: true, category: true, subcategory: true,
         priceNow: true, mainImage: true, availabilityNormalised: true, isVisible: true,
       },
     }),
-    db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } }),
+    poaNamesFromDb(db),
     db.trackedEvent.findMany({
       where: { createdAt: { gte: new Date(Date.now() - 30 * DAY) } },
       select: { type: true, productSlug: true, source: true, createdAt: true },
     }),
   ]);
-  const poa = new Set(poaCats.map((c: { name: string }) => c.name));
 
   // One bucket per product — the first gate it fails is the one fix that matters.
   type Row = (typeof products)[number];

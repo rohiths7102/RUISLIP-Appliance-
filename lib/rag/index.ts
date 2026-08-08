@@ -3,6 +3,7 @@ import { loadCatalog } from "../repo";
 import { buildDocuments, productDoc, businessDocs, faqDocs, categoryDoc, brandDoc, type RagDoc } from "./documents";
 import { retrieve, retrieveSemantic, type Doc, type Hit } from "./retriever";
 import { embedText, embeddingsEnabled } from "./embed";
+import { poaNamesFromDb, isPoaProduct } from "../poa";
 
 const docId = (sourceType: string, sourceId: string) => `${sourceType}:${sourceId}`;
 
@@ -27,24 +28,43 @@ export async function buildIndex(db: any): Promise<{ indexed: number; embedded: 
   return { indexed: docs.length, embedded: embeddingsEnabled() };
 }
 
+/** Build and upsert one visible product's doc. */
+async function writeProductDoc(db: any, r: any): Promise<void> {
+  // Call-for-price category -> the doc must not carry a number the bot could quote.
+  // Asking the flags directly would re-open the leak on a catalogue whose flags
+  // are missing; poaNamesFromDb carries the storefront's fallback.
+  const poa = await poaNamesFromDb(db);
+  const p: any = { title: r.title, productCode: r.productCode, brand: r.brand, category: r.category, subcategory: r.subcategory, priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, warranty: r.warranty, shortDescription: r.shortDescription, specifications: r.specifications || [], features: r.features || [], image: r.mainImage, newSlug: `/products/${r.slug}` };
+  await upsertDoc(db, productDoc(p, { omitPrice: isPoaProduct(poa, r) }));
+}
+
+/**
+ * Retire the doc of a product that has just been hidden or deleted. Docs are
+ * keyed by productCode (see productDoc), NOT the DB id — and 198 BSH part
+ * numbers are listed twice, once as Bosch and once as Neff, so a plain delete
+ * would take the twin that is still on the storefront out of the chatbot with
+ * it. Rebuild from the surviving twin instead; delete only when none is left, so
+ * a hidden product never lingers in the bot's context. Pass the id of the row
+ * being retired when it is still readable (hide), so it cannot count as its own
+ * survivor.
+ */
+export async function dropProductDoc(db: any, productCode: string, retiredId?: string): Promise<void> {
+  const survivor = await db.product.findFirst({
+    where: { productCode, isVisible: true, ...(retiredId ? { NOT: { id: retiredId } } : {}) },
+  });
+  if (survivor) { await writeProductDoc(db, survivor); return; }
+  await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: productCode } }).catch(() => {});
+}
+
 /** Reindex a single product (called after an admin product edit). */
 export async function syncProductToRag(db: any, productId: string): Promise<boolean> {
   const r = await db.product.findUnique({ where: { id: productId } });
   if (!r) return false;
   // A product the owner has hidden from the storefront must not survive in the
   // chatbot's context either — the bot would otherwise recommend (and leak the
-  // price of) something the shop chose not to show. Product docs are keyed by
-  // productCode (see productDoc), NOT the DB id.
-  if (!r.isVisible) {
-    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: r.productCode } }).catch(() => {});
-    return true;
-  }
-  // Call-for-price category -> the doc must not carry a number the bot could quote.
-  const poaHit = await db.category.count({
-    where: { priceOnApplication: true, name: { in: [r.category, r.subcategory].filter(Boolean) } },
-  });
-  const p: any = { title: r.title, productCode: r.productCode, brand: r.brand, category: r.category, subcategory: r.subcategory, priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, warranty: r.warranty, shortDescription: r.shortDescription, specifications: r.specifications || [], features: r.features || [], image: r.mainImage, newSlug: `/products/${r.slug}` };
-  await upsertDoc(db, productDoc(p, { omitPrice: poaHit > 0 }));
+  // price of) something the shop chose not to show.
+  if (!r.isVisible) { await dropProductDoc(db, r.productCode, r.id); return true; }
+  await writeProductDoc(db, r);
   return true;
 }
 
@@ -78,12 +98,10 @@ export async function syncCategoryProductsToRag(db: any, categoryId: string): Pr
   if (!rows.length) return 0;
   // Recompute against ALL flagged categories: a product this category reaches by
   // name may still be covered by its other (category|subcategory) name.
-  const poaNames = new Set(
-    (await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } })).map((x: { name: string }) => x.name),
-  );
+  const poaNames = await poaNamesFromDb(db);
   const writes = rows.map((r: any) => {
     const p: any = { title: r.title, productCode: r.productCode, brand: r.brand, category: r.category, subcategory: r.subcategory, priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, warranty: r.warranty, shortDescription: r.shortDescription, specifications: r.specifications || [], features: r.features || [], image: r.mainImage, newSlug: `/products/${r.slug}` };
-    const d = productDoc(p, { omitPrice: poaNames.has(r.category) || poaNames.has(r.subcategory) });
+    const d = productDoc(p, { omitPrice: isPoaProduct(poaNames, r) });
     // updateMany: a product the index hasn't met yet (empty/partial index) is a
     // no-op here, not an error — buildIndex owns creation.
     return db.rAGDocument.updateMany({

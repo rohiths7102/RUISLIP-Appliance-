@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncBrandToRag } from "@/lib/rag/index";
@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 const EDITABLE = ["logo", "description", "isVisible", "order"];
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await getAdmin(); if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminApi(req);
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   const { id } = await params; const body = await req.json().catch(() => ({}));
   try {
     const db = await getPrisma();

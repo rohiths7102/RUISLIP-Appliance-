@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/auth";
+import { getAdmin, requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
         select: {
           id: true, title: true, brand: true, productCode: true, category: true, subcategory: true,
           priceNow: true, priceWas: true, availabilityNormalised: true, warranty: true,
-          shortDescription: true, mainImage: true, slug: true, isVisible: true, featured: true,
+          shortDescription: true, deliveryNotes: true, mainImage: true, slug: true, isVisible: true, featured: true,
           adminOverrideFields: true,
         },
       }),
@@ -42,8 +42,9 @@ export async function GET(req: Request) {
 
 /** Create a product. */
 export async function POST(req: Request) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminApi(req);
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   const body = await req.json().catch(() => ({}));
 
   if (!body.title || !String(body.title).trim()) return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
         sourceUrl: "", oldUrl: "", currency: "GBP", descriptionHtml: "",
         breadcrumbs: [data.category, data.subcategory].filter(Boolean),
         specifications: [], features: [], galleryImages: data.mainImage ? [data.mainImage] : [],
-        relatedProductCodes: [], serviceAddOns: [], energyLabelUrl: "", deliveryNotes: "",
+        relatedProductCodes: [], serviceAddOns: [], energyLabelUrl: "", deliveryNotes: data.deliveryNotes || "",
         seoTitle: `${data.brand || ""} ${data.title}`.trim().slice(0, 68),
         seoDescription: `${data.title}. Call 0208 864 5763 to confirm price, availability and delivery.`.slice(0, 300),
       },

@@ -59,8 +59,15 @@ export async function GET(req: Request) {
     };
   });
 
+  // Every keystroke is a request, so a shared cache still earns its keep — but
+  // revalidateStorefront can only purge PAGES (revalidatePath), never a route
+  // handler, so whatever the CDN holds outlives the owner's edit with nothing
+  // able to clear it. 30s bounds that: still absorbs a burst of visitors typing
+  // the same prefixes, yet a price the owner just changed or withdrew can't sit
+  // in the dropdown. stale-while-revalidate is dropped outright — it would keep
+  // serving the superseded payload for another ten minutes past expiry.
   return NextResponse.json(
     { suggestions, items, total: scored.length },
-    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
+    { headers: { "Cache-Control": "public, s-maxage=30" } },
   );
 }

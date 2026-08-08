@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { syncProductToRag } from "@/lib/rag/index";
+import { syncProductToRag, dropProductDoc } from "@/lib/rag/index";
 import { EDITABLE, SCRAPE_OWNED, coerce, reconcileSaving, ValidationError } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
@@ -12,8 +12,9 @@ const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[
 
 /** Update a product: price, stock, visibility, copy, image. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminApi(req);
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
 
@@ -66,9 +67,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 /** Remove a product from the catalogue. */
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const gate = await requireAdminApi(req);
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   const { id } = await params;
   try {
     const db = await getPrisma();
@@ -76,8 +78,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     await db.product.delete({ where: { id } });
-    // Product RAG docs are keyed by productCode (see lib/rag/documents.ts), not DB id.
-    await db.rAGDocument.deleteMany({ where: { sourceType: "product", sourceId: existing.productCode } }).catch(() => {});
+    // Docs are keyed by productCode, and BSH part numbers are listed twice (Bosch
+    // and Neff), so this must not take a surviving twin out of the chatbot.
+    await dropProductDoc(db, existing.productCode).catch(() => {});
     await writeAudit(db, {
       entityType: "product", entityId: id, action: "delete", changedFields: ["*"],
       previousValue: { title: existing.title, productCode: existing.productCode, priceNow: existing.priceNow },

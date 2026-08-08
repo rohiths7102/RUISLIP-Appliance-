@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from "
 import { join } from "node:path";
 import { createRequire } from "module";
 import { classify, LEAF } from "./taxonomy.mjs";
+import { buildTitle } from "./product-title.mjs";
 
 const require = createRequire(import.meta.url);
 const { PrismaClient } = require("@prisma/client");
@@ -50,6 +51,26 @@ const db = new PrismaClient();
 const existing = new Set((await db.product.findMany({ select: { productCode: true } })).map((p) => p.productCode.toUpperCase().trim()));
 const existingSlugs = new Set((await db.product.findMany({ select: { slug: true } })).map((p) => p.slug));
 
+/**
+ * Drop folders are named by hand, so the same maker arrives as "Fisher" one week
+ * and "Fisher & Paykel" the next, or "NUTRIBULLET" against an existing
+ * "Nutribullet". Each spelling would mint its own brand row, its own brand page
+ * and its own filter entry — the catalogue splits in two. Resolve every drop
+ * folder against the brands already in the database, case-insensitively, and
+ * keep the name the database already uses.
+ */
+const brandRows = await db.brand.findMany({ select: { name: true } });
+const brandByKey = new Map(brandRows.map((b) => [b.name.toLowerCase().replace(/[^a-z0-9]/g, ""), b.name]));
+const canonicalBrand = (folder) => {
+  const raw = String(folder).trim();
+  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (brandByKey.has(key)) return brandByKey.get(key);
+  // A truncated folder name ("Fisher" for "Fisher & Paykel") is only ever a
+  // prefix of the real brand — never fold one brand into an unrelated longer one.
+  const prefixed = brandRows.map((b) => b.name).filter((n) => n.toLowerCase().replace(/[^a-z0-9]/g, "").startsWith(key) && key.length >= 4);
+  return prefixed.length === 1 ? prefixed[0] : raw;
+};
+
 const raw = [...readDrop(stageDir, "employee-zip"), ...readDrop(extraDir, "client-site")];
 const seen = new Set();
 const staged = [];
@@ -59,15 +80,18 @@ const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|
 
 for (const r of raw) {
   const code = String(r.code).toUpperCase().trim();
-  if (RETIRED.has(r.brand)) { skipped.retired++; continue; }
-  if (JUNK.has(r.brand)) { skipped.junk++; continue; }
+  const brand = canonicalBrand(r.brand);
+  // Match retirement on both spellings: the owner's rule is about the maker, not
+  // about however this week's drop folder happens to be typed.
+  if (RETIRED.has(brand) || RETIRED.has(r.brand)) { skipped.retired++; continue; }
+  if (JUNK.has(brand) || JUNK.has(r.brand)) { skipped.junk++; continue; }
   if (existing.has(code)) { skipped.duplicateInDb++; continue; }
   if (seen.has(code)) { skipped.duplicateInDrop++; continue; }
 
   const j = r.json || {};
-  // The drop's "name" repeats the code; strip it so titles read like the site's.
-  const rawTitle = String(j.name || j.description || "").replace(/&amp;/g, "&").trim();
-  const title = rawTitle.replace(new RegExp(`^${r.brand}\\s+${code}\\s*`, "i"), `${r.brand} `).trim() || rawTitle;
+  // The drop's "name" is only "<Brand> <CODE>" — the real product name lives in
+  // the description. See product-title.mjs for why this matters.
+  const title = buildTitle(j, brand, code);
   if (!title) { skipped.noTitle++; continue; }
   if (!r.localImages.length) { skipped.noImage++; continue; }
 
@@ -81,12 +105,12 @@ for (const r of raw) {
   if (!meta) { skipped.badLeaf = (skipped.badLeaf || 0) + 1; continue; }
   const category = meta.topName, subcategory = meta.leafName;
 
-  let slug = slugify(`${r.brand}-${code}`);
-  if (existingSlugs.has(slug) || staged.some((s) => s.slug === slug)) slug = slugify(`${r.brand}-${code}-${staged.length}`);
+  let slug = slugify(`${brand}-${code}`);
+  if (existingSlugs.has(slug) || staged.some((s) => s.slug === slug)) slug = slugify(`${brand}-${code}-${staged.length}`);
 
   seen.add(code);
   staged.push({
-    slug, title, brand: r.brand, productCode: code,
+    slug, title, brand, productCode: code,
     category, subcategory,
     priceNow: typeof j.price === "number" && j.price > 0 ? j.price : null,
     shortDescription: String(j.description || "").replace(/&amp;/g, "&").slice(0, 400),

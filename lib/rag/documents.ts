@@ -1,4 +1,5 @@
 import type { Product, Category, Brand, Business, Service } from "../types";
+import { poaNamesFrom } from "../select";
 
 export interface RagDoc { sourceType: string; sourceId: string; title: string; content: string; metadata: Record<string, any>; }
 
@@ -50,7 +51,10 @@ export function faqDocs(b: Business): RagDoc[] {
   ];
 }
 export function buildDocuments(cat: { products: Product[]; categories: Category[]; brands: Brand[]; business: Business; services: Service[] }): RagDoc[] {
-  const poa = new Set(cat.categories.filter((c) => c.priceOnApplication).map((c) => c.name));
+  // Same helper the storefront masks with, not a second reading of the flags:
+  // "which categories are call-for-price" has exactly one definition, so the
+  // bot can't be the one surface that quotes a number the owner withholds.
+  const poa = poaNamesFrom(cat.categories);
   return [
     ...cat.products.map((p) => productDoc(p, { omitPrice: poa.has(p.category) || poa.has(p.subcategory) })),
     ...cat.categories.map(categoryDoc), ...cat.brands.map(brandDoc),

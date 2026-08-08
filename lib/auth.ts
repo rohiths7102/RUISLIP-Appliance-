@@ -84,12 +84,27 @@ export async function requireAdmin(): Promise<{ email: string }> {
  */
 export async function requireAdminApi(
   req: Request,
-  opts: { limit?: number; windowMs?: number } = {}
+  opts: { limit?: number; windowMs?: number; bucket?: string } = {}
 ): Promise<{ admin: { email: string } } | { response: Response }> {
   const admin = await getAdmin();
   if (!admin) return { response: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } }) };
   const { rateLimit, clientIp, tooMany } = await import("./rate-limit");
-  const gate = rateLimit("admin-write", clientIp(req), opts.limit ?? 120, opts.windowMs ?? 60_000);
+  // Each route counts on its OWN bucket. Sharing one meant a route's ceiling was
+  // measured against every other route's traffic: a dozen ordinary product saves
+  // (own limit 120) would 429 the Send button (limit 15) or Apply sync (limit 6),
+  // for an action the owner had performed once.
+  const gate = rateLimit(`admin-write:${opts.bucket ?? routeBucket(req)}`, clientIp(req), opts.limit ?? 120, opts.windowMs ?? 60_000);
   if (!gate.ok) return { response: tooMany(gate.retryAfter, "Slow down — too many changes at once.") };
   return { admin };
+}
+
+/** Route identity for rate-limit bucketing: the pathname with record ids folded
+ *  away, so every edit to /api/admin/products/<id> shares one counter rather
+ *  than getting a fresh allowance per product. */
+function routeBucket(req: Request): string {
+  try {
+    return new URL(req.url).pathname.replace(/\/[A-Za-z0-9_-]{16,}(?=\/|$)/g, "/:id");
+  } catch {
+    return "unknown";
+  }
 }

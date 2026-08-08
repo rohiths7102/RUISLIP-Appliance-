@@ -21,7 +21,12 @@ ok(slugOf({ newSlug: "/products/foo-bar" } as any) === "foo-bar", "slugOf strips
 // rag documents
 const pd = productDoc(seed.products[0]);
 ok(pd.content.includes(seed.products[0].productCode), "productDoc includes product code");
-ok(/£/.test(pd.content), "productDoc includes price");
+// Take a product that HAS a published price: the seed leads with a call-for-price
+// accessory whose price is deliberately scrubbed, so products[0] proves nothing here.
+const priced = seed.products.find((p) => p.priceNow != null)!;
+ok(/£/.test(productDoc(priced).content), "productDoc includes price when one is published");
+// The other half of the owner's rule: a withheld price must never reach the bot.
+ok(!/£/.test(productDoc(priced, { omitPrice: true }).content), "productDoc omits price for call-for-price products");
 const docs = buildDocuments(seed as any);
 ok(docs.length > seed.products.length, "buildDocuments adds category/brand/business/faq docs");
 ok(faqDocs(seed.business).some((f) => /call/i.test(f.content) && f.content.includes(seed.business.phone)), "how-to-buy FAQ is phone-first");

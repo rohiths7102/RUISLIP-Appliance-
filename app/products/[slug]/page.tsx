@@ -160,6 +160,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           Delivery available to selected local areas. Please call to confirm availability, delivery cost and
           date — we&apos;ll arrange everything directly with you over the phone.
         </p>
+        {/* What the owner typed for THIS appliance in the admin — a two-man lift,
+            a longer lead time — outranks the standard wording above. */}
+        {p.deliveryNotes && (
+          <p className="mb-6 max-w-3xl rounded-[4px] border border-blue/25 bg-blue/[.06] px-4 py-3 text-[14.5px] leading-relaxed text-navy">
+            {p.deliveryNotes}
+          </p>
+        )}
         <ul className="grid gap-3 sm:grid-cols-3">
           {[
             ["Connection & installation", "Fitted and tested by our team"],
@@ -178,7 +185,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <section className="container-x mt-20">
           <h2 className="mb-7 font-display text-display-3 font-normal">You might also like</h2>
           <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
-            {related.map((r) => <ProductCard key={r.id} p={toCardItem(r, poaSet) as never} />)}
+            {/* energyClass rides alongside the DTO — the card DTO drops the specs
+                array the card's own fallback would otherwise read, so without this
+                the A-G chip vanishes from every related product. */}
+            {related.map((r) => {
+              const item = toCardItem(r, poaSet);
+              return <ProductCard key={item.id} p={item as never} energyClass={item.energyClass} />;
+            })}
           </div>
         </section>
       )}

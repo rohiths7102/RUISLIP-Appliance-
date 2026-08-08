@@ -8,10 +8,13 @@
  *   node scripts/db/engine.mjs deploy     -> push schema + seed catalogue into the
  *                                            Postgres given by SUPABASE_DB_URL /
  *                                            DATABASE_URL (one-time setup)
+ *   node scripts/db/engine.mjs client:pg  -> generate a SEPARATE Postgres client for
+ *                                            the maintenance scripts and print the
+ *                                            PRISMA_CLIENT_DIR they expect
  *
  * Reads .env.local / .env itself (plain `node` doesn't), so secrets live there.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -49,17 +52,54 @@ function findPgUrl() {
   return null;
 }
 
+/** Same, but the modes that WRITE to Postgres can't proceed without one. */
+function requirePgUrl() {
+  const found = findPgUrl();
+  if (found) return found;
+  console.error("✗ No Postgres URL found in the environment or .env.local.");
+  console.error(`  Looked for: ${PG_VARS.join(", ")} (and any *_URL holding a postgres:// value).`);
+  console.error("  Fix: connect the database in Vercel and run `npx vercel env pull .env.local`,");
+  console.error("       or paste SUPABASE_DB_URL=postgresql://... into .env.local yourself.");
+  process.exit(1);
+}
+
+/** Never print a connection string with its password in it. */
+const maskUrl = (u) => u.replace(/:\/\/[^@]*@/, "://***:***@");
+
 const SQLITE_SCHEMA = join(ROOT, "prisma", "schema.prisma");
 const PG_SCHEMA = join(ROOT, "prisma", "schema.postgres.prisma");
+// Home of the isolated maintenance client (PRISMA_CLIENT_DIR). Inside the repo but
+// git-ignored, so the production recipe is reproducible on any machine instead of
+// depending on a folder someone made by hand.
+const PG_CLIENT_ROOT = join(ROOT, ".prisma-pg");
+const PG_CLIENT_SCHEMA = join(PG_CLIENT_ROOT, "schema.prisma");
+const PG_CLIENT_DIR = join(PG_CLIENT_ROOT, "client");
+
+/** The sqlite schema retargeted at Postgres — the only edit ever made to it. */
+function pgSource() {
+  const src = readFileSync(SQLITE_SCHEMA, "utf8");
+  return (
+    "// GENERATED from schema.prisma by scripts/db/engine.mjs — do not edit by hand.\n" +
+    src.replace(/provider\s*=\s*"sqlite"/, 'provider = "postgresql"')
+  );
+}
 
 /** Regenerate the Postgres schema from the sqlite source of truth. */
 function writePgSchema() {
-  const src = readFileSync(SQLITE_SCHEMA, "utf8");
-  const out =
-    "// GENERATED from schema.prisma by scripts/db/engine.mjs — do not edit by hand.\n" +
-    src.replace(/provider\s*=\s*"sqlite"/, 'provider = "postgresql"');
-  writeFileSync(PG_SCHEMA, out);
+  writeFileSync(PG_SCHEMA, pgSource());
   return PG_SCHEMA;
+}
+
+/** The same Postgres schema with the generator redirected to its own directory —
+ *  without `output` prisma would overwrite the default client in node_modules,
+ *  which is the sqlite one a running dev server has already loaded. */
+function writePgClientSchema() {
+  // Relative to the schema's own folder: an absolute Windows path would need its
+  // backslashes escaped inside a Prisma string.
+  const out = pgSource().replace(/(generator\s+client\s*\{)/, '$1\n  output   = "./client"');
+  mkdirSync(PG_CLIENT_ROOT, { recursive: true });
+  writeFileSync(PG_CLIENT_SCHEMA, out);
+  return PG_CLIENT_SCHEMA;
 }
 
 function run(cmd, args, extraEnv = {}) {
@@ -101,16 +141,9 @@ if (mode === "generate") {
   }
 } else if (mode === "deploy") {
   // Push schema + seed into Postgres, using whichever env var actually holds the URL.
-  const found = findPgUrl();
-  if (!found) {
-    console.error("✗ No Postgres URL found in the environment or .env.local.");
-    console.error(`  Looked for: ${PG_VARS.join(", ")} (and any *_URL holding a postgres:// value).`);
-    console.error("  Fix: connect the database in Vercel and run `npx vercel env pull .env.local`,");
-    console.error("       or paste SUPABASE_DB_URL=postgresql://... into .env.local yourself.");
-    process.exit(1);
-  }
+  const found = requirePgUrl();
   const pg = found.url;
-  console.log(`engine: using ${found.key} → ${pg.replace(/:\/\/[^@]*@/, "://***:***@")}`);
+  console.log(`engine: using ${found.key} → ${maskUrl(pg)}`);
   const schema = writePgSchema();
   console.log("engine: postgresql — pushing schema to Supabase…");
   run("npx", ["prisma", "db", "push", "--schema", schema, "--accept-data-loss"], { DATABASE_URL: pg });
@@ -121,7 +154,22 @@ if (mode === "generate") {
   console.log("engine: restoring local sqlite client…");
   run("npx", ["prisma", "generate"]);
   console.log("\n✓ Supabase is seeded. Set DATABASE_URL to the same URI in Vercel env vars.");
+} else if (mode === "client:pg") {
+  // The maintenance scripts (catalogue import/repair, RAG rebuild) reach production
+  // through PRISMA_CLIENT_DIR. That client has to live OUTSIDE the default one:
+  // regenerating the default client swaps it to postgresql under the running dev
+  // server, which is bound to sqlite. So this mode deliberately never runs a plain
+  // `prisma generate` — nothing here touches node_modules/@prisma/client.
+  const found = requirePgUrl();
+  const pg = found.url;
+  console.log(`engine: using ${found.key} → ${maskUrl(pg)}`);
+  const schema = writePgClientSchema();
+  console.log("engine: postgresql — generating the isolated maintenance client…");
+  run("npx", ["prisma", "generate", "--schema", schema], { DATABASE_URL: pg });
+  console.log("\n✓ Postgres client generated; the local sqlite client is untouched. Use it with:");
+  console.log(`\n  PRISMA_CLIENT_DIR="${PG_CLIENT_DIR}" node scripts/db/with-prod-db.mjs scripts/rag/rebuild-from-db.ts`);
+  console.log(`\n  PowerShell: $env:PRISMA_CLIENT_DIR="${PG_CLIENT_DIR}"; node scripts/db/with-prod-db.mjs scripts/rag/rebuild-from-db.ts`);
 } else {
-  console.error(`Unknown mode "${mode}" — use generate | deploy`);
+  console.error(`Unknown mode "${mode}" — use generate | deploy | client:pg`);
   process.exit(1);
 }

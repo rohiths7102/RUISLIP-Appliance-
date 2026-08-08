@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { writeAudit } from "@/lib/audit";
 export const dynamic = "force-dynamic";
+
+const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
 
 export async function GET() {
   if (!(await getAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -13,7 +16,8 @@ export async function GET() {
 const STATUSES = ["new", "contacted", "quoted", "won", "lost", "closed"];
 
 export async function PATCH(req: Request) {
-  if (!(await getAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const admin = await getAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const b = await req.json().catch(() => ({}));
   if (!b.id) return NextResponse.json({ error: "Bad request" }, { status: 400 });
 
@@ -40,5 +44,18 @@ export async function PATCH(req: Request) {
   if (!Object.keys(data).length) return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
 
   const db = await getPrisma();
-  return NextResponse.json(await db.enquiry.update({ where: { id: b.id }, data }));
+  const existing = await db.enquiry.findUnique({ where: { id: b.id } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // What was quoted, and when it was said, has to be reconstructable if a customer
+  // disputes it months later — so a real change is never written without a log row.
+  const changed = Object.keys(data).filter((k) => !Object.is(data[k], existing[k]));
+  if (!changed.length) return NextResponse.json(existing);
+
+  const updated = await db.enquiry.update({ where: { id: b.id }, data });
+  await writeAudit(db, {
+    entityType: "enquiry", entityId: b.id, action: "update", changedFields: changed,
+    previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email,
+  });
+  return NextResponse.json(updated);
 }

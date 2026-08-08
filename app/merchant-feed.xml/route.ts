@@ -1,4 +1,5 @@
 import { getPrisma } from "@/lib/prisma";
+import { poaNamesFrom } from "@/lib/select";
 export const dynamic = "force-dynamic";
 
 /** Escape the five XML special characters for safe element content. */
@@ -24,8 +25,12 @@ export async function GET() {
     const db = await getPrisma();
     // Call-for-price categories never enter the feed: Google requires the shown
     // price to be honoured, and the owner deliberately doesn't publish these.
-    const poaCats = await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } });
-    const poaNames = poaCats.map((c: { name: string }) => c.name);
+    // Read every category and mask through the storefront's helper rather than
+    // querying the flags alone — of all the surfaces, this is the worst one to
+    // publish a withheld price on when the flags are missing.
+    const cats: { name: string; priceOnApplication: boolean }[] =
+      await db.category.findMany({ select: { name: true, priceOnApplication: true } });
+    const poaNames = [...poaNamesFrom(cats)];
     const rows = await db.product.findMany({
       where: {
         isVisible: true,

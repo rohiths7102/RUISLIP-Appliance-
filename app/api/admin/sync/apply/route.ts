@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { applyImport } from "@/lib/importer";
 import { writeAudit } from "@/lib/audit";
@@ -9,8 +9,10 @@ export const dynamic = "force-dynamic";
 // An import rewrites ~1,600 products AND rebuilds the chatbot index — well past
 // the 10s serverless default.
 export const maxDuration = 300;
-export async function POST() {
-  const admin = await getAdmin(); if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(req: Request) {
+  const gate = await requireAdminApi(req, { limit: 6, windowMs: 60_000 });
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   try {
     const db = await getPrisma();
     const r = await applyImport(db, admin.email);

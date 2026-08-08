@@ -14,6 +14,7 @@ type Row = {
   category: string; subcategory: string; slug?: string;
   priceNow: number | null; priceWas: number | null;
   availabilityNormalised: string; warranty: string; shortDescription: string;
+  deliveryNotes: string;
   mainImage: string; isVisible: boolean; featured: boolean; adminOverrideFields: string[];
 };
 
@@ -27,7 +28,7 @@ const AVAIL = [
 const PER_PAGE = 25;
 const blank = (): Row => ({
   id: "", title: "", brand: "", productCode: "", category: "", subcategory: "", priceNow: null, priceWas: null,
-  availabilityNormalised: "call_to_confirm", warranty: "", shortDescription: "", mainImage: "",
+  availabilityNormalised: "call_to_confirm", warranty: "", shortDescription: "", deliveryNotes: "", mainImage: "",
   isVisible: true, featured: false, adminOverrideFields: [],
 });
 
@@ -87,7 +88,8 @@ export default function ProductsAdmin({
       category: editing.category, subcategory: editing.subcategory,
       priceNow: editing.priceNow, priceWas: editing.priceWas,
       availabilityNormalised: editing.availabilityNormalised, warranty: editing.warranty,
-      shortDescription: editing.shortDescription, mainImage: editing.mainImage,
+      shortDescription: editing.shortDescription, deliveryNotes: editing.deliveryNotes,
+      mainImage: editing.mainImage,
       isVisible: editing.isVisible, featured: editing.featured,
     };
     const r = await fetch(isNew ? "/api/admin/products" : `/api/admin/products/${editing.id}`, {
@@ -486,6 +488,12 @@ function Editor({
 
           <label className="text-xs font-semibold text-ink/60">Description
             <textarea rows={3} value={row.shortDescription} onChange={(e) => set("shortDescription", e.target.value)} className={`mt-1 ${input} resize-y`} />
+          </label>
+
+          <label className="text-xs font-semibold text-ink/60">Delivery note
+            <input value={row.deliveryNotes} onChange={(e) => set("deliveryNotes", e.target.value)} className={`mt-1 ${input}`}
+              placeholder="e.g. Own van, next day locally — two-man delivery" />
+            <span className="mt-1 block font-normal text-[11px] text-muted">Shown on this product&apos;s page. Leave blank to use the standard delivery wording.</span>
           </label>
 
           <div>

@@ -18,7 +18,7 @@ model number, same appliance — listing it twice would show two identical tiles
 records are **merged** (price from whichever had one, the larger gallery, the longer
 description), so nothing is lost.
 
-Bosch/Neff twins of a shared BSH part number (224 of them) are **kept separate**, because
+Bosch/Neff twins of a shared BSH part number (198 of them) are **kept separate**, because
 they're sold as different branded SKUs and customers search by their own appliance's brand.
 
 ## Categories

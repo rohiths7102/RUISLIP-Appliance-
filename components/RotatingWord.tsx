@@ -49,6 +49,12 @@ export default function RotatingWord({
         className={`relative inline-block overflow-hidden align-bottom transition-[width] duration-500 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${className}`}
         style={{ height: "1.12em", width: width === null ? undefined : `${width}px` }}
       >
+        {/* Every animated copy is absolutely positioned, so this in-flow twin is
+            the only thing giving the container an intrinsic width: without it the
+            server paint (and any JS-off render) is 0px wide behind overflow-hidden
+            and the hero H1 loses its key word entirely. The measured width takes
+            over the moment JS runs — that is what makes the glide animate. */}
+        <span className="invisible whitespace-nowrap">{words[i]}</span>
         {words.map((w, x) => {
           const prev = (i + words.length - 1) % words.length;
           const pos = x === i ? "translate-y-0 opacity-100" : x === prev ? "-translate-y-[80%] opacity-0" : "translate-y-[80%] opacity-0";

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const SELECT = {
   id: true, title: true, brand: true, productCode: true, category: true, subcategory: true,
   priceNow: true, priceWas: true, availabilityNormalised: true, warranty: true,
-  shortDescription: true, mainImage: true, slug: true, isVisible: true, featured: true,
+  shortDescription: true, deliveryNotes: true, mainImage: true, slug: true, isVisible: true, featured: true,
   adminOverrideFields: true,
 };
 

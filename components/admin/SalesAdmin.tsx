@@ -67,6 +67,12 @@ export default function SalesAdmin() {
     return false;
   };
 
+  // The draft lives in the rows, not in the editor: the detail pane is keyed by
+  // lead id, so anything held locally is thrown away the moment he clicks
+  // another lead and comes back — losing his edits and showing the stale draft.
+  const setDraft = (id: string, d: Partial<Pick<Lead, "aiDraftSubject" | "aiDraftBody">>) =>
+    setRows((rs) => rs.map((x) => (x.id === id ? { ...x, ...d } : x)));
+
   return (
     <div>
       <PageTitle
@@ -122,18 +128,22 @@ export default function SalesAdmin() {
           </Card>
 
           {/* ---------------- detail ---------------- */}
-          {sel ? <LeadDetail key={sel.id} lead={sel} patch={patch} /> : <Card className="p-6 text-sm text-muted">Pick a lead.</Card>}
+          {sel ? <LeadDetail key={sel.id} lead={sel} patch={patch} setDraft={setDraft} /> : <Card className="p-6 text-sm text-muted">Pick a lead.</Card>}
         </div>
       )}
     </div>
   );
 }
 
-function LeadDetail({ lead, patch }: { lead: Lead; patch: (id: string, d: Record<string, unknown>) => Promise<boolean> }) {
+function LeadDetail({ lead, patch, setDraft }: {
+  lead: Lead;
+  patch: (id: string, d: Record<string, unknown>) => Promise<boolean>;
+  setDraft: (id: string, d: Partial<Pick<Lead, "aiDraftSubject" | "aiDraftBody">>) => void;
+}) {
   const [notes, setNotes] = useState(lead.notes);
   const [quoted, setQuoted] = useState(lead.quotedPrice == null ? "" : String(lead.quotedPrice));
-  const [subject, setSubject] = useState(lead.aiDraftSubject);
-  const [body, setBody] = useState(lead.aiDraftBody);
+  const subject = lead.aiDraftSubject;
+  const body = lead.aiDraftBody;
   const [drafting, setDrafting] = useState(false);
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState<{ tone: "success" | "warning" | "danger" | "info"; text: string } | null>(null);
@@ -145,7 +155,7 @@ function LeadDetail({ lead, patch }: { lead: Lead; patch: (id: string, d: Record
       const r = await fetch(`/api/admin/leads/${lead.id}/draft`, { method: "POST" });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { setMsg({ tone: "danger", text: j.error || "Drafting failed." }); return; }
-      setSubject(j.subject); setBody(j.body);
+      setDraft(lead.id, { aiDraftSubject: j.subject, aiDraftBody: j.body });
       setMsg(j.grounded?.withheld
         ? { tone: "info", text: "This product is call-for-price — the draft has an [ADD YOUR PRICE] gap for your personal quote." }
         : { tone: "success", text: "Draft ready — edit anything, then send." });
@@ -160,7 +170,15 @@ function LeadDetail({ lead, patch }: { lead: Lead; patch: (id: string, d: Record
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, body }),
       });
       const j = await r.json().catch(() => ({}));
-      if (j.ok) { setMsg({ tone: "success", text: `Sent to ${lead.email} from the shop's Outlook.` }); await patch(lead.id, {}); location.reload(); return; }
+      // The send route only stamps lastEmailedAt/status, so his edits to the
+      // draft are persisted here — otherwise the reload replaces what he
+      // actually sent with the original AI text. If that write fails the reload
+      // is skipped, so the sent wording stays on screen next to the error.
+      if (j.ok) {
+        setMsg({ tone: "success", text: `Sent to ${lead.email} from the shop's Outlook.` });
+        if (await patch(lead.id, { aiDraftSubject: subject, aiDraftBody: body })) location.reload();
+        return;
+      }
       if (j.reason === "not_connected") {
         setMsg({ tone: "info", text: "Outlook isn't connected yet (Settings → Integrations). Opening your own email app instead…" });
         openMailApp();
@@ -253,9 +271,14 @@ function LeadDetail({ lead, patch }: { lead: Lead; patch: (id: string, d: Record
           Grounded in the real product data — published prices are quoted exactly; withheld prices become an [ADD YOUR PRICE] gap. It never invents a number.
         </p>
 
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject"
+        {/* Saved on blur like the notes field — every other patch here answers
+            with the whole row, so an unsaved edit would be replaced by the
+            stored draft the next time he touches a stage or the quote. */}
+        <input value={subject} onChange={(e) => setDraft(lead.id, { aiDraftSubject: e.target.value })}
+          onBlur={() => void patch(lead.id, { aiDraftSubject: subject })} placeholder="Subject"
           className="mt-3 w-full rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] font-semibold outline-none focus:border-blue" />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={9} placeholder="Press “Draft with AI”, or write your own…"
+        <textarea value={body} onChange={(e) => setDraft(lead.id, { aiDraftBody: e.target.value })}
+          onBlur={() => void patch(lead.id, { aiDraftBody: body })} rows={9} placeholder="Press “Draft with AI”, or write your own…"
           className="mt-2 w-full rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none focus:border-blue" />
 
         {msg && <Notice tone={msg.tone} className="mt-3">{msg.text}</Notice>}

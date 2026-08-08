@@ -12,7 +12,7 @@ Guarantees the application itself is safe even with **nothing in front of it**:
 | **Admin discoverability** | Every admin response carries `X-Robots-Tag: noindex, nofollow` (via middleware); robots.txt disallows `/admin`. It can't be indexed even if a URL leaks. |
 | **Hide the admin (optional)** | `ADMIN_PATH=<secret>` moves the panel off `/admin` to a secret segment (e.g. `/manage-8f3a2`); the default `/admin` then 404s so it can't be a backdoor. **Obscurity, not security** — thins bot noise, not a real gate. |
 | **Lock the admin (real)** | `ADMIN_ALLOWED_IPS=<ip,ip>` — every admin surface (UI + `/api/admin/*` + auth) returns **404** to any other IP, so the panel is neither reachable nor discoverable. This is the true "not publicly available." Middleware enforces it at the edge, before any handler. |
-| **Admin write APIs** | Every route auth-gated; bulk/import additionally **rate-capped behind auth** (a stolen/forged cookie can't drive machine-speed edits). |
+| **Admin write APIs** | Every route auth-gated; most write routes additionally **rate-capped behind auth** (a stolen/forged cookie can't drive machine-speed edits). Caps — and the four still missing one — listed below. |
 | **Contact / enquiry form** | 5/min per IP, honeypot field, length caps. |
 | **Chatbot** | 20/min per IP; server-side Groq key; prompt grounded only in catalogue. |
 | **Analytics beacon** | 60/min per IP, silent 204 over-limit; stores no cookies/IPs/identifiers. |
@@ -22,6 +22,22 @@ Guarantees the application itself is safe even with **nothing in front of it**:
 Limiter: `lib/rate-limit.ts` — in-memory fixed-window, per IP+bucket, self-evicting. Proven by `npm run verify:ratelimit` (login/enquiry/chat all flip to 429 on a burst; a normal cadence passes).
 
 > **Per-process caveat:** the in-memory limiter resets on restart and is per-instance. For one shop on one server that's fine. Behind multiple instances, move the counter to Redis/Upstash — the interface in `rate-limit.ts` is the only thing to swap.
+
+> **"Per IP" needs a trusted header.** `lib/client-ip.ts` believes only `TRUST_PROXY_HEADER` (the header your own proxy rewrites) or Vercel's `x-vercel-forwarded-for`; raw `x-forwarded-for` / `cf-connecting-ip` are forgeable and deliberately ignored. With neither present every caller falls into one shared bucket — see `.env.example`.
+
+### Which admin writes are capped
+
+`requireAdminApi()` in `lib/auth.ts` gates auth **and** rate together. Each route counts on its own bucket, per IP per minute, so a dozen ordinary product saves can't 429 an action the owner performs once:
+
+| Route | Per minute |
+|---|---:|
+| products `POST` · products `PATCH`/`DELETE` · categories `PATCH` · brands `PATCH` · quick-add | 120 |
+| bulk edit | 40 |
+| CSV import · lead draft | 20 |
+| lead send | 15 |
+| sync apply | 6 |
+
+**Not capped — auth only.** Four write routes still call bare `getAdmin()`: `POST /api/admin/upload`, `PATCH /api/admin/business`, `PATCH /api/admin/enquiries`, and — the one that matters — `POST /api/admin/rag/rebuild`, which re-indexes the whole catalogue, so it is the cheapest request to make the server do the most work. A valid session can drive all four as fast as it likes. (The read-only admin routes — overview, CSV exports, sync preview, rag status — are auth-only too.)
 
 ## Layer 2 — Cloudflare (the edge, you configure it)
 

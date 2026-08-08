@@ -35,6 +35,7 @@ and anyone could forge an admin cookie without knowing the password.
 | **Upload a photo** | In the editor → *Upload photo*. JPG/PNG/WebP/AVIF/GIF, max 8MB. Or paste an image URL. |
 | **Change a price** | Editor → Price. Leave blank and the site shows **“Call for price”**. Set *Was* and the “Save £X” badge is calculated automatically. |
 | **Update stock** | The dropdown in the table — one click, no dialog. It's the most common daily job. |
+| **Delivery note for one product** | Editor → *Delivery note*. Shows on that product's page under the standard "Delivery & services" wording — for the exceptions: a two-man lift, a longer lead time. Leave it blank and the page just uses the standard wording. |
 | **Hide without deleting** | *Show on website* — stays in the admin, vanishes from the shop. |
 | **Feature on the homepage** | *Featured* checkbox. |
 | **Delete** | Bin icon. Asks first; removes it from the site immediately. |

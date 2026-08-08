@@ -14,7 +14,9 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname, extname } from "node:path";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const { PrismaClient } = require("@prisma/client");
+// PRISMA_CLIENT_DIR lets this run against an isolated Postgres client without
+// regenerating the shared sqlite client that running dev servers hold open.
+const { PrismaClient } = require(process.env.PRISMA_CLIENT_DIR || "@prisma/client");
 
 // .env.local / .env loading (plain node) — for BLOB_READ_WRITE_TOKEN
 for (const f of [".env.local", ".env"]) {
@@ -34,27 +36,42 @@ const blobMap = existsSync(mapFile) ? JSON.parse(readFileSync(mapFile, "utf8")) 
 
 const CT = { ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png" };
 
+/** Photos per product carried to Blob. The drops ship up to 13; the product page
+ *  gallery shows a handful, and every extra image is paid storage — 8 is the same
+ *  cap the owner's own quick-add uses. */
+const MAX_IMAGES = 8;
+
+/** blob-map.json holds an ARRAY of urls per code (first = main image). Earlier
+ *  runs wrote a bare string, so keep reading those. */
+const urlsFor = (code) => { const v = blobMap[code]; return typeof v === "string" ? [v] : Array.isArray(v) ? v : []; };
+
 if (DO_UPLOAD) {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) { console.error("✗ BLOB_READ_WRITE_TOKEN missing"); process.exit(1); }
   const { put } = await import("@vercel/blob");
-  let done = 0, bytes = 0;
+  let done = 0, bytes = 0, images = 0;
   for (const s of staged) {
-    if (blobMap[s.productCode]) { done++; continue; } // resume-safe
-    const img = s.localImages[0];
-    const body = readFileSync(join(s.dir, img));
-    const ext = extname(img).toLowerCase();
-    const key = `catalog/${s.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}/${s.productCode}/01${ext}`;
-    const { url } = await put(key, body, { access: "public", token, contentType: CT[ext] || "image/jpeg", addRandomSuffix: false, allowOverwrite: true });
-    blobMap[s.productCode] = url;
-    bytes += body.length;
-    if (++done % 50 === 0 || done === staged.length) {
+    const wanted = s.localImages.slice(0, MAX_IMAGES);
+    // resume-safe: only skip when every image of this product is already up
+    if (urlsFor(s.productCode).length >= wanted.length && urlsFor(s.productCode).length > 0) { done++; images += urlsFor(s.productCode).length; continue; }
+    const urls = [];
+    for (const [i, img] of wanted.entries()) {
+      const body = readFileSync(join(s.dir, img));
+      const ext = extname(img).toLowerCase();
+      const key = `catalog/${s.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}/${s.productCode}/${String(i + 1).padStart(2, "0")}${ext}`;
+      const { url } = await put(key, body, { access: "public", token, contentType: CT[ext] || "image/jpeg", addRandomSuffix: false, allowOverwrite: true });
+      urls.push(url);
+      bytes += body.length;
+    }
+    blobMap[s.productCode] = urls;
+    images += urls.length;
+    if (++done % 25 === 0 || done === staged.length) {
       writeFileSync(mapFile, JSON.stringify(blobMap, null, 1));
-      console.log(`  uploaded ${done}/${staged.length} (${(bytes / 1048576).toFixed(1)} MB)`);
+      console.log(`  uploaded ${done}/${staged.length} products, ${images} images (${(bytes / 1048576).toFixed(1)} MB)`);
     }
   }
   writeFileSync(mapFile, JSON.stringify(blobMap, null, 1));
-  console.log(`images on Blob: ${Object.keys(blobMap).length}`);
+  console.log(`products on Blob: ${Object.keys(blobMap).length} (${images} images)`);
 }
 
 const db = new PrismaClient();
@@ -82,7 +99,8 @@ try {
   let created = 0, skipped = 0, noBlob = 0;
   for (const s of staged) {
     if (existing.has(s.productCode.toUpperCase())) { skipped++; continue; }
-    const mainImage = blobMap[s.productCode];
+    const gallery = urlsFor(s.productCode);
+    const mainImage = gallery[0];
     if (!mainImage) { noBlob++; continue; }
     const categoryId = catByName.get(s.subcategory.toLowerCase()) || catByName.get(s.category.toLowerCase()) || null;
     const row = await db.product.create({ data: {
@@ -92,7 +110,7 @@ try {
       availabilityRaw: "", availabilityNormalised: "call_to_confirm",
       warranty: "", shortDescription: s.shortDescription, descriptionHtml: "", descriptionText: s.shortDescription,
       specifications: [], features: [], energyLabelUrl: "",
-      mainImage, galleryImages: [mainImage], relatedProductCodes: [], serviceAddOns: [],
+      mainImage, galleryImages: gallery, relatedProductCodes: [], serviceAddOns: [],
       deliveryNotes: "", seoTitle: "", seoDescription: "",
       lastScrapedAt: new Date(), adminOverrideFields: [], categoryId, isVisible: true,
     } });

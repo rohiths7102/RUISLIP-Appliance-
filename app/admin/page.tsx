@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { poaNamesFromDb } from "@/lib/poa";
 import { loadCatalog } from "@/lib/repo";
 import AdminShell from "@/components/admin/AdminShell";
 import { Sparkline, BarChart, HBar } from "@/components/admin/Charts";
@@ -39,7 +40,7 @@ const delta = (series: number[]) => {
 async function dashboard() {
   const db = await getPrisma();
   const since14 = new Date(Date.now() - 14 * DAY);
-  const poaNames = (await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } })).map((c: { name: string }) => c.name);
+  const poaNames = [...(await poaNamesFromDb(db))];
   const [events, enquiries14, newEnquiries, latestEnquiries, counts, missing, lastJob, audit, feedReady] = await Promise.all([
     db.trackedEvent.findMany({ where: { createdAt: { gte: since14 } }, select: { type: true, productSlug: true, postcode: true, isLocal: true, createdAt: true } }),
     db.enquiry.findMany({ where: { createdAt: { gte: since14 } }, select: { createdAt: true } }),

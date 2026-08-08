@@ -26,10 +26,22 @@ export const toCardItem = (p: Product, poaNames?: Set<string>) => {
 
 /**
  * Names of every category the owner flagged price-on-application.
- * Defence in depth: if the catalogue in hand carries NO flags at all (a seed
- * snapshot from before the flags existed, or a partial DB failure), fall back
- * to the known flagged set — a degraded catalogue must never resurrect prices
- * the owner withholds. When any flag IS present, the owner's data wins alone.
+ *
+ * Two situations look alike in the data and need OPPOSITE answers:
+ *
+ *  1. The owner deliberately unticked a category's flag. That is a real
+ *     instruction and must win — otherwise the admin checkbox is a lie the
+ *     owner has no way to undo from the admin.
+ *  2. The flag never reached us: the category is hidden (loadCatalog fetches
+ *     isVisible categories only), deleted, or the catalogue is a pre-flag seed
+ *     snapshot. There is no instruction here, and a degraded catalogue must
+ *     never resurrect prices the owner withholds.
+ *
+ * PRESENCE in the catalogue is what tells them apart. A fallback category that
+ * IS in `cs` and carries no flag is case 1, so the owner's data stands alone.
+ * One that is absent is case 2, so the fallback still masks it — hiding a
+ * flagged category must not un-hide its prices on every storefront surface.
+ * An empty `cs` (no flag information at all) therefore masks the whole set.
  */
 const POA_FALLBACK = [
   "Accessories & Spare Parts", "Coffee Machines", "Oven & Cooking Accessories",
@@ -38,9 +50,12 @@ const POA_FALLBACK = [
   "Coffee Machine Accessories", "Kitchen Machine Accessories", "Kitchen Utensils",
   "Cleaning & Care Products", "Spare Parts",
 ];
-export const poaNamesFrom = (cs: Category[]) => {
-  const flagged = cs.filter((c) => c.priceOnApplication).map((c) => c.name);
-  return new Set(flagged.length ? flagged : POA_FALLBACK);
+export const poaNamesFrom = (cs: Pick<Category, "name" | "priceOnApplication">[]) => {
+  const known = new Set(cs.map((c) => c.name));
+  return new Set([
+    ...cs.filter((c) => c.priceOnApplication).map((c) => c.name),
+    ...POA_FALLBACK.filter((n) => !known.has(n)),
+  ]);
 };
 export const getProduct = (ps: Product[], slug: string) => ps.find((p) => slugOf(p) === slug);
 export const topCategories = (cs: Category[]) => cs.filter((c) => !c.parentCategory);

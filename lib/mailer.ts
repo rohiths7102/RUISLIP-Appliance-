@@ -23,6 +23,17 @@ export const graphConfigured = () =>
 
 type SendResult = { ok: true } | { ok: false; reason: "not_connected" | "token_failed" | "send_failed" };
 
+/**
+ * Microsoft sits on the critical path of a request the owner is watching. Without
+ * a deadline a slow or blackholed endpoint leaves the button spinning on
+ * "Sending…" until the platform kills the route — no result, no audit row, and no
+ * way for him to know whether the lead was emailed. Both budgets together stay
+ * inside a serverless invocation with room for the enquiry update that follows,
+ * and a blown deadline resolves to a normal typed failure rather than a throw.
+ */
+const TOKEN_TIMEOUT_MS = 8000;
+const SEND_TIMEOUT_MS = 12000;
+
 async function graphToken(): Promise<string | null> {
   const r = await fetch(`https://login.microsoftonline.com/${process.env.MS_TENANT_ID}/oauth2/v2.0/token`, {
     method: "POST",
@@ -33,8 +44,9 @@ async function graphToken(): Promise<string | null> {
       scope: "https://graph.microsoft.com/.default",
       grant_type: "client_credentials",
     }),
-  });
-  if (!r.ok) return null;
+    signal: AbortSignal.timeout(TOKEN_TIMEOUT_MS),
+  }).catch(() => null);
+  if (!r || !r.ok) return null;
   const j = (await r.json().catch(() => null)) as { access_token?: string } | null;
   return j?.access_token || null;
 }
@@ -55,6 +67,9 @@ export async function sendViaOutlook(input: { to: string; toName?: string; subje
         toRecipients: [{ emailAddress: { address: input.to, name: input.toName || undefined } }],
       },
     }),
-  });
-  return r.status === 202 ? { ok: true } : { ok: false, reason: "send_failed" };
+    signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
+  }).catch(() => null);
+  // A timeout here is ambiguous — Graph may have accepted the message — so report
+  // the failure and never retry: the owner's Sent folder is the record of truth.
+  return r?.status === 202 ? { ok: true } : { ok: false, reason: "send_failed" };
 }

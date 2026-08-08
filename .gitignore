@@ -25,6 +25,15 @@ prisma/*.db-journal
 # Generated from schema.prisma by scripts/db/engine.mjs — never hand-edited
 prisma/schema.postgres.prisma
 
+# Isolated Postgres client for the maintenance scripts (PRISMA_CLIENT_DIR);
+# regenerate with `node scripts/db/engine.mjs client:pg`
+.prisma-pg/
+
+# Catalogue import intermediates — staged.json can be tens of MB and blob-map.json
+# pins live Blob URLs; both are per-drop working files, not repo content.
+staged.json
+blob-map.json
+
 # TypeScript incremental build cache
 tsconfig.tsbuildinfo
 

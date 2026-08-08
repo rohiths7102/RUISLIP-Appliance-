@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncCategoryToRag, syncCategoryProductsToRag } from "@/lib/rag/index";
@@ -9,16 +9,52 @@ export const dynamic = "force-dynamic";
 // (839 for the accessories department) — give the write room beyond the 10s default.
 export const maxDuration = 60;
 const EDITABLE = ["name", "image", "description", "seoTitle", "seoDescription", "isVisible", "order", "priceOnApplication"];
+const TEXT = new Set(["name", "image", "description", "seoTitle", "seoDescription"]);
+const FLAG = new Set(["isVisible", "priceOnApplication"]);
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
+
+/**
+ * Check the values before Prisma sees them. The name is not cosmetic: products
+ * join categories by NAME string, so a blank one stamps "" onto all 813
+ * accessories AND — when the category is call-for-price — puts "" into the
+ * suppression set, which then matches every product that has no subcategory.
+ * Returns an owner-readable message, or null when the body is safe to write.
+ */
+function reject(body: Record<string, unknown>): string | null {
+  for (const k of EDITABLE) {
+    if (!(k in body)) continue;
+    const v = body[k];
+    if (TEXT.has(k)) {
+      if (typeof v !== "string") return `${k} must be text.`;
+      if (k === "name" && !v.trim()) return "Name cannot be empty — every product in this department is filed under it.";
+    } else if (FLAG.has(k)) {
+      if (typeof v !== "boolean") return `${k} must be a yes/no value.`;
+    } else if (k === "order" && !Number.isInteger(v)) {
+      return "Order must be a whole number.";
+    }
+  }
+  return null;
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await getAdmin(); if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminApi(req);
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   const { id } = await params; const body = await req.json().catch(() => ({}));
+  const bad = reject(body); if (bad) return NextResponse.json({ error: bad }, { status: 400 });
   try {
     const db = await getPrisma();
     const existing = await db.category.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const data: Record<string, any> = {}; const changed: string[] = [];
-    for (const k of EDITABLE) if (k in body && body[k] !== (existing as any)[k]) { data[k] = body[k]; changed.push(k); }
+    for (const k of EDITABLE) {
+      if (!(k in body)) continue;
+      // The name is the join key, so stray padding would fork it off the name
+      // the products already carry.
+      const v = k === "name" ? String(body[k]).trim() : body[k];
+      if (v === (existing as any)[k]) continue;
+      data[k] = v; changed.push(k);
+    }
     if (!changed.length) return NextResponse.json(existing);
     const updated = await db.category.update({ where: { id }, data });
     // Products join categories by NAME string — a rename must carry them along

@@ -36,7 +36,8 @@
     "verify:analytics": "node scripts/catalog/verify-analytics.mjs",
     "verify:ratelimit": "node scripts/catalog/verify-ratelimit.mjs",
     "verify:lockdown": "node scripts/catalog/verify-admin-lockdown.mjs http://localhost:3005 default",
-    "demo:reset": "node scripts/catalog/reset-demo-data.mjs",
+    "demo:reset:dry": "node scripts/catalog/reset-demo-data.mjs",
+    "demo:reset": "node scripts/catalog/reset-demo-data.mjs --yes-wipe-enquiries",
     "blob:sync:dry": "node scripts/blob/upload-images.mjs --dry-run",
     "blob:sync": "node scripts/blob/upload-images.mjs",
     "pg:deploy": "node scripts/db/engine.mjs deploy"

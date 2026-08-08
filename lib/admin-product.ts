@@ -4,13 +4,13 @@
 export const EDITABLE = [
   "title", "brand", "productCode", "category", "subcategory",
   "priceNow", "priceWas", "saving", "availabilityNormalised", "availabilityRaw",
-  "warranty", "shortDescription", "descriptionText", "mainImage", "isVisible", "featured",
+  "warranty", "shortDescription", "descriptionText", "deliveryNotes", "mainImage", "isVisible", "featured",
 ] as const;
 
 /** Fields a re-scrape owns — once the owner edits one, it gets locked. */
 export const SCRAPE_OWNED = new Set<string>([
   "title", "priceNow", "priceWas", "saving", "availabilityNormalised",
-  "availabilityRaw", "warranty", "shortDescription", "mainImage",
+  "availabilityRaw", "warranty", "shortDescription", "deliveryNotes", "mainImage",
 ]);
 
 const NUM = new Set(["priceNow", "priceWas", "saving"]);

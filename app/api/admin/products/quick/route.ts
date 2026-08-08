@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
@@ -17,12 +17,16 @@ export const dynamic = "force-dynamic";
  * or "revalidate"; he sees "filed under Cooking › Ovens" and a live link.
  */
 export async function POST(req: Request) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminApi(req);
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   const b = await req.json().catch(() => ({}));
 
   const brand = String(b.brand || "").trim();
-  const productCode = String(b.productCode || "").trim();
+  // The admin field only LOOKS uppercase (that is CSS) — store the uppercase
+  // form so a phone lookup and a CSV round trip (which matches codes uppercased)
+  // find the same row whichever way the owner typed it.
+  const productCode = String(b.productCode || "").trim().toUpperCase();
   const title = String(b.title || "").trim();
   const images: string[] = Array.isArray(b.images) ? b.images.filter((u: unknown) => typeof u === "string" && u).slice(0, 8) : [];
   if (!brand) return NextResponse.json({ error: "Brand is required" }, { status: 400 });
@@ -33,8 +37,13 @@ export async function POST(req: Request) {
     const db = await getPrisma();
 
     // Same code twice = the same appliance — send the owner to the existing one
-    // instead of silently creating a lookalike listing.
-    const dup = await db.product.findFirst({ where: { productCode }, select: { slug: true, title: true } });
+    // instead of silently creating a lookalike listing. Scraped codes are not
+    // uniformly cased, and Prisma's case-insensitive filter is Postgres-only
+    // while this schema also runs on SQLite, so the codes come back in one thin
+    // projection and the fold happens here.
+    const codes: { slug: string; title: string; productCode: string }[] =
+      await db.product.findMany({ select: { slug: true, title: true, productCode: true } });
+    const dup = codes.find((p) => p.productCode.trim().toUpperCase() === productCode);
     if (dup) {
       return NextResponse.json(
         { error: `${productCode} is already in the catalogue ("${dup.title}"). Edit it in Products instead.`, slug: dup.slug },
@@ -95,9 +104,16 @@ export async function POST(req: Request) {
       },
     });
 
-    // ---- brand row + counts: shared implementation with every other mutation path
-    const brandCreated = await ensureBrand(db, brand);
-    await recomputeCounts(db, { brands: [brand], categories: [category, subcategory] });
+    // ---- brand row + counts: shared implementation with every other mutation
+    // path, and best-effort like them. The product row already exists at this
+    // point, so a counts failure must not cost it the audit line, the chatbot
+    // doc and the cache purge below — it would be live nowhere but the database.
+    let brandCreated = false;
+    try {
+      const ensured = await ensureBrand(db, brand);
+      brandCreated = ensured.created;
+      await recomputeCounts(db, { brands: [ensured.name], categories: [category, subcategory] });
+    } catch { /* best effort */ }
 
     await writeAudit(db, {
       entityType: "product", entityId: created.id, action: "create",

@@ -58,17 +58,31 @@ export default function QuickAdd({ brands, departments }: { brands: string[]; de
     setPhase("working");
 
     try {
-      // 1 — photos through the existing hardened upload route
+      // 0 — the duplicate model code is the usual reason this fails, and it is
+      // only caught by the create at the very end. Photos go to public Blob
+      // storage, so failing after them orphans up to eight files forever and a
+      // retry uploads eight more. Ask first; the create's 409 stays the truth.
+      const wanted = code.trim();
+      const dupe = await fetch(`/api/admin/products?q=${encodeURIComponent(wanted)}&take=100`);
+      if (dupe.ok) {
+        const dj = await dupe.json().catch(() => ({}));
+        const found: { productCode: string; title: string }[] = dj.rows || [];
+        const hit = found.find((x) => x.productCode.toLowerCase() === wanted.toLowerCase());
+        if (hit) throw new Error(`${wanted} is already in the catalogue ("${hit.title}"). Edit it in Products instead.`);
+      }
+
+      // 1 — photos through the existing hardened upload route, all at once:
+      // each POST is independent and the shop's wifi made eight of them a
+      // sixteen-second wait in a row.
       setStep(0, "run");
-      const urls: string[] = [];
-      for (const s of shots) {
+      const urls: string[] = await Promise.all(shots.map(async (s) => {
         const fd = new FormData();
         fd.append("file", s.file);
         const r = await fetch("/api/admin/upload", { method: "POST", body: fd });
         const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.error || "A photo failed to upload");
-        urls.push(j.url);
-      }
+        return j.url as string;
+      }));
       setStep(0, "done");
 
       // 2 + 3 — one call does the rest server-side

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Phone, LayoutGrid, Tag, ArrowUpRight } from "lucide-react";
 import { formatPrice } from "@/lib/format";
@@ -28,14 +28,28 @@ export default function SearchBar({ className = "" }: { className?: string }) {
   const [active, setActive] = useState(-1);
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const seqRef = useRef(0);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const count = sugs.length + hits.length;
 
-  // Debounced fetch; in-flight responses are aborted so a fast typist never
-  // sees an earlier query's results land after a later one's.
+  // Drops the armed debounce and any in-flight request, and retires their
+  // sequence number. Enter fires inside the 180ms debounce, so without this a
+  // late response would re-open the dropdown on top of the results page the
+  // customer just landed on.
+  const cancelPending = useCallback(() => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    abortRef.current?.abort();
+    abortRef.current = null;
+    seqRef.current++;
+  }, []);
+
+  // Debounced fetch; in-flight responses are aborted and stale ones ignored so a
+  // fast typist never sees an earlier query's results land after a later one's.
   useEffect(() => {
     const q = v.trim();
-    if (q.length < 2) { setSugs([]); setHits([]); setTotal(0); setOpen(false); return; }
+    if (q.length < 2) { cancelPending(); setSugs([]); setHits([]); setTotal(0); setOpen(false); return; }
+    const seq = ++seqRef.current;
     const t = setTimeout(async () => {
       abortRef.current?.abort();
       const ac = new AbortController();
@@ -44,12 +58,14 @@ export default function SearchBar({ className = "" }: { className?: string }) {
         const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ac.signal });
         if (!r.ok) return;
         const j = await r.json();
+        if (seq !== seqRef.current) return;
         setSugs(j.suggestions || []); setHits(j.items || []); setTotal(j.total || 0);
         setOpen(true); setActive(-1);
       } catch { /* aborted or offline — keep whatever is shown */ }
     }, 180);
+    timerRef.current = t;
     return () => clearTimeout(t);
-  }, [v]);
+  }, [v, cancelPending]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -59,7 +75,7 @@ export default function SearchBar({ className = "" }: { className?: string }) {
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const go = (href: string) => { setOpen(false); setActive(-1); router.push(href); };
+  const go = (href: string) => { cancelPending(); setOpen(false); setActive(-1); router.push(href); };
   const hrefAt = (i: number) =>
     i < sugs.length ? sugs[i].href : `/products/${hits[i - sugs.length].slug}`;
   const submit = () => {
@@ -82,7 +98,7 @@ export default function SearchBar({ className = "" }: { className?: string }) {
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") { e.preventDefault(); if (count) { setOpen(true); setActive((a) => (a + 1) % count); } }
             else if (e.key === "ArrowUp") { e.preventDefault(); if (count) { setOpen(true); setActive((a) => (a <= 0 ? count - 1 : a - 1)); } }
-            else if (e.key === "Escape") { setOpen(false); setActive(-1); }
+            else if (e.key === "Escape") { cancelPending(); setOpen(false); setActive(-1); }
           }}
           placeholder="Search 1,800+ appliances…"
           aria-label="Search products"

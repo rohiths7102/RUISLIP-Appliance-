@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { sendViaOutlook, graphConfigured } from "@/lib/mailer";
@@ -11,8 +11,11 @@ export const dynamic = "force-dynamic";
  * falls back to the owner's own mail app — no dead button, no silent failure.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // This route sends real email from the shop's mailbox. A stolen cookie looping
+  // it would spam customers and burn the sender's reputation, so cap it hard.
+  const gate = await requireAdminApi(req, { limit: 15, windowMs: 60_000 });
+  if ("response" in gate) return gate.response;
+  const { admin } = gate;
   const { id } = await params;
   const b = await req.json().catch(() => ({}));
   const subject = String(b.subject || "").trim();

@@ -4,7 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { parseCsv } from "@/lib/csv";
-import { AVAILABILITY, SCRAPE_OWNED } from "@/lib/admin-product";
+import { AVAILABILITY, SCRAPE_OWNED, reconcileSaving } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
@@ -59,7 +59,9 @@ export async function POST(req: Request) {
     }
 
     const errors: string[] = [];
-    const changes: { id: string; slug: string; code: string; data: Record<string, any>; fields: { field: string; from: any; to: any }[] }[] = [];
+    // `before` is the pre-import row: the saving is reconciled against it, and the
+    // brand/department it is leaving still needs its count retrued.
+    const changes: { id: string; slug: string; code: string; data: Record<string, any>; fields: { field: string; from: any; to: any }[]; before: any }[] = [];
     const creates: { data: Record<string, any>; code: string }[] = [];
     let unchanged = 0;
 
@@ -105,7 +107,7 @@ export async function POST(req: Request) {
 
       if (target) {
         if (!fields.length) { unchanged++; continue; }
-        changes.push({ id: target.id, slug: target.slug, code: target.productCode, data, fields });
+        changes.push({ id: target.id, slug: target.slug, code: target.productCode, data, fields, before: target });
       } else {
         // brand-new product from the spreadsheet
         if (!data.title || !code) { errors.push(`row ${rowNo}: unknown product — a new row needs productCode and title`); continue; }
@@ -129,19 +131,23 @@ export async function POST(req: Request) {
     /* ---- apply ---- */
     const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
     for (const c of changes) {
-      const overrides = new Set<string>(((bySlug.get(c.slug) as any)?.adminOverrideFields as string[]) || []);
+      const overrides = new Set<string>((c.before.adminOverrideFields as string[]) || []);
       for (const f of Object.keys(c.data)) if (SCRAPE_OWNED.has(f)) overrides.add(f);
+      // A price edited in the spreadsheet has to carry the saving with it, or the
+      // storefront keeps advertising the pre-edit delta as "Save £X".
+      reconcileSaving(c.data, c.before);
       await db.product.update({ where: { id: c.id }, data: { ...c.data, adminOverrideFields: [...overrides], lastUpdatedByAdmin: new Date() } });
       try { await syncProductToRag(db, c.id); } catch {}
     }
     for (const c of creates) {
+      reconcileSaving(c.data);
       const base = slugify(`${c.data.brand || "product"}-${c.code}`);
       let slug = base;
       for (let i = 2; await db.product.findUnique({ where: { slug } }); i++) slug = `${base}-${i}`;
       const created = await db.product.create({ data: {
         slug, title: c.data.title, brand: c.data.brand || "Unbranded", productCode: c.code,
         category: c.data.category || "", subcategory: c.data.subcategory || "",
-        priceNow: c.data.priceNow ?? null, priceWas: c.data.priceWas ?? null, saving: null,
+        priceNow: c.data.priceNow ?? null, priceWas: c.data.priceWas ?? null, saving: c.data.saving ?? null,
         availabilityNormalised: c.data.availabilityNormalised || "call_to_confirm", availabilityRaw: "",
         warranty: c.data.warranty || "", isVisible: c.data.isVisible ?? true, featured: c.data.featured ?? false,
         shortDescription: "", descriptionHtml: "", descriptionText: "", sourceUrl: "", oldUrl: "", currency: "GBP",
@@ -152,13 +158,15 @@ export async function POST(req: Request) {
       try { await syncProductToRag(db, created.id); } catch {}
     }
     // New brands get their pages; every count the storefront shows gets retrued.
+    // Both sides of a move are recomputed — the brand/department a row left keeps
+    // its inflated total for ever if only the new one is counted again.
     try {
-      const touched = [...changes.map((c) => c.data), ...creates.map((c) => c.data)];
-      for (const d of creates.map((c) => c.data)) if (d.brand) await ensureBrand(db, d.brand);
-      const affected = await db.product.findMany({ where: { id: { in: changes.map((c) => c.id) } }, select: { brand: true, category: true, subcategory: true } });
+      const after = [...changes.map((c) => c.data), ...creates.map((c) => c.data)];
+      const before = changes.map((c) => c.before);
+      for (const d of after) if (d.brand) await ensureBrand(db, d.brand);
       await recomputeCounts(db, {
-        brands: [...touched.map((d) => d.brand), ...affected.map((a: any) => a.brand)],
-        categories: [...touched.flatMap((d) => [d.category, d.subcategory]), ...affected.flatMap((a: any) => [a.category, a.subcategory])],
+        brands: [...before.map((p: any) => p.brand), ...after.map((d) => d.brand)],
+        categories: [...before.flatMap((p: any) => [p.category, p.subcategory]), ...after.flatMap((d) => [d.category, d.subcategory])],
       });
     } catch { /* counts are best effort */ }
     await writeAudit(db, {

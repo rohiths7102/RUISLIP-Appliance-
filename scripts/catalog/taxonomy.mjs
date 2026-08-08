@@ -308,7 +308,9 @@ export const GLOBAL_PRE = [
   [/bluetooth turntable|vinyl turntable/i, "soundbars-speakers"],
   [/outdoor tv\b/i, "televisions"],
   [/waste ?disposal|multigrind/i, "food-prep"],
-  [/quooker (pro|flex|fusion|front|classic|combi)/i, "kettles"], // boiling-water taps (SCR descaler stays under cleaning)
+  // Boiling-water taps and the CUBE sparkling/chilled unit that plumbs into them
+  // sit with the taps. The SCR descaler stays under cleaning — it is a consumable.
+  [/quooker (pro|flex|fusion|front|classic|combi|cube)|quooker.*(sparkling|chilled)/i, "kettles"],
 ];
 
 /**

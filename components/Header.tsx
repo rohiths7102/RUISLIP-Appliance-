@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Phone, Menu, X, Star } from "lucide-react";
 import { telHref } from "@/lib/format";
 import OpenNow from "@/components/OpenNow";
@@ -31,6 +31,10 @@ const UTILITY = [
 export default function Header({ business }: { business: Business }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  // Any navigation closes the mobile panel, not just the department links: the
+  // search box inside the panel routes on its own, and on a phone that left the
+  // full menu covering the product the customer had just tapped.
+  useEffect(() => { setOpen(false); }, [pathname]);
   return (
     <header className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
       {/* ---- white bar: name · member mark · search · phone ---- */}

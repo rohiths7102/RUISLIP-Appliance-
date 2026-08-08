@@ -14,6 +14,20 @@ export const dynamic = "force-dynamic";
  */
 const TYPES = new Set(["call_click", "postcode_check"]);
 
+/**
+ * Traffic tags the site itself stamps (lib/ad-source): the literal "google-ads"
+ * for a paid click — the only value the Ads page counts — or the campaign's
+ * utm_source. This beacon is public, so a free-text field would let anyone
+ * invent channels in the owner's numbers, and he steers real ad spend by them.
+ * Anything that isn't shaped like a tag we issue is stored as unattributed
+ * rather than taken at its word.
+ */
+const AD_SOURCE = /^[a-z0-9][a-z0-9._-]{0,39}$/;
+const normaliseSource = (raw: unknown): string => {
+  const s = String(raw || "").trim().toLowerCase();
+  return AD_SOURCE.test(s) ? s : "";
+};
+
 export async function POST(req: Request) {
   // Analytics never surfaces errors — over-limit is a silent 204, not a 429.
   if (!rateLimit("track", clientIp(req), 60, 60_000).ok) return new NextResponse(null, { status: 204 });
@@ -30,7 +44,7 @@ export async function POST(req: Request) {
         productSlug: String(b.productSlug || "").slice(0, 120),
         postcode: String(b.postcode || "").toUpperCase().slice(0, 10),
         isLocal: typeof b.isLocal === "boolean" ? b.isLocal : null,
-        source: String(b.source || "").slice(0, 40),
+        source: normaliseSource(b.source),
       },
     });
   } catch { /* analytics never surfaces errors */ }

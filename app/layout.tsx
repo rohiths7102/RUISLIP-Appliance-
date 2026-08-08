@@ -24,6 +24,7 @@ import UspStrip from "@/components/UspStrip";
 import CallTracker from "@/components/CallTracker";
 import ConsentAnalytics from "@/components/ConsentAnalytics";
 import { getBusiness } from "@/lib/repo";
+import { jsonLdScript } from "@/lib/seo";
 import reviewsRaw from "@/data/reviews.json";
 import type { ReviewsData } from "@/components/GoogleReviews";
 
@@ -99,8 +100,8 @@ function BrandSchema({ business }: { business: any }) {
   };
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(site) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(org)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(site)} />
     </>
   );
 }
@@ -140,7 +141,7 @@ function LocalBusinessSchema({ business }: { business: any }) {
       ? { aggregateRating: { "@type": "AggregateRating", ratingValue: reviews.rating, reviewCount: reviews.count } }
       : {}),
   };
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
+  return <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(data)} />;
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
