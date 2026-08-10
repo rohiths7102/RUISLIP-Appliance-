@@ -37,6 +37,13 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Catalogue imagery is content-stable per product code (01.jpg never
+        // changes in place — a new shot gets a new path), so let browsers and
+        // the CDN keep it for a year and skip even the 304 revalidations.
+        source: "/catalog/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
         source: "/(.*)",
         headers: [
           // Stops browsers MIME-sniffing responses into executable types.

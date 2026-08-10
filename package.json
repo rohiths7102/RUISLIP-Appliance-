@@ -40,6 +40,8 @@
     "demo:reset": "node scripts/catalog/reset-demo-data.mjs --yes-wipe-enquiries",
     "blob:sync:dry": "node scripts/blob/upload-images.mjs --dry-run",
     "blob:sync": "node scripts/blob/upload-images.mjs",
+    "blob:repoint:dry": "node scripts/blob/repoint-static.mjs --dry-run",
+    "blob:repoint": "node scripts/blob/repoint-static.mjs",
     "pg:deploy": "node scripts/db/engine.mjs deploy"
   },
   "dependencies": {

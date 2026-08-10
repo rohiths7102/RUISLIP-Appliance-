@@ -10,6 +10,10 @@ dist
 data/enquiries.jsonl
 
 # 2.5GB of extracted catalogue imagery; regenerate from the catalog zips.
+# EXCEPTION: the ~2k images the live DB actually references ARE tracked (force-added)
+# so the deployment serves them itself — the Vercel Blob store they used to live on
+# was suspended (free-tier usage) and 403'd every product photo. To move back to
+# Blob later: npm run blob:sync (inverse: npm run blob:repoint).
 public/catalog/
 
 # build:check output (see scripts/build-check.mjs)

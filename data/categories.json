@@ -12,7 +12,7 @@
     ],
     "description": "Washing machines, washer dryers and tumble dryers from the brands we stock and service.",
     "productCount": 113,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/WT1210WWF/01.jpg",
+    "image": "/catalog/ruislip/WT1210WWF/01.jpg",
     "seoTitle": "Laundry",
     "seoDescription": "Washing machines, washer dryers and tumble dryers from the brands we stock and service."
   },
@@ -25,7 +25,7 @@
     "children": [],
     "description": "",
     "productCount": 57,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/WEE385WCS/01.jpg",
+    "image": "/catalog/ruislip/WEE385WCS/01.jpg",
     "seoTitle": "Washing Machines",
     "seoDescription": "Washing Machines at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -38,7 +38,7 @@
     "children": [],
     "description": "",
     "productCount": 25,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/WT1210WWF/01.jpg",
+    "image": "/catalog/ruislip/WT1210WWF/01.jpg",
     "seoTitle": "Washer Dryers",
     "seoDescription": "Washer Dryers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -51,7 +51,7 @@
     "children": [],
     "description": "",
     "productCount": 31,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/DV90F09F4SU1/01.jpg",
+    "image": "/catalog/ruislip/DV90F09F4SU1/01.jpg",
     "seoTitle": "Tumble Dryers",
     "seoDescription": "Tumble Dryers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -70,7 +70,7 @@
     ],
     "description": "Fridge freezers, American-style, integrated fridges, freezers and wine coolers.",
     "productCount": 126,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/KFF96PIEP/01.webp",
+    "image": "/catalog/bosch/KFF96PIEP/01.webp",
     "seoTitle": "Refrigeration",
     "seoDescription": "Fridge freezers, American-style, integrated fridges, freezers and wine coolers."
   },
@@ -83,7 +83,7 @@
     "children": [],
     "description": "",
     "productCount": 66,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/KFN7744C/01.jpg",
+    "image": "/catalog/ruislip/KFN7744C/01.jpg",
     "seoTitle": "Fridge Freezers",
     "seoDescription": "Fridge Freezers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -96,7 +96,7 @@
     "children": [],
     "description": "",
     "productCount": 20,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/KFF96PIEP/01.webp",
+    "image": "/catalog/bosch/KFF96PIEP/01.webp",
     "seoTitle": "American Style Fridge Freezers",
     "seoDescription": "American Style Fridge Freezers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -109,7 +109,7 @@
     "children": [],
     "description": "",
     "productCount": 19,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/K7747C/01.jpg",
+    "image": "/catalog/ruislip/K7747C/01.jpg",
     "seoTitle": "Fridges",
     "seoDescription": "Fridges at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -122,7 +122,7 @@
     "children": [],
     "description": "",
     "productCount": 16,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/GBBW322CPY/01.jpg",
+    "image": "/catalog/ruislip/GBBW322CPY/01.jpg",
     "seoTitle": "Freezers",
     "seoDescription": "Freezers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -135,7 +135,7 @@
     "children": [],
     "description": "",
     "productCount": 5,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/KUW21AHG0G/01.webp",
+    "image": "/catalog/bosch/KUW21AHG0G/01.webp",
     "seoTitle": "Wine Coolers",
     "seoDescription": "Wine Coolers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -151,7 +151,7 @@
     ],
     "description": "Integrated and freestanding dishwashers, fitted by our own team.",
     "productCount": 60,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/G5851SCVi/01.jpg",
+    "image": "/catalog/ruislip/G5851SCVi/01.jpg",
     "seoTitle": "Dishwashers",
     "seoDescription": "Integrated and freestanding dishwashers, fitted by our own team."
   },
@@ -164,7 +164,7 @@
     "children": [],
     "description": "",
     "productCount": 35,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/G5851SCVi/01.jpg",
+    "image": "/catalog/ruislip/G5851SCVi/01.jpg",
     "seoTitle": "Integrated Dishwashers",
     "seoDescription": "Integrated Dishwashers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -177,7 +177,7 @@
     "children": [],
     "description": "",
     "productCount": 25,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/DB273TX/01.jpg",
+    "image": "/catalog/ruislip/DB273TX/01.jpg",
     "seoTitle": "Freestanding Dishwashers",
     "seoDescription": "Freestanding Dishwashers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -197,7 +197,7 @@
     ],
     "description": "Ovens, hobs, cookers, microwaves, extractor hoods and warming drawers.",
     "productCount": 224,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/V68FUX4L0/01.webp",
+    "image": "/catalog/neff/V68FUX4L0/01.webp",
     "seoTitle": "Cooking",
     "seoDescription": "Ovens, hobs, cookers, microwaves, extractor hoods and warming drawers."
   },
@@ -210,7 +210,7 @@
     "children": [],
     "description": "",
     "productCount": 47,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/C24MT73G0B/01.jpg",
+    "image": "/catalog/ruislip/C24MT73G0B/01.jpg",
     "seoTitle": "Ovens",
     "seoDescription": "Ovens at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -223,7 +223,7 @@
     "children": [],
     "description": "",
     "productCount": 62,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/V68FUX4L0/01.webp",
+    "image": "/catalog/neff/V68FUX4L0/01.webp",
     "seoTitle": "Hobs",
     "seoDescription": "Hobs at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -236,7 +236,7 @@
     "children": [],
     "description": "",
     "productCount": 8,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/HDG6GDCWX/01.jpg",
+    "image": "/catalog/ruislip/HDG6GDCWX/01.jpg",
     "seoTitle": "Cookers",
     "seoDescription": "Cookers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -249,7 +249,7 @@
     "children": [],
     "description": "",
     "productCount": 40,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/C24MS71G0B/01.webp",
+    "image": "/catalog/neff/C24MS71G0B/01.webp",
     "seoTitle": "Microwaves",
     "seoDescription": "Microwaves at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -262,7 +262,7 @@
     "children": [],
     "description": "",
     "productCount": 56,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/HIXI84700UP/01.png",
+    "image": "/catalog/ruislip/HIXI84700UP/01.png",
     "seoTitle": "Cooker Hoods & Extractors",
     "seoDescription": "Cooker Hoods & Extractors at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -275,7 +275,7 @@
     "children": [],
     "description": "",
     "productCount": 11,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/CR329X/01.jpg",
+    "image": "/catalog/ruislip/CR329X/01.jpg",
     "seoTitle": "Warming Drawers",
     "seoDescription": "Warming Drawers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -293,7 +293,7 @@
     ],
     "description": "Bean-to-cup, filter, pod machines and grinders.",
     "productCount": 20,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/CEG7304X/01.jpg",
+    "image": "/catalog/ruislip/CEG7304X/01.jpg",
     "seoTitle": "Coffee Machines",
     "seoDescription": "Bean-to-cup, filter, pod machines and grinders.",
     "priceOnApplication": true
@@ -307,7 +307,7 @@
     "children": [],
     "description": "",
     "productCount": 3,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/CEG7304X/01.jpg",
+    "image": "/catalog/ruislip/CEG7304X/01.jpg",
     "seoTitle": "Bean to Cup & Espresso",
     "seoDescription": "Bean to Cup & Espresso at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -320,7 +320,7 @@
     "children": [],
     "description": "",
     "productCount": 15,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/TAS6502GB/01.webp",
+    "image": "/catalog/bosch/TAS6502GB/01.webp",
     "seoTitle": "Tassimo & Pod Machines",
     "seoDescription": "Tassimo & Pod Machines at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -333,7 +333,7 @@
     "children": [],
     "description": "",
     "productCount": 1,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/TKA2M113GB/01.webp",
+    "image": "/catalog/bosch/TKA2M113GB/01.webp",
     "seoTitle": "Filter Coffee Machines",
     "seoDescription": "Filter Coffee Machines at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -346,7 +346,7 @@
     "children": [],
     "description": "",
     "productCount": 1,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/MKM6003NGB/01.webp",
+    "image": "/catalog/bosch/MKM6003NGB/01.webp",
     "seoTitle": "Coffee Grinders",
     "seoDescription": "Coffee Grinders at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -364,7 +364,7 @@
     ],
     "description": "Vacuum cleaners, cordless sticks, robots and hard floor cleaners.",
     "productCount": 34,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/BCRDW3BX/01.webp",
+    "image": "/catalog/bosch/BCRDW3BX/01.webp",
     "seoTitle": "Floorcare",
     "seoDescription": "Vacuum cleaners, cordless sticks, robots and hard floor cleaners."
   },
@@ -377,7 +377,7 @@
     "children": [],
     "description": "",
     "productCount": 10,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/GUARDM1C_DFLEX/01.jpg",
+    "image": "/catalog/ruislip/GUARDM1C_DFLEX/01.jpg",
     "seoTitle": "Vacuum Cleaners",
     "seoDescription": "Vacuum Cleaners at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -390,7 +390,7 @@
     "children": [],
     "description": "",
     "productCount": 20,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/BCS1051GB/01.webp",
+    "image": "/catalog/bosch/BCS1051GB/01.webp",
     "seoTitle": "Cordless Vacuums",
     "seoDescription": "Cordless Vacuums at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -403,7 +403,7 @@
     "children": [],
     "description": "",
     "productCount": 2,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/BCRDW3BX/01.webp",
+    "image": "/catalog/bosch/BCRDW3BX/01.webp",
     "seoTitle": "Robot Vacuums",
     "seoDescription": "Robot Vacuums at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -416,7 +416,7 @@
     "children": [],
     "description": "",
     "productCount": 2,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/WD210UK/01.jpg",
+    "image": "/catalog/ruislip/WD210UK/01.jpg",
     "seoTitle": "Hard Floor Cleaners",
     "seoDescription": "Hard Floor Cleaners at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -438,7 +438,7 @@
     ],
     "description": "Kettles, toasters, blenders, air fryers, grills and everything on the worktop.",
     "productCount": 151,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/PG301UK/01.jpg",
+    "image": "/catalog/ruislip/PG301UK/01.jpg",
     "seoTitle": "Small Appliances",
     "seoDescription": "Kettles, toasters, blenders, air fryers, grills and everything on the worktop."
   },
@@ -451,7 +451,7 @@
     "children": [],
     "description": "",
     "productCount": 25,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/TWK7201GB/01.webp",
+    "image": "/catalog/bosch/TWK7201GB/01.webp",
     "seoTitle": "Kettles",
     "seoDescription": "Kettles at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -464,7 +464,7 @@
     "children": [],
     "description": "",
     "productCount": 30,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/ST202UK/01.jpg",
+    "image": "/catalog/ruislip/ST202UK/01.jpg",
     "seoTitle": "Toasters",
     "seoDescription": "Toasters at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -477,7 +477,7 @@
     "children": [],
     "description": "",
     "productCount": 25,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/FS301UK/01.jpg",
+    "image": "/catalog/ruislip/FS301UK/01.jpg",
     "seoTitle": "Blenders",
     "seoDescription": "Blenders at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -490,7 +490,7 @@
     "children": [],
     "description": "",
     "productCount": 14,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/MUMS6ZM00G/01.webp",
+    "image": "/catalog/bosch/MUMS6ZM00G/01.webp",
     "seoTitle": "Food Prep & Kitchen Machines",
     "seoDescription": "Food Prep & Kitchen Machines at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -503,7 +503,7 @@
     "children": [],
     "description": "",
     "productCount": 14,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/SFP700UK/01.jpg",
+    "image": "/catalog/ruislip/SFP700UK/01.jpg",
     "seoTitle": "Air Fryers & Multi Cookers",
     "seoDescription": "Air Fryers & Multi Cookers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -516,7 +516,7 @@
     "children": [],
     "description": "",
     "productCount": 3,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/PG301UK/01.jpg",
+    "image": "/catalog/ruislip/PG301UK/01.jpg",
     "seoTitle": "Grills & BBQ",
     "seoDescription": "Grills & BBQ at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -529,7 +529,7 @@
     "children": [],
     "description": "",
     "productCount": 10,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/FB265EUUKGY/01.jpg",
+    "image": "/catalog/ruislip/FB265EUUKGY/01.jpg",
     "seoTitle": "Cool Boxes",
     "seoDescription": "Cool Boxes at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -542,7 +542,7 @@
     "children": [],
     "description": "",
     "productCount": 30,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17007157/01.webp",
+    "image": "/catalog/bosch/17007157/01.webp",
     "seoTitle": "Cookware",
     "seoDescription": "Cookware at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -559,7 +559,7 @@
     ],
     "description": "Televisions, soundbars and players.",
     "productCount": 36,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/K98XR55BP.UKA/01.jpg",
+    "image": "/catalog/ruislip/K98XR55BP.UKA/01.jpg",
     "seoTitle": "TV & Audio",
     "seoDescription": "Televisions, soundbars and players."
   },
@@ -572,7 +572,7 @@
     "children": [],
     "description": "",
     "productCount": 33,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/K98XR55BP.UKA/01.jpg",
+    "image": "/catalog/ruislip/K98XR55BP.UKA/01.jpg",
     "seoTitle": "Televisions",
     "seoDescription": "Televisions at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -585,7 +585,7 @@
     "children": [],
     "description": "",
     "productCount": 2,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/ruislip/HTA9000.CEK/01.jpg",
+    "image": "/catalog/ruislip/HTA9000.CEK/01.jpg",
     "seoTitle": "Soundbars & Speakers",
     "seoDescription": "Soundbars & Speakers at Euronics Ruislip. Call 0208 864 5763 to confirm availability."
   },
@@ -624,7 +624,7 @@
     ],
     "description": "Genuine accessories, filters, cleaning products and spare parts to order.",
     "productCount": 813,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17004034/01.webp",
+    "image": "/catalog/bosch/17004034/01.webp",
     "seoTitle": "Accessories & Spare Parts",
     "seoDescription": "Genuine accessories, filters, cleaning products and spare parts to order.",
     "priceOnApplication": true
@@ -638,7 +638,7 @@
     "children": [],
     "description": "",
     "productCount": 136,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/00577538/01.webp",
+    "image": "/catalog/neff/00577538/01.webp",
     "seoTitle": "Oven & Cooking Accessories",
     "seoDescription": "Oven & Cooking Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -652,7 +652,7 @@
     "children": [],
     "description": "",
     "productCount": 18,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17007160/01.webp",
+    "image": "/catalog/bosch/17007160/01.webp",
     "seoTitle": "Hob Accessories",
     "seoDescription": "Hob Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -666,7 +666,7 @@
     "children": [],
     "description": "",
     "productCount": 223,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17004034/01.webp",
+    "image": "/catalog/bosch/17004034/01.webp",
     "seoTitle": "Hood Filters & Accessories",
     "seoDescription": "Hood Filters & Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -680,7 +680,7 @@
     "children": [],
     "description": "",
     "productCount": 26,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/WMZMPF10/01.webp",
+    "image": "/catalog/bosch/WMZMPF10/01.webp",
     "seoTitle": "Laundry Accessories",
     "seoDescription": "Laundry Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -694,7 +694,7 @@
     "children": [],
     "description": "",
     "productCount": 31,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00711335/01.webp",
+    "image": "/catalog/bosch/00711335/01.webp",
     "seoTitle": "Refrigeration Accessories",
     "seoDescription": "Refrigeration Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -708,7 +708,7 @@
     "children": [],
     "description": "",
     "productCount": 17,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/00681729/01.webp",
+    "image": "/catalog/neff/00681729/01.webp",
     "seoTitle": "Dishwasher Accessories",
     "seoDescription": "Dishwasher Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -722,7 +722,7 @@
     "children": [],
     "description": "",
     "productCount": 63,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17006570/01.webp",
+    "image": "/catalog/bosch/17006570/01.webp",
     "seoTitle": "Vacuum Bags & Accessories",
     "seoDescription": "Vacuum Bags & Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -736,7 +736,7 @@
     "children": [],
     "description": "",
     "productCount": 19,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00717187/01.webp",
+    "image": "/catalog/bosch/00717187/01.webp",
     "seoTitle": "Coffee Machine Accessories",
     "seoDescription": "Coffee Machine Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -750,7 +750,7 @@
     "children": [],
     "description": "",
     "productCount": 47,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00572476/01.webp",
+    "image": "/catalog/bosch/00572476/01.webp",
     "seoTitle": "Kitchen Machine Accessories",
     "seoDescription": "Kitchen Machine Accessories at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -764,7 +764,7 @@
     "children": [],
     "description": "",
     "productCount": 56,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/17001251/01.webp",
+    "image": "/catalog/bosch/17001251/01.webp",
     "seoTitle": "Kitchen Utensils",
     "seoDescription": "Kitchen Utensils at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -778,7 +778,7 @@
     "children": [],
     "description": "",
     "productCount": 70,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/bosch/00312485/01.webp",
+    "image": "/catalog/bosch/00312485/01.webp",
     "seoTitle": "Cleaning & Care Products",
     "seoDescription": "Cleaning & Care Products at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
@@ -792,7 +792,7 @@
     "children": [],
     "description": "",
     "productCount": 107,
-    "image": "https://ottod2keltk3fotp.public.blob.vercel-storage.com/catalog/neff/00774442/01.webp",
+    "image": "/catalog/neff/00774442/01.webp",
     "seoTitle": "Spare Parts",
     "seoDescription": "Spare Parts at Euronics Ruislip. Call 0208 864 5763 to confirm availability.",
     "priceOnApplication": true
