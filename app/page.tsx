@@ -1,27 +1,18 @@
 import Link from "next/link";
 import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
-import { topCategories, slugOf, toCardItem, poaNamesFrom } from "@/lib/select";
+import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
 import { telHref } from "@/lib/format";
-import HeroVideo from "@/components/HeroVideo";
 import Reveal from "@/components/Reveal";
 import RotatingWord from "@/components/RotatingWord";
 import CountUp from "@/components/CountUp";
 import ShowroomReel from "@/components/ShowroomReel";
-import ProductSlideshow, { type Slide } from "@/components/ProductSlideshow";
+import DiscoverPanel from "@/components/DiscoverPanel";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
 export const revalidate = 300;
-
-// A real background video ships with the site: a 4K (3840×2160) cinematic loop
-// rendered from the brand hero frame, plus a 1080p variant for small screens.
-// To swap in a different brand film, set NEXT_PUBLIC_HERO_VIDEO (or replace the
-// files in public/hero/) — nothing else changes.
-const HERO_VIDEO = process.env.NEXT_PUBLIC_HERO_VIDEO || "/hero/hero.mp4";
-const HERO_VIDEO_SMALL = "/hero/hero-1080.mp4";
-const HERO_POSTER = "/hero/hero-poster-4k.jpg";
 
 const STEPS = [
   ["01", "Choose your appliance", "Browse the range and find the model that fits your kitchen."],
@@ -74,60 +65,54 @@ export default async function Home() {
     products.filter((p) => p.image && p.priceNow !== null && !featured.includes(p)).slice(0, 20)
   );
 
-  // The Amazon-style slideshow uses the same records the product pages render,
-  // so price / code / link are in sync by construction.
-  const slides: Slide[] = featured.map((p) => ({
-    slug: slugOf(p),
-    brand: p.brand,
-    title: p.title,
-    category: p.category,
-    productCode: p.productCode,
-    image: p.image,
-    priceNow: p.priceNow,
-    priceWas: p.priceWas,
-    saving: p.saving,
+  // Department -> sub-category names for the finder; one vocabulary with the
+  // category pages and the /products browser.
+  const departments = cats.map((c) => ({
+    name: c.name,
+    subs: childCategories(categories, c.id).map((s) => s.name),
   }));
 
   return (
     <>
-      {/* ------- HERO — 4K video behind, product slideshow in front ------- */}
-      <section className="relative flex min-h-[92vh] flex-col overflow-hidden bg-navy-3">
-        <HeroVideo videoSrc={HERO_VIDEO} videoSrcSmall={HERO_VIDEO_SMALL} poster={HERO_POSTER} />
-        <div className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(4,16,31,.82)_0%,rgba(4,16,31,.45)_38%,rgba(4,16,31,.72)_100%)]" />
-        <div className="absolute inset-x-0 top-0 z-[2] h-px bg-[linear-gradient(90deg,transparent,rgba(63,157,240,.6),transparent)]" />
+      {/* ------- HERO — one solid royal band, the finder front and centre.
+                 The layout the owner chose leads with "help me find it",
+                 not with a film. ------- */}
+      <section className="bg-blue">
+        <div className="container-x flex flex-col gap-7 py-14 lg:py-[72px]">
+          <div className="reveal max-w-[860px]">
+            <p className="mb-4 inline-flex items-center gap-2 border border-white/20 px-3.5 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.22em] text-sky">
+              <span className="h-1.5 w-1.5 rounded-full bg-cta" /> Euronics Ruislip · South Ruislip · since 1977
+            </p>
+            <h1 className="font-display text-[clamp(30px,4vw,50px)] leading-[1.08] text-white">
+              Big-brand <RotatingWord words={HERO_WORDS} fallback="appliances" className="text-sky" />,{" "}
+              <em className="shimmer not-italic italic">honest local prices.</em>
+            </h1>
+            <p className="mt-4 max-w-[560px] text-[15.5px] leading-relaxed text-white/80">
+              Browse {products.length.toLocaleString("en-GB")} appliances, check the price and product code,
+              then call us — we confirm stock, delivery and fitting in one conversation.
+            </p>
+          </div>
 
-        <div className="container-x relative z-[3] flex flex-1 flex-col justify-center gap-8 py-12">
-          {/* compact headline row */}
-          <div className="reveal flex flex-wrap items-end justify-between gap-6">
-            <div>
-              <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.22em] text-sky backdrop-blur-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-sky" /> Euronics Ruislip · South Ruislip · since 1977
-              </p>
-              <h1 className="font-display text-[clamp(30px,4vw,52px)] font-normal leading-[1.05] tracking-[-0.015em] text-[#f4f9ff]">
-                Big-brand <RotatingWord words={HERO_WORDS} fallback="appliances" className="text-sky" />,{" "}
-                <em className="shimmer not-italic font-normal italic">honest local prices.</em>
-              </h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href="/products"
-                className="group inline-flex items-center gap-2 rounded-full bg-[linear-gradient(118deg,#3f9df0_0%,#1173d4_46%,#0b4a8d_100%)] px-7 py-[14px] text-sm font-bold tracking-[0.03em] text-white shadow-[0_16px_42px_-14px_rgba(17,115,212,.7)] transition-[transform,box-shadow] duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] hover:-translate-y-0.5 hover:shadow-[0_22px_54px_-12px_rgba(17,115,212,.85)] active:translate-y-0">
-                Browse {products.length.toLocaleString("en-GB")} appliances
-                <ArrowRight size={16} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] group-hover:translate-x-[3px]" />
-              </Link>
-              <a href={telHref(business.phone)}
-                className="inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/5 px-6 py-[14px] text-sm font-semibold text-paper backdrop-blur-sm transition-colors hover:border-sky hover:text-sky">
-                <Phone size={16} /> Call {business.phone}
-              </a>
-            </div>
+          <div className="reveal">
+            <DiscoverPanel departments={departments} />
+          </div>
+
+          <div className="reveal flex flex-wrap items-center gap-3">
+            <a href={telHref(business.phone)}
+              className="inline-flex items-center gap-2.5 bg-cta px-6 py-[13px] text-sm font-bold text-white transition-colors hover:bg-cta-deep">
+              <Phone size={16} /> Call {business.phone}
+            </a>
+            <Link href="/products"
+              className="group inline-flex items-center gap-2 border border-white/30 px-6 py-[13px] text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white hover:text-blue">
+              Browse everything
+              <ArrowRight size={16} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] group-hover:translate-x-[3px]" />
+            </Link>
           </div>
 
           {/* honest inline coverage check — replaces the old auto-opening modal */}
           <div className="reveal">
             <PostcodeCheck phone={business.phone} />
           </div>
-
-          {/* the slideshow, front and centre over the video — calm 6s cadence */}
-          <ProductSlideshow slides={slides} intervalMs={6000} className="reveal" />
         </div>
       </section>
 
@@ -237,15 +222,19 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ---------------- MANIFESTO ---------------- */}
-      <section className="mt-16 bg-navy px-6 py-28">
+      {/* ---------------- HERITAGE — the family story, like the reference site ---------------- */}
+      <section className="mt-16 bg-blue px-6 py-24">
         <div className="mx-auto max-w-[1000px] text-center">
           <p className="mb-8 font-mono text-[11px] uppercase tracking-[0.24em] text-sky">
-            — Why people keep coming back
+            — Family run since 1977
           </p>
-          <p className="font-display text-[clamp(28px,4.3vw,56px)] font-normal leading-[1.24] tracking-[-0.01em] text-paper">
-            Since 1977 we have sold appliances the honest way. Real advice from people you can call,
-            fair prices, and proper aftercare long after the box has gone.
+          <p className="font-display text-[clamp(26px,3.8vw,48px)] leading-[1.24] text-white">
+            Jyotsna Electrical has sold appliances in South Ruislip since 1977 — a family-run
+            member of Euronics, with our own vans and people you can actually call.
+          </p>
+          <p className="mx-auto mt-7 max-w-[640px] text-[15.5px] leading-relaxed text-white/75">
+            Real advice, fair prices, and proper aftercare long after the box has gone.
+            That is the whole business model, and it has not changed in nearly fifty years.
           </p>
         </div>
       </section>
@@ -325,7 +314,7 @@ export default async function Home() {
               you, what it costs and when we can come.
             </p>
             <a href={telHref(business.phone)}
-              className="inline-flex items-center gap-2 rounded-sm bg-blue px-6 py-4 text-[15px] font-bold text-navy hover:bg-sky">
+              className="inline-flex items-center gap-2 bg-cta px-6 py-4 text-[15px] font-bold text-white transition-colors hover:bg-cta-deep">
               <Phone size={17} /> Call to check coverage
             </a>
           </div>
@@ -342,23 +331,22 @@ export default async function Home() {
       </section>
 
       {/* ---------------- CONTACT CTA ---------------- */}
-      <section className="relative overflow-hidden bg-navy">
-        <div className="absolute inset-0 bg-[radial-gradient(80%_120%_at_50%_0%,rgba(63,157,240,.14),transparent_60%)]" />
-        <div className="container-x relative z-[2] mx-auto max-w-[900px] py-24 text-center">
+      <section className="bg-navy">
+        <div className="container-x mx-auto max-w-[900px] py-24 text-center">
           <p className="mb-5 font-mono text-[11px] uppercase tracking-[0.24em] text-sky">
             — Found something you like?
           </p>
-          <h2 className="mb-6 font-display text-[54px] font-normal leading-[1.06] text-paper">
+          <h2 className="mb-6 font-display text-[clamp(34px,4.5vw,54px)] leading-[1.06] text-paper">
             Call to confirm availability
             <br />
             before you visit.
           </h2>
-          <p className="mx-auto mb-9 max-w-[560px] text-[17px] leading-relaxed text-[#b6cce4]">
+          <p className="mx-auto mb-9 max-w-[560px] text-[17px] leading-relaxed text-[#b9c4ea]">
             Quote the product code and we&apos;ll check live stock, give you the best price and book in
             delivery or installation — all in one call.
           </p>
           <a href={telHref(business.phone)}
-            className="group inline-flex items-center gap-3 rounded-full bg-[linear-gradient(118deg,#3f9df0_0%,#1173d4_46%,#0b4a8d_100%)] px-10 py-5 text-[17px] font-bold text-white shadow-[0_18px_44px_-14px_rgba(11,74,141,.55)] transition-[transform,box-shadow] duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] hover:-translate-y-0.5 hover:shadow-[0_24px_58px_-12px_rgba(17,115,212,.7)] active:translate-y-0">
+            className="group inline-flex items-center gap-3 bg-cta px-10 py-5 text-[17px] font-bold text-white transition-colors hover:bg-cta-deep">
             <Phone size={19} /> {business.phone}
             <ArrowRight size={18} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] group-hover:translate-x-[3px]" />
           </a>

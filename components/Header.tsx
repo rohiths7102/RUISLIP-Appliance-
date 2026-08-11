@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Phone, Menu, X, Star } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Phone, Menu, X, Star, ChevronDown } from "lucide-react";
 import { telHref } from "@/lib/format";
 import OpenNow from "@/components/OpenNow";
 import SearchBar from "@/components/SearchBar";
+import MegaMenu, { type NavData } from "@/components/MegaMenu";
 import type { Business } from "@/lib/types";
 
 /**
@@ -28,13 +29,20 @@ const UTILITY = [
   { href: "/contact", label: "Contact" },
 ];
 
-export default function Header({ business }: { business: Business }) {
+export default function Header({ business, nav }: { business: Business; nav?: NavData }) {
   const [open, setOpen] = useState(false);
+  // Which department's fly-out is showing. Opens on hover OR keyboard focus;
+  // closes on a short delay so the diagonal mouse path from trigger to panel
+  // doesn't shut it mid-travel.
+  const [openDept, setOpenDept] = useState<string | null>(null);
+  const closeT = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showDept = (id: string | null) => { if (closeT.current) clearTimeout(closeT.current); setOpenDept(id); };
+  const scheduleClose = () => { if (closeT.current) clearTimeout(closeT.current); closeT.current = setTimeout(() => setOpenDept(null), 140); };
   const pathname = usePathname();
   // Any navigation closes the mobile panel, not just the department links: the
   // search box inside the panel routes on its own, and on a phone that left the
   // full menu covering the product the customer had just tapped.
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => { setOpen(false); setOpenDept(null); }, [pathname]);
   return (
     <header className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
       {/* ---- white bar: name · member mark · search · phone ---- */}
@@ -62,8 +70,9 @@ export default function Header({ business }: { business: Business }) {
 
           <div className="ml-auto flex shrink-0 items-center gap-3">
             <div className="flex flex-col items-end gap-1">
-              {/* min-h-11 = 44px: the primary action on a phone-first shop. */}
-              <a href={telHref(business.phone)} className="flex min-h-11 items-center gap-2 rounded-full bg-blue px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-blue-deep">
+              {/* min-h-11 = 44px: the primary action on a phone-first shop.
+                  Green is the action colour in this design — call is the action. */}
+              <a href={telHref(business.phone)} className="flex min-h-11 items-center gap-2 rounded-sm bg-cta px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-cta-deep">
                 <Phone size={15} strokeWidth={2.2} />
                 <span className="hidden sm:inline">{business.phone}</span>
               </a>
@@ -81,17 +90,28 @@ export default function Header({ business }: { business: Business }) {
         </div>
       </div>
 
-      {/* ---- blue department nav — the "same colours" row, with the site's
-              signature gradient (blue -> blue-deep keeps white text AA) and an
-              eased sliding underline; the current section stays underlined ---- */}
-      <nav aria-label="Departments" className="hidden bg-[linear-gradient(118deg,#1173d4_0%,#0b4a8d_100%)] lg:block">
+      {/* ---- department nav — one solid royal-blue band, flat like the
+              reference the owner chose; an eased sliding underline marks the
+              current section ---- */}
+      {/* The fly-out is a sibling of the scrolling link row, not a child — the
+          row's overflow-x-auto would clip an absolutely-positioned panel. */}
+      <nav aria-label="Departments" className="relative hidden bg-blue lg:block"
+        onMouseLeave={scheduleClose}
+        onKeyDown={(e) => { if (e.key === "Escape") showDept(null); }}>
         <div className="container-x flex items-center gap-6 overflow-x-auto whitespace-nowrap">
           {DEPARTMENTS.map(([slug, label]) => {
             const current = pathname === `/categories/${slug}`;
+            const dept = nav?.departments.find((d) => d.id === slug);
+            const hasPanel = !!dept && dept.subs.length > 0;
+            const openNow = openDept === slug && hasPanel;
             return (
               <Link key={slug} href={`/categories/${slug}`} aria-current={current ? "page" : undefined}
-                className={`relative py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
+                aria-expanded={hasPanel ? openNow : undefined}
+                onMouseEnter={() => (hasPanel ? showDept(slug) : scheduleClose())}
+                onFocus={() => (hasPanel ? showDept(slug) : setOpenDept(null))}
+                className={`relative flex items-center gap-1 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current || openNow ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
                 {label}
+                {hasPanel && <ChevronDown size={12} strokeWidth={2.4} className={`transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${openNow ? "rotate-180" : ""}`} aria-hidden />}
               </Link>
             );
           })}
@@ -106,6 +126,15 @@ export default function Header({ business }: { business: Business }) {
             );
           })}
         </div>
+        {openDept && nav && (() => {
+          const dept = nav.departments.find((d) => d.id === openDept);
+          if (!dept || !dept.subs.length) return null;
+          return (
+            <div onMouseEnter={() => showDept(openDept)} onMouseLeave={scheduleClose}>
+              <MegaMenu dept={dept} brands={nav.brands} />
+            </div>
+          );
+        })()}
       </nav>
 
       {/* ---- mobile panel: search + everything ---- */}

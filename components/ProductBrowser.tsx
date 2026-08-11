@@ -22,24 +22,31 @@ const PER_PAGE = 24;
  * The catalogue is ~1,600 products, so results are always paginated — rendering
  * every card at once locks up the browser on mobile.
  */
+/** Budget steps for the "max price" filter — same set the homepage finder offers. */
+export const BUDGETS = [250, 500, 750, 1000, 1500, 2000] as const;
+
 export default function ProductBrowser({
   items,
   brands,
   categories = [],
   initialCategory = "all",
   initialQuery = "",
+  initialMax = 0,
 }: {
   items: ProductCardItem[];
   brands: string[];
   categories?: string[];
   initialCategory?: string;
   initialQuery?: string;
+  /** 0 = no cap. Call-for-price items carry no number, so a cap hides them. */
+  initialMax?: number;
 }) {
   const [q, setQ] = useState(initialQuery);
   const [brand, setBrand] = useState("all");
   const [cat, setCat] = useState(initialCategory);
   const [avail, setAvail] = useState("all");
   const [energy, setEnergy] = useState("all");
+  const [max, setMax] = useState(initialMax);
   const [sort, setSort] = useState("featured");
   const [page, setPage] = useState(1);
 
@@ -59,6 +66,7 @@ export default function ProductBrowser({
       if (cat !== "all" && p.category !== cat && p.subcategory !== cat) return false;
       if (avail !== "all" && p.availabilityNormalised !== avail) return false;
       if (energy !== "all" && (!p.energyClass || energyLetter(p.energyClass) !== energy)) return false;
+      if (max > 0 && (p.priceNow === null || p.priceNow > max)) return false;
       return true;
     });
     if (sort === "price-asc") list = [...list].sort((a, b) => (a.priceNow ?? 1e9) - (b.priceNow ?? 1e9));
@@ -67,15 +75,20 @@ export default function ProductBrowser({
     // Featured = best-merchandised first: photographed, priced, energy-labelled.
     else list = [...list].sort((a, b) => Number(!!b.image) - Number(!!a.image) || Number(b.priceNow !== null) - Number(a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
     return list;
-  }, [items, q, brand, cat, avail, energy, sort]);
+  }, [items, q, brand, cat, avail, energy, max, sort]);
 
   // Any filter change invalidates the current page number.
-  useEffect(() => { setPage(1); }, [q, brand, cat, avail, energy, sort]);
+  useEffect(() => { setPage(1); }, [q, brand, cat, avail, energy, max, sort]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const current = Math.min(page, pages);
   const shown = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
-  const dirty = q !== "" || brand !== "all" || cat !== initialCategory || avail !== "all" || energy !== "all";
+  const dirty = q !== "" || brand !== "all" || cat !== initialCategory || avail !== "all" || energy !== "all" || max !== initialMax;
+
+  // A category handed in from the homepage finder may be a sub-category name
+  // that isn't in the department list — it still has to appear as the selected
+  // option rather than silently reading "All categories".
+  const catOptions = cat !== "all" && !categories.includes(cat) ? [cat, ...categories] : categories;
 
   const select = "rounded-sm border border-ink/15 bg-white px-3 py-2.5 text-[13px] outline-none focus:border-blue";
 
@@ -96,12 +109,16 @@ export default function ProductBrowser({
           {categories.length > 0 && (
             <select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category" className={select}>
               <option value="all">All categories</option>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              {catOptions.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
           <select value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Brand" className={select}>
             <option value="all">All brands</option>
             {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <select value={String(max)} onChange={(e) => setMax(Number(e.target.value))} aria-label="Budget" className={select}>
+            <option value="0">Any budget</option>
+            {BUDGETS.map((b) => <option key={b} value={b}>Under £{b.toLocaleString("en-GB")}</option>)}
           </select>
           <select value={avail} onChange={(e) => setAvail(e.target.value)} aria-label="Availability" className={select}>
             <option value="all">Any availability</option>
@@ -131,7 +148,7 @@ export default function ProductBrowser({
           )}
           {dirty && (
             <button
-              onClick={() => { setQ(""); setBrand("all"); setCat(initialCategory); setAvail("all"); setEnergy("all"); }}
+              onClick={() => { setQ(""); setBrand("all"); setCat(initialCategory); setAvail("all"); setEnergy("all"); setMax(initialMax); }}
               className="inline-flex items-center gap-1.5 rounded-sm px-3 py-2.5 text-[12px] font-semibold text-blue-deep hover:underline"
             >
               <X size={13} /> Clear filters

@@ -4,34 +4,48 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Euronics Ruislip — premium white + blue.
-   Deep navy + crisp electric blue accent on a clean white/paper
-   ground. Cormorant Garamond (display), Hanken Grotesk (UI),
-   Space Mono (product codes / eyebrows).
+   Euronics Ruislip — the owner's chosen direction (Aug 2026):
+   deep royal blue + green action colour on a white ground with
+   light blue-washed sections, square corners, flat tiles, and
+   clean semibold sans headings. Simple to look at, simple to
+   navigate. Hanken Grotesk everywhere; Space Mono for codes.
    ============================================================ */
 @theme {
   --font-sans: var(--font-hanken), system-ui, sans-serif;
-  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-display: var(--font-hanken), system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, monospace;
 
-  /* dark ground (hero, header, footer) */
-  --color-navy: #071a33;
-  --color-navy-2: #0d2949;
-  --color-navy-3: #04101f;
+  /* dark ground (hero, header, footer) — royal-blue family */
+  --color-navy: #081538;
+  --color-navy-2: #0e2166;
+  --color-navy-3: #050d24;
 
   /* light ground */
   --color-paper: #ffffff;
-  --color-paper-2: #eef3f9;
-  --color-card: #f8fbff;
+  --color-paper-2: #eaeef7;
+  --color-card: #f5f7fc;
 
-  /* blue accent scale */
-  --color-blue: #1173d4;       /* primary */
-  --color-sky: #3f9df0;        /* bright */
-  --color-blue-deep: #0b4a8d;  /* deep */
+  /* royal blue scale */
+  --color-blue: #0a2788;       /* primary */
+  --color-sky: #93a8ef;        /* light accent — legible on the dark grounds */
+  --color-blue-deep: #041d71;  /* deep */
 
-  --color-ink: #0f1b2d;
-  --color-muted: #5b6b80;
-  --color-line: #dde6f0;
+  /* the action colour — buy/search/call buttons */
+  --color-cta: #45a44b;
+  --color-cta-deep: #37853c;
+
+  --color-ink: #101623;
+  --color-muted: #5b6577;
+  --color-line: #d9dfee;
+
+  /* square corners across the board — the flat, catalogue look */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
 
   /* semantic status — soft = tinted background, base = text/icon/border */
   --color-success: #167a3d;
@@ -59,15 +73,18 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-::selection { background: var(--color-sky); color: #fff; }
-.font-display { font-family: var(--font-display); }
+::selection { background: var(--color-blue); color: #fff; }
+/* Headings are semibold sans in this direction — the weight lives here so every
+   .font-display heading lands consistent, whatever weight utility it carried
+   under the old serif look. */
+.font-display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; }
 
 .container-x { width: 100%; max-width: 1280px; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem; }
 
-/* electric-blue shimmer on the hero's italic line — one pass, then the headline settles */
+/* royal-blue shimmer on the hero's italic line — one pass, then the headline settles */
 @keyframes blueShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 .shimmer {
-  background: linear-gradient(100deg, #7bc0ff 0%, #3f9df0 30%, #1173d4 50%, #3f9df0 70%, #7bc0ff 100%);
+  background: linear-gradient(100deg, #c7d2f7 0%, #93a8ef 30%, #ffffff 50%, #93a8ef 70%, #c7d2f7 100%);
   background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   animation: blueShimmer 7s linear 1 forwards;
@@ -109,15 +126,16 @@ body {
 .admin-fade { animation: adminFade .35s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { .admin-fade { animation: none; } }
 
-.card-lift { transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease, border-color .45s ease; }
-.card-lift:hover { transform: translateY(-4px); box-shadow: 0 26px 50px -30px rgba(11,74,141,.45); border-color: rgba(17,115,212,.5); }
+/* flat tiles: the hover is a quiet border emphasis, not a floating shadow */
+.card-lift { transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease, border-color .35s ease; }
+.card-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -18px rgba(10,39,136,.35); border-color: rgba(10,39,136,.45); }
 
 /* product shots are shot on white — multiply drops the box background out */
 .shot { mix-blend-mode: multiply; }
 
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #c3d3e6; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #c2cbe8; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-blue); }
 
 /* Reduced motion — WCAG targets movement, not all feedback: jump the

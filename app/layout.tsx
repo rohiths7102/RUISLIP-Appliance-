@@ -23,7 +23,9 @@ import ChatWidget from "@/components/ChatWidget";
 import UspStrip from "@/components/UspStrip";
 import CallTracker from "@/components/CallTracker";
 import ConsentAnalytics from "@/components/ConsentAnalytics";
-import { getBusiness } from "@/lib/repo";
+import { getBusiness, loadCatalog } from "@/lib/repo";
+import { topCategories, childCategories } from "@/lib/select";
+import type { NavData } from "@/components/MegaMenu";
 import { jsonLdScript } from "@/lib/seo";
 import reviewsRaw from "@/data/reviews.json";
 import type { ReviewsData } from "@/components/GoogleReviews";
@@ -145,17 +147,24 @@ function LocalBusinessSchema({ business }: { business: any }) {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const business = await getBusiness();
+  const { business, categories, brands } = await loadCatalog();
+  // Department -> sub-categories (with photos and live counts) for the nav
+  // fly-outs, plus the owner's main brands — loadCatalog already pins those
+  // first. Same vocabulary as the category and brand pages the panel links to.
+  const nav: NavData = {
+    departments: topCategories(categories).map((c) => ({
+      id: c.id,
+      name: c.name,
+      subs: childCategories(categories, c.id).map((s) => ({ id: s.id, name: s.name, image: s.image, count: s.productCount })),
+    })),
+    brands: brands.slice(0, 12).map((b) => ({ slug: b.slug, name: b.name })),
+  };
   return (
     <html lang="en-GB" className={`${cormorant.variable} ${hanken.variable} ${spaceMono.variable}`}>
-      <head>
-        {/* Prod product shots come from Vercel Blob — warm the connection early. */}
-        <link rel="preconnect" href="https://ottod2keltk3fotp.public.blob.vercel-storage.com" />
-      </head>
       <body>
         <LocalBusinessSchema business={business} />
         <BrandSchema business={business} />
-        <Header business={business} />
+        <Header business={business} nav={nav} />
         <UspStrip />
         <main className="min-h-[60vh]">{children}</main>
         <Footer business={business} />

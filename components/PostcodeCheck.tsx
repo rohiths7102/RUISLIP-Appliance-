@@ -11,7 +11,7 @@ import { adSource } from "@/lib/ad-source";
 const LOCAL = ["HA", "UB", "WD", "TW", "SL"];
 const outward = (pc: string) => pc.toUpperCase().replace(/\s+/g, "").match(/^[A-Z]{1,2}/)?.[0] || "";
 
-/** Inline hero postcode checker — dark-glass pill that sits on the navy video hero. */
+/** Inline hero postcode checker — a flat white strip on the royal-blue hero band. */
 export default function PostcodeCheck({ phone }: { phone: string }) {
   const [value, setValue] = useState("");
   const [result, setResult] = useState<null | { local: boolean; pc: string }>(null);
@@ -38,17 +38,17 @@ export default function PostcodeCheck({ phone }: { phone: string }) {
         <MapPin size={12} /> Do we deliver to you?
       </p>
       <form onSubmit={check}
-        className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[.07] p-1.5 backdrop-blur-md">
+        className="flex items-center gap-1.5 border border-white/25 bg-white p-1.5">
         <input
           value={value}
           onChange={(e) => { setValue(e.target.value); setResult(null); }}
           placeholder="Your postcode — e.g. HA4 0QP"
           aria-label="Postcode"
           autoComplete="postal-code"
-          className="min-w-0 flex-1 bg-transparent px-4 py-2 text-sm uppercase tracking-wide text-paper placeholder:normal-case placeholder:text-paper/40 outline-none"
+          className="min-w-0 flex-1 bg-transparent px-4 py-2 text-sm uppercase tracking-wide text-ink placeholder:normal-case placeholder:text-muted outline-none"
         />
         <button type="submit"
-          className="shrink-0 rounded-full bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-colors duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] hover:bg-sky hover:text-navy">
+          className="shrink-0 bg-cta px-5 py-2.5 text-[13px] font-bold text-white transition-colors duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] hover:bg-cta-deep">
           Check
         </button>
       </form>

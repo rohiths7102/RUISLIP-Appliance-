@@ -19,9 +19,9 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
   const save = !poa && p.saving !== null && p.priceWas !== null && p.priceNow !== null && p.priceWas > p.priceNow
     ? Math.round(p.saving) : 0;
   return (
-    <div className="card-lift group flex h-full flex-col overflow-hidden rounded-[5px] border border-ink/10 bg-card">
+    <div className="card-lift group flex h-full flex-col overflow-hidden border border-line bg-white">
       <Link href={`/products/${slug}`} className="block">
-        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-white to-paper-2">
+        <div className="relative aspect-square overflow-hidden bg-white">
           {p.image ? (
             // fill + object-contain inside the square wrapper; the wrapper's paper
             // gradient shows as a quiet tile until onLoad flips data-loaded → fade in.
@@ -55,30 +55,31 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               {p.availability || "Call to confirm"}
             </span>
           </div>
-          <h3 className="mb-2.5 line-clamp-2 min-h-[48px] font-display text-[21px] font-medium leading-tight text-ink transition-colors duration-300 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:text-blue-deep">
+          <h3 className="mb-2.5 line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-ink transition-colors duration-300 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:text-blue">
             {p.title}
           </h3>
           <p className="mb-3.5 font-mono text-[10px] tracking-[0.06em] text-ink/50">Code {p.productCode}</p>
           {poa ? (
-            <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue-deep">
+            <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue">
               <Phone size={13} strokeWidth={2.4} /> Call for price
             </span>
           ) : (
             <div className="flex items-baseline gap-2.5">
-              <span className="font-display text-[27px] font-semibold text-ink">{gbp(p.priceNow)}</span>
+              <span className="text-[21px] font-bold tracking-tight text-ink">{gbp(p.priceNow)}</span>
               {p.priceWas ? <span className="text-sm text-ink/40 line-through">{gbp(p.priceWas)}</span> : null}
             </div>
           )}
         </div>
       </Link>
-      {/* min-h-11 = 44px tap targets; most of this shop's traffic is on a phone. */}
+      {/* min-h-11 = 44px tap targets; most of this shop's traffic is on a phone.
+          Green marks the action, phone-first: Call is solid, details is quiet. */}
       <div className="mt-auto flex gap-2 px-[18px] pb-[18px]">
         <Link href={`/products/${slug}`}
-          className="flex min-h-11 flex-1 items-center justify-center rounded-sm bg-navy px-3 text-center text-[12.5px] font-semibold tracking-[0.02em] text-paper transition-colors hover:bg-navy-2">
+          className="flex min-h-11 flex-1 items-center justify-center border border-blue/30 px-3 text-center text-[12.5px] font-semibold tracking-[0.02em] text-blue transition-colors hover:border-blue hover:bg-blue hover:text-white">
           View details
         </Link>
         <a href={telHref(STORE_PHONE)} aria-label={`Call to check stock for ${p.productCode}`}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-ink/20 px-3.5 text-[12.5px] font-semibold text-ink transition-colors hover:border-blue hover:text-blue-deep">
+          className="inline-flex min-h-11 items-center gap-1.5 bg-cta px-3.5 text-[12.5px] font-bold text-white transition-colors hover:bg-cta-deep">
           <Phone size={13} strokeWidth={2.2} /> Call
         </a>
       </div>
