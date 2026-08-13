@@ -63,7 +63,7 @@ export default function AdminShell({ active, email, children }: { active: string
           <nav className="flex-1 px-3">
             {GROUPS.map((g) => (
               <div key={g.title} className="mb-4">
-                <p className="px-2.5 pb-1.5 font-mono text-[8.5px] uppercase tracking-[0.26em] text-sky/50">{g.title}</p>
+                <p className="px-2.5 pb-1.5 font-mono text-[8.5px] uppercase tracking-[0.26em] text-sky">{g.title}</p>
                 {g.items.map(([sub, label, Icon]) => {
                   const current = activeSub === sub;
                   return (

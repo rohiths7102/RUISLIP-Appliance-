@@ -30,7 +30,7 @@ export default function ChatWidget({ phone }: { phone: string }) {
   return (
     <>
       {!open && (
-        <button onClick={() => setOpen(true)} aria-label="Open chat" className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue text-navy shadow-lg transition hover:scale-105">
+        <button onClick={() => setOpen(true)} aria-label="Open chat" className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue text-white shadow-lg transition hover:scale-105">
           <MessageCircle />
         </button>
       )}
@@ -51,7 +51,7 @@ export default function ChatWidget({ phone }: { phone: string }) {
                 )}
               </div>
             ))}
-            {busy && <div className="text-xs text-ink/40">Assistant is typing…</div>}
+            {busy && <div className="text-xs text-ink/70">Assistant is typing…</div>}
           </div>
           <div className="border-t border-line p-3">
             <a href={telHref(phone)} className="mb-2 flex items-center justify-center gap-2 rounded-full bg-blue/15 px-3 py-1.5 text-xs font-medium text-navy"><Phone size={13} /> Call the store: {phone}</a>

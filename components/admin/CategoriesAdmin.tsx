@@ -19,7 +19,7 @@ export default function CategoriesAdmin({ initial }: { initial: Row[] }) {
       <Card className="mt-4 overflow-x-auto"><table className="w-full text-sm">
         <thead className="bg-paper-2 text-left text-muted"><tr><th className="p-3">Name</th><th className="p-3">Products</th><th className="p-3">Visible</th><th className="p-3">Order</th><th className="p-3"></th></tr></thead>
         <tbody>{rows.map((r) => (
-          <tr key={r.id} className="border-t border-line"><td className="p-3">{r.name}{r.parentId ? <span className="ml-1 text-xs text-ink/40">(sub)</span> : null}</td><td className="p-3">{r.productCount}</td><td className="p-3">{r.isVisible ? "Yes" : "No"}</td><td className="p-3">{r.order}</td>
+          <tr key={r.id} className="border-t border-line"><td className="p-3">{r.name}{r.parentId ? <span className="ml-1 text-xs text-ink/70">(sub)</span> : null}</td><td className="p-3">{r.productCount}</td><td className="p-3">{r.isVisible ? "Yes" : "No"}</td><td className="p-3">{r.order}</td>
             <td className="p-3"><Button variant="secondary" small onClick={() => { setSel(r); setMsg(""); }}>Edit</Button></td></tr>
         ))}</tbody>
       </table></Card>

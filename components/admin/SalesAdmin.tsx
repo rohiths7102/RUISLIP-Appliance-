@@ -118,7 +118,7 @@ export default function SalesAdmin() {
                 <div className="mt-0.5 truncate text-[12px] text-muted">
                   {l.productTitle || l.message.slice(0, 60) || "General enquiry"}
                 </div>
-                <div className="mt-1 flex items-center gap-2 font-mono text-[10px] text-ink/40">
+                <div className="mt-1 flex items-center gap-2 font-mono text-[10px] text-ink/70">
                   {new Date(l.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
                   {l.quotedPrice != null && <span className="text-blue-deep">· quoted £{l.quotedPrice}</span>}
                   {l.lastEmailedAt && <span className="text-success">· emailed</span>}
@@ -212,7 +212,7 @@ function LeadDetail({ lead, patch, setDraft }: {
             <p className="mt-1 flex flex-wrap items-center gap-3 text-[13px] text-muted">
               {lead.email && <a className="text-blue-deep hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a>}
               {lead.phone && <a className="inline-flex items-center gap-1 text-blue-deep hover:underline" href={`tel:${lead.phone}`}><Phone size={12} />{lead.phone}</a>}
-              <span className="font-mono text-[11px] text-ink/40">
+              <span className="font-mono text-[11px] text-ink/70">
                 {new Date(lead.createdAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · via {lead.source}
               </span>
             </p>
@@ -228,7 +228,7 @@ function LeadDetail({ lead, patch, setDraft }: {
           <p className="mt-3 text-[13px]">
             <span className="text-muted">About:</span>{" "}
             <strong>{lead.productTitle || lead.productCode}</strong>{" "}
-            <span className="font-mono text-[11px] text-ink/45">({lead.productCode})</span>
+            <span className="font-mono text-[11px] text-ink/70">({lead.productCode})</span>
             <a href={`/products?q=${encodeURIComponent(lead.productCode)}`} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-0.5 text-blue-deep hover:underline">
               view <ArrowUpRight size={11} />
             </a>

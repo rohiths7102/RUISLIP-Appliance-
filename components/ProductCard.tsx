@@ -58,7 +58,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
           <h3 className="mb-2.5 line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-ink transition-colors duration-300 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:text-blue">
             {p.title}
           </h3>
-          <p className="mb-3.5 font-mono text-[10px] tracking-[0.06em] text-ink/50">Code {p.productCode}</p>
+          <p className="mb-3.5 font-mono text-[10px] tracking-[0.06em] text-ink/70">Code {p.productCode}</p>
           {poa ? (
             <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue">
               <Phone size={13} strokeWidth={2.4} /> Call for price
@@ -66,7 +66,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
           ) : (
             <div className="flex items-baseline gap-2.5">
               <span className="text-[21px] font-bold tracking-tight text-ink">{gbp(p.priceNow)}</span>
-              {p.priceWas ? <span className="text-sm text-ink/40 line-through">{gbp(p.priceWas)}</span> : null}
+              {p.priceWas ? <span className="text-sm text-ink/70 line-through">{gbp(p.priceWas)}</span> : null}
             </div>
           )}
         </div>

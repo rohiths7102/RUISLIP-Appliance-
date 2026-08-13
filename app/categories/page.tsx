@@ -32,7 +32,7 @@ export default async function CategoriesPage() {
                   <Link href={`/categories/${ch.id}`}
                     className="flex items-baseline justify-between gap-3 text-[13.5px] text-muted transition-colors hover:text-blue-deep">
                     <span>{ch.name}</span>
-                    <span className="font-mono text-[11px] text-ink/35">{ch.productCount}</span>
+                    <span className="font-mono text-[11px] text-ink/70">{ch.productCount}</span>
                   </Link>
                 </li>
               ))}

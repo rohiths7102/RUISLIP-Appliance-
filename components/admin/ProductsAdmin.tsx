@@ -217,7 +217,7 @@ export default function ProductsAdmin({
       {err && <Notice tone="danger" className="mt-3">{err}</Notice>}
 
       <div className="relative mt-4 max-w-md">
-        <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" />
+        <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/70" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search all products by name, brand or code…"
           className="w-full rounded-full border border-line py-2 pl-9 pr-3 text-sm outline-none focus:border-blue" />
       </div>
@@ -281,18 +281,18 @@ export default function ProductsAdmin({
                     {r.mainImage
                       /* eslint-disable-next-line @next/next/no-img-element */
                       ? <img src={r.mainImage} alt="" className="h-full w-full object-contain p-0.5" />
-                      : <span className="text-[9px] text-ink/30">none</span>}
+                      : <span className="text-[9px] text-ink/70">none</span>}
                   </div>
                 </td>
                 <td className="p-3 font-mono text-xs">{r.productCode}</td>
                 <td className="p-3">
                   <div className="font-medium leading-tight">{r.title}</div>
-                  <div className="text-xs text-ink/45">
+                  <div className="text-xs text-ink/70">
                     {r.brand} · {r.subcategory || r.category || "—"}
                     {r.adminOverrideFields?.length ? <span className="ml-2 rounded bg-blue/20 px-1.5 py-0.5 text-[10px] text-navy">edited</span> : null}
                   </div>
                 </td>
-                <td className="p-3 whitespace-nowrap">{r.priceNow === null ? <span className="text-ink/40">Call</span> : `£${r.priceNow}`}</td>
+                <td className="p-3 whitespace-nowrap">{r.priceNow === null ? <span className="text-ink/70">Call</span> : `£${r.priceNow}`}</td>
                 <td className="p-3">
                   <select value={r.availabilityNormalised} onChange={(e) => setStock(r, e.target.value)}
                     aria-label={`Stock for ${r.productCode}`}
@@ -304,19 +304,19 @@ export default function ProductsAdmin({
                 <td className="p-3 whitespace-nowrap text-right">
                   {r.slug && (
                     <a href={`/products/${r.slug}`} target="_blank" rel="noopener noreferrer" title="View on site"
-                      className="mr-1 inline-flex rounded p-2 text-ink/40 hover:text-blue"><ExternalLink size={14} /></a>
+                      className="mr-1 inline-flex rounded p-2 text-ink/70 hover:text-blue"><ExternalLink size={14} /></a>
                   )}
                   <button onClick={() => { setEditing(r); setIsNew(false); setErr(""); }}
                     className="rounded-full border border-navy/20 px-3 py-1.5 text-xs hover:border-blue">Edit</button>
                   <button onClick={() => remove(r)} aria-label={`Delete ${r.productCode}`}
-                    className="ml-1 rounded p-2 text-ink/40 hover:text-danger"><Trash2 size={14} /></button>
+                    className="ml-1 rounded p-2 text-ink/70 hover:text-danger"><Trash2 size={14} /></button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {loading && <div className="p-4 text-center text-sm text-ink/40">Loading…</div>}
-        {!loading && !rows.length && <div className="p-10 text-center text-sm text-ink/40">No products match “{q}”.</div>}
+        {loading && <div className="p-4 text-center text-sm text-ink/70">Loading…</div>}
+        {!loading && !rows.length && <div className="p-10 text-center text-sm text-ink/70">No products match “{q}”.</div>}
       </Card>
 
       {pages > 1 && (
@@ -373,7 +373,7 @@ export default function ProductsAdmin({
                           {s.fields.map((f) => (
                             <div key={f.field}>
                               <span className="text-ink/60">{f.field}:</span>{" "}
-                              <span className="text-ink/40 line-through">{String(f.from ?? "—")}</span>{" "}
+                              <span className="text-ink/70 line-through">{String(f.from ?? "—")}</span>{" "}
                               → <strong>{String(f.to ?? "—")}</strong>
                             </div>
                           ))}
@@ -428,9 +428,9 @@ function Editor({
         <div className="flex items-start justify-between">
           <div>
             <h2 className="font-display text-xl font-semibold">{isNew ? "Add product" : row.title}</h2>
-            {!isNew && <p className="font-mono text-xs text-ink/45">{row.productCode}</p>}
+            {!isNew && <p className="font-mono text-xs text-ink/70">{row.productCode}</p>}
           </div>
-          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-ink/40 hover:text-ink"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-ink/70 hover:text-ink"><X size={18} /></button>
         </div>
 
         {error && <Notice tone="danger" className="mt-3">{error}</Notice>}
@@ -503,7 +503,7 @@ function Editor({
                 {row.mainImage
                   /* eslint-disable-next-line @next/next/no-img-element */
                   ? <img src={row.mainImage} alt="" className="h-full w-full object-contain p-1" />
-                  : <span className="text-[10px] text-ink/30">No photo</span>}
+                  : <span className="text-[10px] text-ink/70">No photo</span>}
               </div>
               <div className="flex-1">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-navy/20 px-4 py-2 text-xs font-semibold hover:border-blue">

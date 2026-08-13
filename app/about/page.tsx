@@ -62,7 +62,7 @@ export default async function AboutPage() {
             </address>
             <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-blue-deep">Opening hours</p>
             <p className="mb-5 text-[15px] text-ink">Mon–Sat 9:00–17:30 · Sunday closed</p>
-            <a href={telHref(business.phone)} className="inline-flex items-center gap-2 rounded-sm bg-blue px-6 py-3.5 text-[15px] font-bold text-navy hover:bg-sky">
+            <a href={telHref(business.phone)} className="inline-flex items-center gap-2 rounded-sm bg-blue px-6 py-3.5 text-[15px] font-bold text-white hover:bg-blue-deep">
               <Phone size={16} /> {business.phone}
             </a>
           </div>
@@ -90,7 +90,7 @@ export default async function AboutPage() {
 
       <section className="bg-navy px-6 py-20 text-center">
         <h2 className="mb-6 font-display text-[40px] font-normal text-paper">Pop in, or give us a call.</h2>
-        <a href={telHref(business.phone)} className="inline-flex items-center gap-2.5 rounded-sm bg-blue px-8 py-4 text-[15px] font-bold text-navy hover:bg-sky">
+        <a href={telHref(business.phone)} className="inline-flex items-center gap-2.5 rounded-sm bg-blue px-8 py-4 text-[15px] font-bold text-white hover:bg-blue-deep">
           <Phone size={17} /> Call {business.phone}
         </a>
       </section>

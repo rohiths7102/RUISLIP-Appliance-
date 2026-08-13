@@ -114,7 +114,7 @@ export default async function AdminAds() {
         <Card className="p-5">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Feed health</h2>
-            <span className="font-mono text-[11px] text-ink/45">{eligible.toLocaleString("en-GB")} of {d.total.toLocaleString("en-GB")} products advertisable</span>
+            <span className="font-mono text-[11px] text-ink/70">{eligible.toLocaleString("en-GB")} of {d.total.toLocaleString("en-GB")} products advertisable</span>
           </div>
 
           {/* the one number that matters, then the reasons */}
@@ -149,7 +149,7 @@ export default async function AdminAds() {
                     <p className="mt-1 pl-6 text-[12px] text-muted">
                       {fix} —{" "}
                       <Link href="/admin/products" className="font-semibold text-blue-deep hover:underline">open products</Link>
-                      <span className="text-ink/40"> · e.g. {d!.buckets[key].slice(0, 3).map((p) => p.productCode).join(", ")}</span>
+                      <span className="text-ink/70"> · e.g. {d!.buckets[key].slice(0, 3).map((p) => p.productCode).join(", ")}</span>
                     </p>
                   )}
                 </li>
@@ -207,7 +207,7 @@ export default async function AdminAds() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-medium leading-tight">{p.brand} {p.title}</div>
-                    <div className="font-mono text-[10.5px] text-ink/45">{p.productCode}</div>
+                    <div className="font-mono text-[10.5px] text-ink/70">{p.productCode}</div>
                   </div>
                   <span className="rounded-full bg-blue/10 px-2.5 py-1 text-xs font-bold text-blue-deep">{n} {n === 1 ? "call" : "calls"}</span>
                 </li>

@@ -73,7 +73,7 @@ function SignInForm() {
           </button>
         </div>
 
-        <p className="mt-5 text-center text-[11px] leading-relaxed text-ink/40">
+        <p className="mt-5 text-center text-[11px] leading-relaxed text-ink/70">
           Microsoft / Google sign-in replaces this once the design is signed off.
         </p>
       </form>

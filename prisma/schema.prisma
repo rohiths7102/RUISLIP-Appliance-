@@ -109,6 +109,17 @@ model BusinessInfo {
   mapQuery               String   @default("")
   googleMapsEmbedUrl     String   @default("")
   googleMapsDirectionsUrl String  @default("")
+  // Trading disclosures. Companies Act 2006 s.82/s.1202 (SI 2015/17 reg 25)
+  // requires a limited company to give its registered number, place of
+  // registration and registered office on its website; the E-Commerce
+  // Regulations 2002 reg 6 requires the VAT number of a VAT-registered trader.
+  // Every one defaults to empty and every render site omits the line when
+  // blank — a WRONG company or VAT number on a live site is worse than none,
+  // so these are only ever filled in by the owner in the admin.
+  companyNumber          String   @default("")
+  placeOfRegistration    String   @default("")
+  registeredOffice       String   @default("")
+  vatNumber              String   @default("")
   updatedAt              DateTime @updatedAt
 }
 

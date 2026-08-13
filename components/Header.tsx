@@ -88,6 +88,15 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
             </button>
           </div>
         </div>
+
+        {/* Phones and portrait tablets get their own full-width search row. The
+            desktop bar's SearchBar is lg:flex, so below 1024px search used to
+            live two taps deep inside the hamburger — the shop's customers search
+            by model code, so it has to be on screen from a cold load. Its own
+            row costs no horizontal space, leaving the green call CTA untouched. */}
+        <div className="container-x pb-3 lg:hidden">
+          <SearchBar />
+        </div>
       </div>
 
       {/* ---- department nav — one solid royal-blue band, flat like the
@@ -137,11 +146,16 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
         })()}
       </nav>
 
-      {/* ---- mobile panel: search + everything ---- */}
+      {/* ---- mobile panel: departments + utility links.
+              No search box here any more — it lives in its own always-visible
+              row above, so this panel can't cover the results of a search made
+              from inside it (routing to a page you are already on leaves
+              `pathname` unchanged, so the close effect never fired).
+              Height-capped and scrollable: the full list overflows a phone
+              viewport inside a sticky header, stranding the last links. ---- */}
       {open && (
         <div className="border-b border-line bg-paper lg:hidden">
-          <div className="container-x flex flex-col gap-1 py-3">
-            <SearchBar className="mb-2" />
+          <div className="container-x flex max-h-[calc(100dvh-140px)] flex-col gap-1 overflow-y-auto py-3">
             {DEPARTMENTS.map(([slug, label]) => (
               <Link key={slug} href={`/categories/${slug}`} onClick={() => setOpen(false)}
                 className="border-b border-line py-3 text-sm font-medium text-ink">

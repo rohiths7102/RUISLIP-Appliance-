@@ -52,7 +52,7 @@ export default async function ContactPage() {
           </div>
 
           <a href={telHref(business.phone)}
-            className="mt-6 flex items-center justify-center gap-2.5 rounded-sm bg-blue px-6 py-4 text-base font-bold text-navy hover:bg-sky">
+            className="mt-6 flex items-center justify-center gap-2.5 rounded-sm bg-blue px-6 py-4 text-base font-bold text-white hover:bg-blue-deep">
             <Phone size={17} /> Tap to call {business.phone}
           </a>
 

@@ -67,7 +67,7 @@ export function StatTile({ label, value, hint, children }: { label: string; valu
     <Card className="p-4">
       <div className="font-display text-2xl">{value}</div>
       <div className="mt-0.5 text-xs text-muted">{label}</div>
-      {hint && <div className="mt-1 text-[11px] text-muted/70">{hint}</div>}
+      {hint && <div className="mt-1 text-[11px] text-muted">{hint}</div>}
       {children}
     </Card>
   );

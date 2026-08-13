@@ -28,7 +28,7 @@ export default function BrandsAdmin({ initial }: { initial: Row[] }) {
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {rows.map((r) => (
           <Card key={r.id} className="p-4 text-center">
-            <div className="flex h-16 items-center justify-center">{r.logo ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={r.logo} alt={r.name} className="max-h-12 max-w-[80%] object-contain" /> : <span className="text-ink/40">{r.name}</span>}</div>
+            <div className="flex h-16 items-center justify-center">{r.logo ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={r.logo} alt={r.name} className="max-h-12 max-w-[80%] object-contain" /> : <span className="text-ink/70">{r.name}</span>}</div>
             <div className="mt-2 text-sm font-medium">{r.name}</div><div className="text-xs text-muted">{r.productCount} products · {r.isVisible ? "visible" : "hidden"}</div>
             <Button variant="secondary" small className="mt-2" onClick={() => edit(r)}>Edit</Button>
           </Card>

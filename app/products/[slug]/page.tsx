@@ -89,7 +89,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <span className="h-2 w-2 rounded-full" style={{ background: availabilityDot(p.availabilityNormalised) }} />
               {availabilityLabel(p.availabilityNormalised)}
             </span>
-            {p.warranty && <><span className="text-ink/20">·</span><span className="text-[12.5px] text-muted">{p.warranty}</span></>}
+            {p.warranty && <><span className="text-ink/70">·</span><span className="text-[12.5px] text-muted">{p.warranty}</span></>}
           </div>
 
           <div className="my-4 flex flex-wrap items-end gap-3.5">
@@ -105,7 +105,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <span className="mb-1.5 rounded-sm bg-success-soft px-2.5 py-1.5 text-xs font-bold text-success tabular-nums">Save {formatPrice(p.saving)}</span>
             ) : null}
           </div>
-          <p className="mb-6 text-xs text-ink/50">Price shown excludes optional delivery &amp; installation</p>
+          <p className="mb-6 text-xs text-ink/70">Price shown excludes optional delivery &amp; installation</p>
 
           <div className="mb-6 rounded-[4px] border border-blue/40 bg-blue/[.07] px-[18px] py-4">
             <p className="text-[13.5px] leading-relaxed text-[#44586f]">
@@ -118,7 +118,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           <div className="mb-7 flex flex-col gap-3 sm:flex-row">
             <a href={telHref(business.phone)}
-              className="inline-flex flex-1 items-center justify-center gap-2.5 rounded-sm bg-blue px-6 py-4 text-[15px] font-bold text-navy transition-colors hover:bg-sky">
+              className="inline-flex flex-1 items-center justify-center gap-2.5 rounded-sm bg-blue px-6 py-4 text-[15px] font-bold text-white transition-colors hover:bg-blue-deep">
               <Phone size={17} strokeWidth={2.2} /> Call {business.phone}
             </a>
             <Link href={enquiryHref}
@@ -206,7 +206,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </p>
           </div>
           <a href={telHref(business.phone)}
-            className="inline-flex shrink-0 items-center gap-2 rounded-sm bg-blue px-5 py-3 text-sm font-bold text-navy hover:bg-sky">
+            className="inline-flex shrink-0 items-center gap-2 rounded-sm bg-blue px-5 py-3 text-sm font-bold text-white hover:bg-blue-deep">
             <Phone size={15} strokeWidth={2.2} />
             <span className="hidden sm:inline">Call to confirm stock</span>
             <span className="sm:hidden">Call</span>

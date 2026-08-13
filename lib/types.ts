@@ -34,5 +34,7 @@ export interface Business {
   delivery: { radius: string; notes: string; timescale: string };
   socialLinks: { platform: string; url: string }[];
   mapQuery: string; googleMapsEmbedUrl: string; googleMapsDirectionsUrl: string;
+  /** Trading disclosures — blank until the owner supplies them; never rendered when empty. */
+  companyNumber: string; placeOfRegistration: string; registeredOffice: string; vatNumber: string;
 }
 export interface Service { id: string; name: string; description: string; price: number | null; optional: boolean; category: string; }

@@ -61,7 +61,7 @@ export default async function DeliveryPage() {
             </p>
           </div>
           <a href={telHref(business.phone)}
-            className="inline-flex shrink-0 items-center gap-2.5 rounded-sm bg-blue px-7 py-4 text-[15px] font-bold text-navy hover:bg-sky">
+            className="inline-flex shrink-0 items-center gap-2.5 rounded-sm bg-blue px-7 py-4 text-[15px] font-bold text-white hover:bg-blue-deep">
             <Phone size={17} /> Call to check coverage
           </a>
         </div>

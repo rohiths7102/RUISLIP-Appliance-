@@ -89,6 +89,8 @@ export async function loadCatalog(): Promise<Catalog> {
       address: biz.address, openingHours: biz.openingHours,
       delivery: { radius: biz.deliveryRadius, notes: biz.deliveryNotes, timescale: "" },
       socialLinks: biz.socialLinks, mapQuery: biz.mapQuery, googleMapsEmbedUrl: biz.googleMapsEmbedUrl, googleMapsDirectionsUrl: biz.googleMapsDirectionsUrl,
+      companyNumber: biz.companyNumber || "", placeOfRegistration: biz.placeOfRegistration || "",
+      registeredOffice: biz.registeredOffice || "", vatNumber: biz.vatNumber || "",
     } : seed.business;
     return {
       products: prod.map(mapProduct), categories: cats.map(mapCategory),

@@ -7,7 +7,7 @@ export default function Breadcrumbs({ items }: { items: { label: string; href?: 
       {items.map((it, i) => (
         <span key={i} className="flex items-center gap-1">
           {it.href ? <Link href={it.href} className="hover:text-blue">{it.label}</Link> : <span className="text-ink/80">{it.label}</span>}
-          {i < items.length - 1 && <ChevronRight size={14} className="text-ink/30" />}
+          {i < items.length - 1 && <ChevronRight size={14} className="text-ink/70" />}
         </span>
       ))}
     </nav>

@@ -22,7 +22,7 @@ export default function ChatbotAdmin() {
       {msg && <Notice tone={msg.startsWith("Rebuilt") ? "success" : "warning"} className="mt-3">{msg}</Notice>}
       <Card className="mt-8 p-5">
         <div className="font-medium">Test the chatbot</div>
-        <div className="mt-2 flex gap-2"><input value={q} onChange={(e) => setQ(e.target.value)} className="flex-1 rounded-full border border-line px-3 py-2 text-sm" /><Button small onClick={test} disabled={testing} className="bg-blue! text-navy!">{testing ? "…" : "Ask"}</Button></div>
+        <div className="mt-2 flex gap-2"><input value={q} onChange={(e) => setQ(e.target.value)} className="flex-1 rounded-full border border-line px-3 py-2 text-sm" /><Button small onClick={test} disabled={testing} className="bg-blue! text-white!">{testing ? "…" : "Ask"}</Button></div>
         {ans && (
           <div className="mt-3 rounded-xl bg-paper p-3 text-sm">
             <div>{ans.reply}</div>

@@ -96,7 +96,7 @@ export default function ProductBrowser({
     <div>
       <div className="rounded-[4px] border border-ink/10 bg-card p-5">
         <div className="relative mb-3">
-          <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
+          <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/70" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -160,7 +160,7 @@ export default function ProductBrowser({
       <p className="mt-5 text-[13.5px] text-muted">
         <strong className="text-ink">{filtered.length.toLocaleString("en-GB")}</strong>{" "}
         {filtered.length === 1 ? "appliance" : "appliances"}
-        {pages > 1 && <span className="text-ink/45"> · page {current} of {pages}</span>}
+        {pages > 1 && <span className="text-ink/70"> · page {current} of {pages}</span>}
       </p>
 
       {shown.length > 0 ? (
@@ -186,7 +186,7 @@ export default function ProductBrowser({
           </button>
           {pageWindow(current, pages).map((n, i) =>
             n === "…" ? (
-              <span key={`gap${i}`} className="px-1.5 text-ink/40">…</span>
+              <span key={`gap${i}`} className="px-1.5 text-ink/70">…</span>
             ) : (
               <button
                 key={n}

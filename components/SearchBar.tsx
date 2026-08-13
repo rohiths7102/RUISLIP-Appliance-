@@ -106,7 +106,9 @@ export default function SearchBar({ className = "" }: { className?: string }) {
           aria-autocomplete="list"
           aria-expanded={open}
           aria-controls="header-search-listbox"
-          className="min-w-0 flex-1 bg-transparent px-4 py-2 text-sm text-ink placeholder:text-muted outline-none"
+          // 16px on phones: iOS Safari auto-zooms the whole page when a focused
+          // input is under 16px, and the zoom does not reverse on blur.
+          className="min-w-0 flex-1 bg-transparent px-4 py-2 text-base text-ink placeholder:text-muted outline-none lg:text-sm"
         />
         <button type="submit" aria-label="Search" className="m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-paper transition-colors hover:bg-blue">
           <Search size={15} strokeWidth={2.4} />

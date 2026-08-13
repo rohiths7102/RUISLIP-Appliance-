@@ -54,7 +54,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
             {kids.map((k) => (
               <Link key={k.id} href={`/categories/${k.id}`}
                 className="rounded-full border border-ink/15 bg-card px-4 py-2 text-[12.5px] font-medium transition-colors hover:border-blue hover:text-blue-deep">
-                {k.name} <span className="font-mono text-[11px] text-ink/40">{k.productCount}</span>
+                {k.name} <span className="font-mono text-[11px] text-ink/70">{k.productCount}</span>
               </Link>
             ))}
           </div>
