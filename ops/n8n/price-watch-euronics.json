@@ -1,0 +1,790 @@
+{
+  "name": "Price Watch — Euronics (nightly)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "17 3 * * *"
+            }
+          ]
+        }
+      },
+      "id": "pw-01-nightly-trigger",
+      "name": "Nightly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -460,
+        300
+      ],
+      "notes": "03:17 Europe/London. Off-the-hour on purpose: 03:00 is when every scheduled job on the internet fires at once.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Run Config ───────────────────────────────────────────────────────────────\n// One place for every knob. Nothing downstream reads $env except the two\n// signing nodes (which need the secret) — so the politeness caps below are the\n// only thing standing between this workflow and a ban. Treat them as load-bearing.\n//\n// Requires on the n8n container:\n//   NODE_FUNCTION_ALLOW_BUILTIN=crypto      (so the signing nodes can require it)\n//   N8N_BLOCK_ENV_ACCESS_IN_NODE=false      (default; so $env works here)\n\nconst cfg = {\n  // Our own app. No trailing slash.\n  appBaseUrl: ($env.PRICE_WATCH_APP_URL || 'https://www.kitchen-appliances.co.uk').replace(/\\/+$/, ''),\n\n  // Machine key id. lib/machine-auth.ts only lets \"collector\" post observations.\n  keyId: 'collector',\n\n  // PriceSource.id row for Euronics. Created once in the admin; there is no\n  // default, because guessing an id would file observations against the wrong\n  // source and quietly change what the guards think they are looking at.\n  sourceId: $env.PRICE_WATCH_EURONICS_SOURCE_ID || '',\n\n  // ── Politeness. Hard caps, not suggestions. ──────────────────────────────\n  // 40 products x 2 requests x ~10s mean delay ≈ 13 minutes of traffic, once a\n  // night, from one IP. That is the load of a single slow human browsing.\n  maxProducts: Number($env.PRICE_WATCH_MAX_PRODUCTS || 40),\n  minDelayMs: Number($env.PRICE_WATCH_MIN_DELAY_MS || 6000),\n  maxDelayMs: Number($env.PRICE_WATCH_MAX_DELAY_MS || 14000),\n  requestTimeoutMs: 20000,\n\n  // Identify ourselves honestly, with a way to be contacted or blocked. A\n  // spoofed browser UA is what turns \"a shop checking prices\" into \"a bot\n  // evading detection\", and that is the difference that matters if anyone asks.\n  userAgent: $env.PRICE_WATCH_USER_AGENT\n    || 'RuislipKitchenAppliancesPriceWatch/1.0 (+https://www.kitchen-appliances.co.uk/; ops@kitchen-appliances.co.uk)',\n\n  origin: 'https://www.euronics.co.uk',\n  searchBase: 'https://www.euronics.co.uk/search?text=',\n};\n\nif (!cfg.sourceId) {\n  throw new Error('PRICE_WATCH_EURONICS_SOURCE_ID is not set. Create the Euronics PriceSource row in the admin and put its id in the n8n environment.');\n}\nif (!Number.isFinite(cfg.maxProducts) || cfg.maxProducts < 1 || cfg.maxProducts > 200) {\n  throw new Error('PRICE_WATCH_MAX_PRODUCTS must be 1..200. Refusing to run an uncapped crawl.');\n}\nif (cfg.minDelayMs < 3000 || cfg.maxDelayMs < cfg.minDelayMs) {\n  throw new Error('Refusing to run faster than one request per 3s. Raise PRICE_WATCH_MIN_DELAY_MS.');\n}\n\n// Run-scoped accumulator. Reset here on purpose: n8n persists static data\n// between production executions, so last night's observations would otherwise\n// be re-posted tonight.\nconst sd = $getWorkflowStaticData('global');\nsd.observations = [];\nsd.halt = null;\nsd.startedAt = new Date().toISOString();\n\nreturn [{ json: cfg }];"
+      },
+      "id": "pw-02-run-config",
+      "name": "Run Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        300
+      ],
+      "notes": "All caps and knobs. Resets the run accumulator.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Sign Worklist Request ────────────────────────────────────────────────────\n// HMAC per lib/machine-auth.ts:\n//   signature = hex( HMAC_SHA256( secret, `${timestamp}.${rawBody}` ) )\n// GET has no body, so rawBody is the empty string — the route must read the raw\n// body the same way (an absent body is \"\", not \"null\" and not \"{}\").\n// The query string is NOT signed. It is a hint (limit/sourceId); the server\n// decides the real worklist. Anything the server must trust goes in the body.\n\nlet crypto;\ntry {\n  crypto = require('crypto');\n} catch (e) {\n  throw new Error('The Code node cannot require(\"crypto\"). Set NODE_FUNCTION_ALLOW_BUILTIN=crypto on the n8n container and restart it. See ops/n8n/README.md.');\n}\n\nconst cfg = $input.first().json;\n\n// PRICE_INGEST_SECRET_<KEYID_UPPERCASE_UNDERSCORED> — per key, no shared fallback.\nconst envName = 'PRICE_INGEST_SECRET_' + String(cfg.keyId).toUpperCase().replace(/[^A-Z0-9]/g, '_');\nconst secret = $env[envName];\nif (!secret) {\n  throw new Error('No secret in environment variable ' + envName + '. The server rejects unknown keys rather than allowing by default, so the run would 401.');\n}\n\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst rawBody = '';\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update('worklist.' + timestamp + '.' + rawBody, 'utf8')\n  .digest('hex');\n\nconst url = cfg.appBaseUrl\n  + '/api/price-ingest/worklist'\n  + '?limit=' + encodeURIComponent(cfg.maxProducts)\n  + '&source=' + encodeURIComponent(cfg.sourceId);\n\nreturn [{ json: { ...cfg, url, timestamp, signature } }];"
+      },
+      "id": "pw-03-sign-worklist-request",
+      "name": "Sign Worklist Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        300
+      ],
+      "notes": "HMAC over `${ts}.` (empty body).",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pw-key",
+              "value": "={{ $json.keyId }}"
+            },
+            {
+              "name": "x-pw-timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "x-pw-signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "user-agent",
+              "value": "={{ $json.userAgent }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "pw-04-get-worklist",
+      "name": "GET Worklist",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        300
+      ],
+      "notes": "Our own API. neverError so a 401 is inspectable data, not an opaque node failure.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Worklist To Items ────────────────────────────────────────────────────────\n// Turns the worklist response into one n8n item per product.\n// Expected row shape (whatever /api/price-ingest/worklist returns, it must have\n// at least these two): { productId, productCode, brand?, title?, priceNow? }\n\nconst cfg = $('Run Config').first().json;\nconst res = $input.first().json;\n\n// fullResponse:true + neverError:true, so a bad status arrives as data, not a\n// thrown HTTP error. Fail loudly here — a silent empty worklist looks exactly\n// like \"no products need checking\", which is the wrong thing to believe.\nif (res.statusCode !== 200) {\n  throw new Error('worklist HTTP ' + res.statusCode + ': ' + String(res.body).slice(0, 300));\n}\n\nlet body = res.body;\nif (typeof body === 'string') {\n  try { body = JSON.parse(body); }\n  catch (e) { throw new Error('worklist returned non-JSON: ' + String(res.body).slice(0, 200)); }\n}\n\nconst rows = Array.isArray(body) ? body : (body.products || body.items || body.worklist || []);\nif (!Array.isArray(rows)) {\n  throw new Error('worklist JSON has no array of products. Got keys: ' + Object.keys(body || {}).join(','));\n}\n\nconst usable = rows.filter((r) => r && r.productId && r.productCode);\nconst skipped = rows.length - usable.length;\n\n// The cap is applied here as well as server-side. Two independent caps, because\n// a bug in either one otherwise turns into an uncapped crawl of someone's site.\nconst capped = usable.slice(0, cfg.maxProducts);\n\nreturn capped.map((r, i) => ({\n  json: {\n    productId: r.productId,\n    productCode: String(r.productCode),\n    brand: r.brand || '',\n    title: r.title || '',\n    currentPrice: (r.priceNow === undefined ? null : r.priceNow),\n    _index: i + 1,\n    _total: capped.length,\n    _skippedNoCode: skipped,\n  },\n}));"
+      },
+      "id": "pw-05-worklist-to-items",
+      "name": "Worklist To Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        300
+      ],
+      "notes": "One item per product. Applies the cap a second time.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "pw-06-loop-products",
+      "name": "Loop Products",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        620,
+        300
+      ],
+      "notes": "batchSize 1 = concurrency 1. Never raise this; parallel requests are what gets an IP blocked. Output 0 = done, output 1 = loop.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Polite Delay ─────────────────────────────────────────────────────────────\n// Runs at the top of every loop iteration, so it is also the cheapest place to\n// enforce the halt. Randomised, not fixed: a request exactly every 10.000s is a\n// signature, and it is also worse for the source (predictable bursts).\n//\n// If your n8n build blocks setTimeout in the Code node, replace this node with\n// n8n-nodes-base.wait — you lose the jitter, so lower the rate to compensate.\n\nconst cfg = $('Run Config').first().json;\nconst sd = $getWorkflowStaticData('global');\n\nif (sd.halt) {\n  throw new Error('Run halted before this request: ' + sd.halt);\n}\n\nconst span = Math.max(1, cfg.maxDelayMs - cfg.minDelayMs);\nconst waitMs = cfg.minDelayMs + Math.floor(Math.random() * span);\nawait new Promise((resolve) => setTimeout(resolve, waitMs));\n\nreturn $input.all().map((item) => ({ json: { ...item.json, _waitedMs: waitMs } }));"
+      },
+      "id": "pw-07-polite-delay",
+      "name": "Polite Delay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        440
+      ],
+      "notes": "Randomised 6–14s between products. Also enforces the halt.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Run Config').first().json.searchBase }}{{ encodeURIComponent($json.productCode) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "user-agent",
+              "value": "={{ $('Run Config').first().json.userAgent }}"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            },
+            {
+              "name": "accept-language",
+              "value": "en-GB,en;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 3
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "pw-08-search-euronics",
+      "name": "Search Euronics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1080,
+        440
+      ],
+      "notes": "GET /search?text=<productCode>. Honest UA with a contact address — no browser spoofing.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Parse Search HTML ────────────────────────────────────────────────────────\n// Finds the first Euronics product link in a search results page.\n// Verified shape (2026-08): /catalogue/<dept>/<cat>/<sub>/<slug>/p/<SKU>\n// e.g. /catalogue/refrigeration/fridge-freezers/freestanding-fridge-freezers/\n//      beko-ccfm4552w-54cm-5050-frost-free-fridge-freezer-white/p/BEKCCFM4552W\n//\n// Nothing here throws. Every failure becomes a status the server can store —\n// \"not_found\" and \"parse_failed\" are data, and silently dropping them is how a\n// price watcher ends up reporting on 6 of 40 products and nobody notices.\n\nconst sd = $getWorkflowStaticData('global');\nconst p = $('Polite Delay').first().json;\nconst res = $input.first().json;\n\nconst status = res.statusCode;\nconst html = typeof res.body === 'string' ? res.body : '';\n\nconst base = {\n  productId: p.productId,\n  productCode: p.productCode,\n  title: p.title,\n  currentPrice: p.currentPrice,\n  searchUrl: res.url || '',\n  pdpUrl: '',\n  matchConfidence: 0,\n  blocked: false,\n  status: 'ok',\n  note: '',\n  httpStatus: status,\n};\n\n// 403 = Cloudflare. 429/503 = we are being rate limited or shed. All three mean\n// stop, not retry: continuing is how a soft block becomes a permanent one.\nif (status === 403 || status === 429 || status === 503) {\n  sd.halt = 'Euronics search returned HTTP ' + status + ' on ' + p.productCode + ' — run stopped early to avoid a ban.';\n  return [{ json: { ...base, blocked: true, status: 'blocked', note: 'search HTTP ' + status } }];\n}\nif (status !== 200) {\n  return [{ json: { ...base, status: 'not_found', note: 'search HTTP ' + status } }];\n}\nif (!html) {\n  return [{ json: { ...base, status: 'parse_failed', note: 'search returned an empty body' } }];\n}\n\n// Cloudflare sometimes answers 200 with a challenge page. Treat it as blocked.\nif (/cf-browser-verification|Checking your browser|__cf_chl_|Attention Required!/i.test(html)) {\n  sd.halt = 'Euronics served a bot-challenge page (HTTP 200) on ' + p.productCode + ' — run stopped early.';\n  return [{ json: { ...base, blocked: true, status: 'blocked', note: 'bot challenge page behind a 200' } }];\n}\n\nconst linkRe = /href=\"(\\/catalogue\\/[^\"?#]*?\\/p\\/[A-Za-z0-9._-]+)\"/g;\nconst links = [];\nlet m;\nwhile ((m = linkRe.exec(html)) !== null) {\n  if (!links.includes(m[1])) links.push(m[1]);\n  if (links.length >= 20) break;\n}\n\nif (!links.length) {\n  return [{ json: { ...base, status: 'not_found', note: 'no /p/ link in search results for ' + p.productCode } }];\n}\n\n// Prefer a link whose SKU actually contains our product code (BEKCCFM4552W\n// contains CCFM4552W). Falling back to \"first result\" is legitimate but much\n// weaker, and the confidence we report has to say so — the guards use it.\nconst norm = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]/g, '');\nconst code = norm(p.productCode);\nconst scored = links.map((href) => {\n  const sku = norm(href.split('/p/').pop());\n  return { href, sku, exact: code.length >= 4 && sku.includes(code) };\n});\nconst hit = scored.find((s) => s.exact) || scored[0];\n\nreturn [{\n  json: {\n    ...base,\n    pdpUrl: hit.href,\n    sku: hit.sku,\n    matchConfidence: hit.exact ? 1 : 0.4,\n    note: hit.exact\n      ? 'SKU ' + hit.sku + ' contains product code ' + code\n      : 'no SKU matched ' + code + '; took first of ' + links.length + ' results — low confidence',\n  },\n}];"
+      },
+      "id": "pw-09-parse-search-html",
+      "name": "Parse Search HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        440
+      ],
+      "notes": "First /catalogue/.../p/<SKU> link, SKU-matched where possible.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "blocked-search",
+              "leftValue": "={{ $json.blocked }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "pw-10-if-search-blocked",
+      "name": "IF Search Blocked",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        440
+      ],
+      "notes": "true = 403/429/503 or a Cloudflare challenge. Exits the loop.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "have-pdp",
+              "leftValue": "={{ $json.pdpUrl }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "pw-11-if-product-found",
+      "name": "IF Product Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        520
+      ],
+      "notes": "false = no product page for this code. Recorded as not_found, never dropped.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Run Config').first().json.origin }}{{ $json.pdpUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "user-agent",
+              "value": "={{ $('Run Config').first().json.userAgent }}"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            },
+            {
+              "name": "accept-language",
+              "value": "en-GB,en;q=0.9"
+            },
+            {
+              "name": "referer",
+              "value": "={{ $json.searchUrl }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 3
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "pw-12-fetch-pdp",
+      "name": "Fetch PDP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1960,
+        440
+      ],
+      "notes": "Second and last request for this product. Two requests per product, no images, no assets.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Extract Price ────────────────────────────────────────────────────────────\n// PRIMARY  : the structured value embedded in the page — \"price\": \"349.0\"\n// FALLBACK : the visible currency figure — £349.00\n//\n// The fallback is second for a reason. A PDP contains many £ figures: the was-\n// price, finance-per-month, delivery, extended warranty, \"customers also bought\".\n// Picking the first or the largest is a coin toss. So the fallback takes the\n// *most frequently repeated* plausible figure (a current price is normally\n// printed several times: header, sticky bar, basket panel) and reports lower\n// confidence, because it genuinely is a weaker read.\n//\n// Verified against the live PDP on 2026-08-13:\n//   /catalogue/.../beko-ccfm4552w-.../p/BEKCCFM4552W  ->  \"price\": \"349.0\"  and  £349.00\n\nconst sd = $getWorkflowStaticData('global');\nconst meta = $('Parse Search HTML').first().json;\nconst cfg = $('Run Config').first().json;\nconst res = $input.first().json;\n\nconst status = res.statusCode;\nconst html = typeof res.body === 'string' ? res.body : '';\nconst sourceUrl = cfg.origin + meta.pdpUrl;\n\nconst out = {\n  productId: meta.productId,\n  productCode: meta.productCode,\n  sourceUrl,\n  price: null,\n  deliveryCost: null,   // Euronics does not state it on the PDP. null, never 0 —\n                        // guards.evaluateGuards blocks on unknown_delivery, and\n                        // pretending delivery is free is how a landed-price\n                        // comparison silently becomes wrong.\n  inStock: null,\n  includesVat: true,    // UK retail display prices are inc-VAT.\n  matchConfidence: meta.matchConfidence,\n  blocked: false,\n  status: 'ok',\n  note: meta.note,\n};\n\n// Every non-blocked outcome is recorded here. The blocked ones are not: they\n// exit to \"Record Blocked And Halt\", which records them and ends the run, so\n// recording twice would double-post the same observation.\nconst record = (o) => {\n  const rec = {\n    productId: o.productId,\n    price: o.price,\n    deliveryCost: o.deliveryCost,\n    inStock: o.inStock,\n    includesVat: o.includesVat,\n    sourceUrl: o.sourceUrl,\n    matchConfidence: o.matchConfidence,\n    status: o.status,\n    note: String(o.note || '').slice(0, 480),\n    observedAt: new Date().toISOString(),\n  };\n  sd.observations.push(rec);\n  return [{ json: { ...rec, blocked: false, productCode: o.productCode } }];\n};\n\nif (status === 403 || status === 429 || status === 503) {\n  sd.halt = 'Euronics PDP returned HTTP ' + status + ' on ' + meta.productCode + ' — run stopped early to avoid a ban.';\n  return [{ json: { ...out, blocked: true, status: 'blocked', note: 'PDP HTTP ' + status } }];\n}\nif (/cf-browser-verification|Checking your browser|__cf_chl_|Attention Required!/i.test(html)) {\n  sd.halt = 'Euronics served a bot-challenge page on the PDP for ' + meta.productCode + ' — run stopped early.';\n  return [{ json: { ...out, blocked: true, status: 'blocked', note: 'bot challenge page on PDP' } }];\n}\nif (status === 404) {\n  return record({ ...out, status: 'not_found', note: 'PDP 404 — search link is stale' });\n}\nif (status !== 200 || !html) {\n  return record({ ...out, status: 'parse_failed', note: 'PDP HTTP ' + status });\n}\n\nconst toNum = (s) => Number(String(s).replace(/,/g, ''));\nconst plausible = (n) => Number.isFinite(n) && n >= 1 && n <= 20000;\n\n// ── PRIMARY: structured ─────────────────────────────────────────────────────\nconst structured = [];\nconst structRe = /\"price\"\\s*:\\s*\"?([0-9][0-9,]{0,8}(?:\\.[0-9]{1,2})?)\"?/g;\nlet sm;\nwhile ((sm = structRe.exec(html)) !== null) {\n  const n = toNum(sm[1]);\n  if (plausible(n)) structured.push(n);\n}\n\n// ── FALLBACK: visible currency ──────────────────────────────────────────────\nconst visible = [];\nconst moneyRe = /£\\s?([0-9][0-9,]{0,8}(?:\\.[0-9]{2})?)/g;\nlet vm;\nwhile ((vm = moneyRe.exec(html)) !== null) {\n  const n = toNum(vm[1]);\n  if (plausible(n)) visible.push(n);\n}\nconst counts = new Map();\nfor (const n of visible) counts.set(n, (counts.get(n) || 0) + 1);\nlet modal = null, modalCount = 0;\nfor (const [n, c] of counts) {\n  if (c > modalCount) { modal = n; modalCount = c; }\n}\n\nlet price = null;\nlet method = '';\nlet confidence = meta.matchConfidence;\nconst notes = [];\n\nif (structured.length) {\n  price = structured[0];\n  method = 'structured';\n  const distinct = [...new Set(structured)];\n  if (distinct.length > 1) {\n    confidence -= 0.15;\n    notes.push('page carried ' + distinct.length + ' distinct \"price\" values (' + distinct.slice(0, 4).join('/') + '); took the first');\n  }\n  // Cross-check. If the printed £ figure agrees, that is real corroboration.\n  if (modal !== null && Math.abs(modal - price) < 0.01) {\n    notes.push('structured value corroborated by the printed £ figure');\n  } else if (modal !== null) {\n    confidence -= 0.2;\n    notes.push('structured ' + price + ' disagrees with the most-printed £ figure ' + modal);\n  }\n} else if (modal !== null) {\n  price = modal;\n  method = 'regex-fallback';\n  confidence -= 0.25;\n  notes.push('no structured \"price\" on the page; fell back to the £ figure printed ' + modalCount + 'x out of ' + visible.length + ' £ figures');\n} else {\n  return record({ ...out, status: 'parse_failed', note: 'no structured \"price\" and no £ figure found on ' + sourceUrl });\n}\n\n// Stock. Absence of the phrase is not proof of stock, so only a positive match\n// on an out-of-stock phrase sets false; otherwise stays null (= unknown).\nlet inStock = null;\nif (/out of stock|sold out|currently unavailable|no longer available/i.test(html)) inStock = false;\nelse if (/in stock|add to (basket|cart)/i.test(html)) inStock = true;\n\nreturn record({\n  ...out,\n  price,\n  inStock,\n  status: 'ok',\n  matchConfidence: Math.max(0, Math.min(1, Number(confidence.toFixed(2)))),\n  note: [meta.note, method + ': ' + price].concat(notes).filter(Boolean).join(' | '),\n});"
+      },
+      "id": "pw-13-extract-price",
+      "name": "Extract Price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2180,
+        440
+      ],
+      "notes": "PRIMARY \"price\": \"N\"  |  FALLBACK modal £N. Records the observation.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "blocked-pdp",
+              "leftValue": "={{ $json.blocked }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "pw-14-if-pdp-blocked",
+      "name": "IF PDP Blocked",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        440
+      ],
+      "notes": "The PDP can be blocked even when search was not. Same rule: stop, do not retry.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Record Not Found ─────────────────────────────────────────────────────────\n// The search ran, the source answered, and there was no product page for this\n// code. That is a result worth storing: it tells the owner \"we cannot benchmark\n// this line\", which is different from \"we forgot to look\".\n\nconst sd = $getWorkflowStaticData('global');\nconst src = $input.first().json;\n\nconst rec = {\n  productId: src.productId,\n  price: null,\n  deliveryCost: null,\n  inStock: null,\n  includesVat: true,\n  sourceUrl: src.searchUrl || '',\n  matchConfidence: 0,\n  status: src.status === 'parse_failed' ? 'parse_failed' : 'not_found',\n  note: (src.note || 'no Euronics product page for ' + src.productCode).slice(0, 480),\n  observedAt: new Date().toISOString(),\n};\n\nsd.observations.push(rec);\nreturn [{ json: rec }];"
+      },
+      "id": "pw-15-record-not-found",
+      "name": "Record Not Found",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        640
+      ],
+      "notes": "Stores the miss so \"we cannot benchmark this\" is visible.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Record Blocked And Halt ──────────────────────────────────────────────────\n// Reached from either the search branch or the PDP branch. This node does NOT\n// loop back — it exits the loop straight into the flush, so whatever we already\n// collected still gets posted, and then the run ends.\n//\n// Deliberately no retry, no backoff-and-continue. A 403 from Cloudflare is the\n// source saying stop. Retrying is how a temporary block becomes a permanent one,\n// and there is no price on this site worth losing access over.\n\nconst sd = $getWorkflowStaticData('global');\nconst src = $input.first().json;\n\nconst rec = {\n  productId: src.productId,\n  price: null,\n  deliveryCost: null,\n  inStock: null,\n  includesVat: true,\n  sourceUrl: src.sourceUrl || src.searchUrl || '',\n  matchConfidence: 0,\n  status: 'blocked',\n  note: (src.note || 'blocked').slice(0, 480),\n  observedAt: new Date().toISOString(),\n};\n\nsd.observations.push(rec);\nif (!sd.halt) sd.halt = 'blocked on ' + src.productCode;\n\nreturn [{ json: { ...rec, halted: sd.halt } }];"
+      },
+      "id": "pw-16-record-blocked-and-halt",
+      "name": "Record Blocked And Halt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1740,
+        200
+      ],
+      "notes": "Sets the halt flag and exits the loop into the flush.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Build Observation Batch ──────────────────────────────────────────────────\n// Reached two ways: the loop finished normally, or \"Record Blocked And Halt\"\n// jumped here. Both flush the same accumulator, so a halted run still posts\n// what it managed to collect.\n//\n// The exact JSON string built here is what gets signed AND what gets sent. It\n// must not be re-serialised downstream: the HMAC covers `${timestamp}.${rawBody}`\n// byte for byte, so a re-stringify that reorders one key is a 401. That is why\n// \"POST Observations\" sends contentType:\"raw\" rather than letting n8n build the\n// body from a JSON field.\n\nconst cfg = $('Run Config').first().json;\nconst sd = $getWorkflowStaticData('global');\n\nconst all = Array.isArray(sd.observations) ? sd.observations : [];\nconst MAX = 500;\nconst observations = all.slice(0, MAX);\nconst dropped = all.length - observations.length;\n\nconst counts = observations.reduce((acc, o) => {\n  acc[o.status] = (acc[o.status] || 0) + 1;\n  return acc;\n}, {});\n\nconst payload = {\n  sourceId: cfg.sourceId,\n  runStartedAt: sd.startedAt,\n  runFinishedAt: new Date().toISOString(),\n  halted: sd.halt || null,\n  observations,\n};\n\n// An empty batch is still posted on purpose: it is the heartbeat that moves\n// PriceSource.lastRunAt / lastRunStatus. A source that silently stops running\n// looks identical to a source where nothing changed.\nconst rawBody = JSON.stringify(payload);\n\nreturn [{\n  json: {\n    rawBody,\n    count: observations.length,\n    dropped,\n    counts,\n    halted: payload.halted,\n    // TextEncoder, not Buffer — Buffer is not reliably exposed in the Code\n    // node sandbox, and this figure is only for the run log.\n    bytes: new TextEncoder().encode(rawBody).length,\n  },\n}];"
+      },
+      "id": "pw-17-build-observation-batch",
+      "name": "Build Observation Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        140
+      ],
+      "notes": "Builds the exact JSON string that gets signed and sent.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Sign Observations POST ───────────────────────────────────────────────────\n// Same scheme as the worklist GET, but rawBody is now the JSON we are about to\n// send. Signing the body — not just the timestamp — is the whole point: it is\n// what stops anyone who sees one request from replaying it with different prices.\n//\n// Timestamp is generated here, immediately before the POST. lib/machine-auth.ts\n// rejects anything more than 300s out, and a batch built at the top of a\n// 15-minute run would already be stale.\n\nlet crypto;\ntry {\n  crypto = require('crypto');\n} catch (e) {\n  throw new Error('The Code node cannot require(\"crypto\"). Set NODE_FUNCTION_ALLOW_BUILTIN=crypto on the n8n container and restart it. See ops/n8n/README.md.');\n}\n\nconst cfg = $('Run Config').first().json;\nconst batch = $input.first().json;\n\nconst envName = 'PRICE_INGEST_SECRET_' + String(cfg.keyId).toUpperCase().replace(/[^A-Z0-9]/g, '_');\nconst secret = $env[envName];\nif (!secret) {\n  throw new Error('No secret in environment variable ' + envName + '.');\n}\n\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update('observations.' + timestamp + '.' + batch.rawBody, 'utf8')\n  .digest('hex');\n\nreturn [{\n  json: {\n    ...batch,\n    url: cfg.appBaseUrl + '/api/price-ingest/observations',\n    keyId: cfg.keyId,\n    timestamp,\n    signature,\n  },\n}];"
+      },
+      "id": "pw-18-sign-observations-post",
+      "name": "Sign Observations Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        140
+      ],
+      "notes": "HMAC over `${ts}.${rawBody}`, generated just before the POST.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pw-key",
+              "value": "={{ $json.keyId }}"
+            },
+            {
+              "name": "x-pw-timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "x-pw-signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "user-agent",
+              "value": "={{ $('Run Config').first().json.userAgent }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.rawBody }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "pw-19-post-observations",
+      "name": "POST Observations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        140
+      ],
+      "notes": "contentType RAW on purpose. If n8n re-serialises the JSON, one reordered key breaks the HMAC and the route 401s.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Run Summary ──────────────────────────────────────────────────────────────\n// Last node. Clears the accumulator, then decides whether this execution counts\n// as a success. Throwing here is intentional: a halted or rejected run must show\n// as a FAILED execution in n8n so the operator's error workflow / email fires.\n// A run that quietly ends green after being blocked is how you find out three\n// weeks later that the prices are stale.\n\nconst sd = $getWorkflowStaticData('global');\nconst batch = $('Sign Observations Post').first().json;\nconst res = $input.first().json;\n\nconst summary = {\n  startedAt: sd.startedAt,\n  finishedAt: new Date().toISOString(),\n  posted: batch.count,\n  dropped: batch.dropped,\n  byStatus: batch.counts,\n  bytes: batch.bytes,\n  ingestStatus: res.statusCode,\n  ingestBody: typeof res.body === 'string' ? res.body.slice(0, 400) : res.body,\n  halted: batch.halted,\n};\n\nconst halt = sd.halt;\nsd.observations = [];\nsd.halt = null;\n\nif (res.statusCode === 401 || res.statusCode === 403) {\n  throw new Error('Ingest rejected the batch (HTTP ' + res.statusCode + '). Check PRICE_INGEST_SECRET_COLLECTOR, the container clock (the signature window is 300s), and that key \"collector\" is allowed on the observations route. Body: ' + JSON.stringify(summary.ingestBody));\n}\nif (res.statusCode < 200 || res.statusCode >= 300) {\n  throw new Error('Ingest returned HTTP ' + res.statusCode + '. ' + JSON.stringify(summary.ingestBody));\n}\nif (halt) {\n  throw new Error('Run stopped early and its partial results were posted. Reason: ' + halt);\n}\n\nreturn [{ json: summary }];"
+      },
+      "id": "pw-20-run-summary",
+      "name": "Run Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        140
+      ],
+      "notes": "Throws on a halted or rejected run so the execution shows as failed.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Nightly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Config": {
+      "main": [
+        [
+          {
+            "node": "Sign Worklist Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Worklist Request": {
+      "main": [
+        [
+          {
+            "node": "GET Worklist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Worklist": {
+      "main": [
+        [
+          {
+            "node": "Worklist To Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Worklist To Items": {
+      "main": [
+        [
+          {
+            "node": "Loop Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Products": {
+      "main": [
+        [
+          {
+            "node": "Build Observation Batch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Polite Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Polite Delay": {
+      "main": [
+        [
+          {
+            "node": "Search Euronics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Euronics": {
+      "main": [
+        [
+          {
+            "node": "Parse Search HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Search HTML": {
+      "main": [
+        [
+          {
+            "node": "IF Search Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Search Blocked": {
+      "main": [
+        [
+          {
+            "node": "Record Blocked And Halt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Product Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Product Found": {
+      "main": [
+        [
+          {
+            "node": "Fetch PDP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch PDP": {
+      "main": [
+        [
+          {
+            "node": "Extract Price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Price": {
+      "main": [
+        [
+          {
+            "node": "IF PDP Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF PDP Blocked": {
+      "main": [
+        [
+          {
+            "node": "Record Blocked And Halt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Not Found": {
+      "main": [
+        [
+          {
+            "node": "Loop Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Blocked And Halt": {
+      "main": [
+        [
+          {
+            "node": "Build Observation Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Observation Batch": {
+      "main": [
+        [
+          {
+            "node": "Sign Observations Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Observations Post": {
+      "main": [
+        [
+          {
+            "node": "POST Observations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Observations": {
+      "main": [
+        [
+          {
+            "node": "Run Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/London",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600
+  },
+  "staticData": null,
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

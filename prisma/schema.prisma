@@ -46,6 +46,18 @@ model Product {
   seoDescription        String    @default("")
   lastScrapedAt         DateTime?
   lastUpdatedByAdmin    DateTime?
+  /// EAN/GTIN. Google Merchant Center will not return its free price-benchmark
+  /// data without one, and it is also the only reliable key for matching the
+  /// same appliance across retailers — model codes are formatted inconsistently.
+  gtin                  String    @default("")
+  /// What the unit costs us, ex-VAT. The ONLY thing that can prove a proposed
+  /// price is not below cost; a percentage-drop guard cannot. Never written by
+  /// a scrape — see SCRAPE_OWNED in lib/importer.ts.
+  costPrice             Float?
+  /// Explicit "never advertise below this" override, inc-VAT. When unset the
+  /// floor is derived from costPrice + the category's minimum margin.
+  floorPrice            Float?
+  priceObservations     PriceObservation[]
   isVisible             Boolean   @default(true)
   featured              Boolean   @default(false)
   adminOverrideFields   Json      // field names locked from being overwritten by re-scrape
@@ -121,6 +133,56 @@ model BusinessInfo {
   registeredOffice       String   @default("")
   vatNumber              String   @default("")
   updatedAt              DateTime @updatedAt
+}
+
+/// A place prices come from. `authorised` means we are entitled to the data
+/// (our own supplier/buying group, a licensed feed) and it may — with a floor —
+/// be allowed to auto-apply. `advisory` is somebody else's retail price on
+/// somebody else's cost base and may NEVER auto-apply, only inform a human.
+model PriceSource {
+  id             String   @id                   // "euronics", "cih", "google-benchmark"
+  label          String
+  kind           String   @default("advisory")  // "authorised" | "advisory"
+  /// Are the prices this source reports VAT-inclusive? Retail = true, trade = false.
+  /// Getting this wrong over-prices by 20%, so it is explicit per source, never guessed.
+  priceIncludesVat Boolean @default(true)
+  allowAutoApply Boolean  @default(false)
+  enabled        Boolean  @default(true)
+  lastRunAt      DateTime?
+  lastRunStatus  String   @default("")
+  observations   PriceObservation[]
+  createdAt      DateTime @default(now())
+}
+
+/// One price seen at one source at one moment. Append-only: history is what makes
+/// a trend visible and lets a bad scrape be spotted rather than silently applied.
+model PriceObservation {
+  id            String      @id @default(cuid())
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sourceId      String
+  source        PriceSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  /// Headline price as shown by the source, in GBP.
+  price         Float?
+  /// Delivery, where the source states it. null means UNKNOWN, not free — the
+  /// guards refuse to auto-apply on unknown delivery rather than treat it as 0.
+  deliveryCost  Float?
+  inStock       Boolean?
+  /// Copied from the source at observation time so a later config change cannot
+  /// retro-reinterpret an old row.
+  includesVat   Boolean     @default(true)
+  sourceUrl     String      @default("")
+  /// How confident we are this really is the same product. Anything below 1.0
+  /// came from fuzzy matching and is held for human confirmation.
+  matchConfidence Float     @default(0)
+  /// "ok" | "blocked" | "not_found" | "parse_failed" — a failed run is recorded,
+  /// never silently dropped, or a dead scraper looks identical to stable prices.
+  status        String      @default("ok")
+  note          String      @default("")
+  observedAt    DateTime    @default(now())
+
+  @@index([productId, observedAt])
+  @@index([sourceId, observedAt])
 }
 
 model ServiceAddOn {

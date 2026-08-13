@@ -4,7 +4,7 @@ import { usingDevPassword } from "@/lib/auth";
 import { adminHref, SIGNIN_PATH } from "@/lib/admin-config";
 import {
   LayoutDashboard, PackagePlus, Package, LayoutGrid, Tag, Megaphone,
-  MessageCircle, Inbox, Store, RefreshCw, ArrowUpRight, type LucideIcon,
+  MessageCircle, Inbox, Store, RefreshCw, ArrowUpRight, TrendingUp, type LucideIcon,
 } from "lucide-react";
 
 /**
@@ -25,6 +25,7 @@ const GROUPS: { title: string; items: [string, string, LucideIcon][] }[] = [
     items: [
       ["products/new", "Add product", PackagePlus],
       ["products", "Products", Package],
+      ["price-watch", "Price watch", TrendingUp],
       ["categories", "Categories", LayoutGrid],
       ["brands", "Brands", Tag],
     ],
