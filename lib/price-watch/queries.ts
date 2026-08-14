@@ -447,11 +447,22 @@ export async function worklistProducts(db: any, opts: { limit: number; sourceId:
     });
   }
 
-  // Never-observed first, then oldest observation first.
+  // Never-observed first, then oldest observation first — but among products of
+  // equal staleness, check the DEAREST first.
+  //
+  // The nightly request budget is small and deliberately so (politeness caps in
+  // the collector). Spending it on £4 spare parts is waste twice over: a pound
+  // mispriced on a £900 oven dwarfs the whole accessories aisle, and the buying
+  // group's site does not even list most manufacturer spares — the first live
+  // run burned its entire budget on Bosch part numbers and correctly returned
+  // "not found" for every one.
   due.sort((a, b) => {
     const at = a.lastObservedAt ? a.lastObservedAt.getTime() : Number.NEGATIVE_INFINITY;
     const bt = b.lastObservedAt ? b.lastObservedAt.getTime() : Number.NEGATIVE_INFINITY;
     if (at !== bt) return at - bt;
+    const ap = a.priceNow ?? -1;
+    const bp = b.priceNow ?? -1;
+    if (ap !== bp) return bp - ap; // dearest first; unpriced last
     return a.productId.localeCompare(b.productId);
   });
 
