@@ -122,7 +122,66 @@ export default async function TermsPage() {
         uninterrupted or error-free.
       </P>
 
-      <H>8. Complaints and governing law</H>
+      <H>8. Availability, and when we may cancel</H>
+      <P>
+        Everything on this site is subject to availability. Occasionally a model is discontinued by the
+        manufacturer or sells out between your seeing it here and calling us. If we cannot supply what you
+        ordered we will tell you promptly, offer the nearest equivalent, and refund anything you have paid if
+        you would rather not proceed. We may also cancel an order where the price or description was clearly
+        wrong, or where we cannot deliver to your address — again, with a full refund of anything paid.
+      </P>
+
+      <H>9. Risk and ownership</H>
+      <P>
+        The goods become your responsibility when they are delivered to the address you gave us, or when you
+        collect them from the shop. They remain our property until we have received payment in full.
+      </P>
+
+      <H>10. Repairs and service visits</H>
+      <P>
+        Where we attend to repair or service an appliance, any charge for the visit is explained to you before
+        we book it, and is payable whether or not a repair proves possible. Parts and labour we supply are
+        guaranteed for the period we quote at the time. We cannot accept responsibility for a fault caused by
+        misuse, accidental damage, or work previously carried out by someone else, and we may decline to work
+        on an appliance where doing so would be unsafe.
+      </P>
+
+      <H>11. Our responsibility to you</H>
+      <P>
+        If we fail to meet these terms we are responsible for loss or damage you suffer that is a foreseeable
+        result of that failure, but we are not responsible for loss or damage that is not foreseeable. We do
+        not exclude or limit our liability in any way where it would be unlawful to do so — this includes
+        liability for death or personal injury caused by our negligence, for fraud, and for any breach of your
+        statutory rights in the goods.
+      </P>
+      <P>
+        Because we are a shop selling to consumers, we are not liable for business losses. If you buy for a
+        business purpose we have no liability for loss of profit, loss of business or loss of opportunity.
+      </P>
+
+      <H>12. This website</H>
+      <P>
+        The text, photographs and layout of this site belong to us or to our suppliers, and may not be copied
+        or republished without permission. We make every effort to describe products accurately, but content
+        drawn from manufacturers may contain errors, and nothing here forms a term of any contract until we
+        confirm it with you. We do not guarantee the site will be free from interruption or error, and we are
+        not responsible for the content of any site we link to.
+      </P>
+
+      <H>13. Changes to these terms</H>
+      <P>
+        We may update these terms from time to time — for example when the law changes or we add a service.
+        The version published here when you place your order is the version that applies to it.
+      </P>
+
+      <H>14. General</H>
+      <P>
+        If any part of these terms turns out to be unenforceable, the rest continues to apply. Only you and we
+        may enforce this contract; no one else acquires rights under it. If we do not insist on something you
+        are required to do, or delay in doing so, that does not prevent us from enforcing it later.
+      </P>
+
+      <H>15. Complaints and governing law</H>
       <P>
         If something has gone wrong, call us on{" "}
         <a href={telHref(b.phone)} className="font-semibold text-blue-deep underline underline-offset-4">{b.phone}</a>{" "}
