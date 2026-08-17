@@ -82,6 +82,16 @@ type ApplyResult = {
  * text for the person who runs the shop. Codes the guards may add in future
  * fall back to a safe generic sentence — never the raw key.
  */
+// Guard codes that gate only UNATTENDED application. A human at this screen may
+// still Apply despite them — the reason is shown as advice, not a wall. Kept in
+// step with AUTO_ONLY_BLOCKS in lib/price-watch/guards.ts (the server enforces
+// the same split, so this only decides which button is enabled). Everything not
+// here is a hard block (below cost, VAT-basis error, POA, unusable reading).
+const AUTO_ONLY = new Set<string>([
+  "no_floor_data", "unknown_delivery", "advisory_source", "stale_observation",
+  "implausible_move", "unconfirmed_match", "source_auto_apply_disabled", "auto_apply_flag_unknown",
+]);
+
 const REASON: Record<string, string> = {
   // blocking
   below_floor: "Would sell below your floor price",
@@ -175,13 +185,16 @@ export default function PriceWatchAdmin({
       const chosen = r.observations.find((o) => o.sourceId === sourceId) ?? null;
       const others = r.observations.filter((o) => o.sourceId !== sourceId);
       const gap = gapOf(r.priceNow, chosen?.price ?? null);
-      const blocking = !chosen
+      const rawBlocking = !chosen
         ? ["no_observation"]
         : chosen.price === null
           ? ["no_price"]
           : chosen.guards.blocking;
-      const canApply = Boolean(chosen && chosen.price !== null && chosen.guards.allowed);
-      return { row: r, chosen, others, gap, blocking, warnings: chosen?.guards.warnings ?? [], canApply };
+      // Hard blockers stop a human; auto-only ones are shown as advice.
+      const blocking = rawBlocking.filter((b) => !AUTO_ONLY.has(b));
+      const advisories = rawBlocking.filter((b) => AUTO_ONLY.has(b));
+      const canApply = Boolean(chosen && chosen.price !== null && blocking.length === 0);
+      return { row: r, chosen, others, gap, blocking, advisories, warnings: chosen?.guards.warnings ?? [], canApply };
     });
     return decorated.sort((a, b) => {
       const rank = (x: typeof a) => (!x.chosen ? 2 : !x.gap ? 1 : 0);

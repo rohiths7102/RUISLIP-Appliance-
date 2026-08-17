@@ -152,6 +152,16 @@ export type GuardProduct = {
   subcategory?: string | null;
   /** Pre-computed POA flag; wins over `poaNames` when supplied. */
   isPoa?: boolean;
+  /**
+   * Agency stock: the buying group both owns the stock and sets the retail
+   * price, and the shop earns a fixed commission rather than a buy-sell margin.
+   * There is therefore NO cost the shop could sell below, so the two cost-floor
+   * guards do not apply — the mandated price is the shop's own correct price,
+   * not a competitor number to be floored. Every other guard still runs. The
+   * feed's "B2B price" for these is the group's cost basis, not the shop's, and
+   * is deliberately NOT stored as costPrice (see import-euronics-feed.mjs).
+   */
+  mandated?: boolean;
 };
 
 export type GuardInput = {
@@ -295,16 +305,22 @@ export function evaluateGuards(input: GuardInput): GuardResult {
   const proposed = isPositive(proposal.proposedPrice) ? proposal.proposedPrice : null;
   if (proposed === null) blocking.push("invalid_proposal");
 
+  // Agency/mandated stock carries no shop-side cost, so the two cost-floor
+  // guards are not just skipped but MEANINGLESS here — applying the group's
+  // mandated retail price is compliance, not a margin decision. Every other
+  // guard below still runs.
+  const mandated = product.mandated === true;
+
   // --- 1. below_floor — THE critical guard ---------------------------------
   // A penny of float noise must not be treated as a breach, but nothing wider
   // than that is tolerated.
-  if (proposed !== null && floor !== null && proposed < floor - 0.005) blocking.push("below_floor");
+  if (!mandated && proposed !== null && floor !== null && proposed < floor - 0.005) blocking.push("below_floor");
 
   // --- 2. no_floor_data ----------------------------------------------------
   // No cost and no explicit floor means there is no arithmetic anywhere that
   // can show this price is profitable. Auto-apply is impossible, permanently —
   // not "until a percentage-drop check passes".
-  if (floor === null) blocking.push("no_floor_data");
+  if (!mandated && floor === null) blocking.push("no_floor_data");
 
   // --- 3. vat_basis_mismatch ----------------------------------------------
   // We advertise inc-VAT. A trade (ex-VAT) quote taken literally under-prices
@@ -420,6 +436,33 @@ const GUARD_ORDER: GuardCode[] = [
   "auto_apply_flag_unknown",
   "low_confidence_source_url",
 ];
+
+/**
+ * Guards that gate UNATTENDED (auto) application only. A human looking at the
+ * review screen is the authority these gate against, so a manual "Apply" may
+ * proceed despite them — the reason is still shown, the owner still decides.
+ *
+ * Everything NOT in this set is a HARD block that stops a human too, because it
+ * is a money-critical or data-integrity fault the owner cannot sensibly
+ * override by eye: below_floor (sell below cost), vat_basis_mismatch (a hidden
+ * 20% error), poa_category (a withheld price must never publish), and the
+ * "this observation is not a usable price at all" faults.
+ */
+export const AUTO_ONLY_BLOCKS: ReadonlySet<string> = new Set<GuardCode>([
+  "no_floor_data",           // owner sets prices without a system cost routinely
+  "unknown_delivery",        // owner knows their own delivery terms
+  "advisory_source",         // owner may choose to match a competitor
+  "stale_observation",       // owner can judge whether it is still current
+  "implausible_move",        // a scraper sanity check, not a human one
+  "unconfirmed_match",       // owner can eyeball whether it is the same product
+  "source_auto_apply_disabled", // the flag is literally "do not AUTO-apply"
+  "auto_apply_flag_unknown",
+]);
+
+/** Blockers that stop a human too — the auto-only ones removed. */
+export function manualBlockers(blocking: string[]): string[] {
+  return blocking.filter((b) => !AUTO_ONLY_BLOCKS.has(b));
+}
 
 /** A GuardResult for a product we have no usable observation for at all. */
 export function noObservationResult(floor: number | null): GuardResult {

@@ -57,6 +57,10 @@ model Product {
   /// Explicit "never advertise below this" override, inc-VAT. When unset the
   /// floor is derived from costPrice + the category's minimum margin.
   floorPrice            Float?
+  /// Agency stock: the buying group owns the unit and sets the retail price;
+  /// the shop earns commission, not margin. There is no shop-side cost to sell
+  /// below, so the cost-floor guards do not apply (see lib/price-watch/guards).
+  agencyStock           Boolean   @default(false)
   priceObservations     PriceObservation[]
   isVisible             Boolean   @default(true)
   featured              Boolean   @default(false)

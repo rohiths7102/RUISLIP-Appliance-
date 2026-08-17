@@ -15,7 +15,7 @@ function esc(s: string): string {
  */
 type FeedRow = {
   productCode: string; title: string; brand: string; slug: string; priceNow: number;
-  mainImage: string; shortDescription: string; descriptionText: string;
+  mainImage: string; shortDescription: string; descriptionText: string; gtin: string;
 };
 
 export async function GET() {
@@ -41,7 +41,7 @@ export async function GET() {
       },
       select: {
         productCode: true, title: true, brand: true, slug: true, priceNow: true,
-        mainImage: true, shortDescription: true, descriptionText: true,
+        mainImage: true, shortDescription: true, descriptionText: true, gtin: true,
       },
       orderBy: { productCode: "asc" },
     });
@@ -65,6 +65,11 @@ export async function GET() {
         "      <g:condition>new</g:condition>",
         `      <g:brand>${esc(p.brand)}</g:brand>`,
         `      <g:mpn>${esc(p.productCode)}</g:mpn>`,
+        // GTIN is what turns on Google Merchant's free price-benchmark report —
+        // Google withholds competitor benchmark data for any item without one.
+        // Emitted only when present (from the CIH feed's EAN column); an empty
+        // or invalid g:gtin is worse than none and gets the item disapproved.
+        ...(p.gtin && /^\d{8,14}$/.test(p.gtin) ? [`      <g:gtin>${esc(p.gtin)}</g:gtin>`] : []),
         "    </item>",
       ].join("\n");
     });

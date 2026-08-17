@@ -5,7 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { reconcileSaving } from "@/lib/admin-product";
 import { poaNamesFromDb, isPoaProduct } from "@/lib/poa";
 import { revalidateStorefront } from "@/lib/revalidate";
-import { DEFAULT_GUARD_CONFIG, evaluateGuards } from "@/lib/price-watch/guards";
+import { DEFAULT_GUARD_CONFIG, evaluateGuards, manualBlockers } from "@/lib/price-watch/guards";
 import { syncProductToRag } from "@/lib/rag/index";
 
 export const dynamic = "force-dynamic";
@@ -146,12 +146,20 @@ export async function POST(req: Request) {
             category: p.category,
             subcategory: p.subcategory,
             isPoa,
+            // Agency stock has no shop-side cost, so the cost-floor guards do
+            // not apply — the mandated retail price is the correct price.
+            mandated: (p as { agencyStock?: boolean }).agencyStock === true,
           },
           poaNames,
           config: CFG,
           now: new Date(),
         });
-        verdict = { allowed: g.allowed && g.blocking.length === 0, blocking: g.blocking };
+        // This is a HUMAN pressing Apply, so the auto-only guards (e.g. "source
+        // not enabled for auto-apply", "unconfirmed match") do not stop them —
+        // only the hard, money-critical / data-integrity blockers do. The
+        // auto-only reasons were already shown on the review screen.
+        const hard = manualBlockers(g.blocking);
+        verdict = { allowed: hard.length === 0, blocking: hard };
       } catch {
         // Fail closed: a guard module that throws refuses the write.
         verdict = { allowed: false, blocking: ["guard_error"] };

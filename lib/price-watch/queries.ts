@@ -119,6 +119,7 @@ type ProductRow = {
   priceNow: number | null;
   costPrice: number | null;
   floorPrice: number | null;
+  agencyStock: boolean;
   isVisible: boolean;
   lastScrapedAt: Date | null;
 };
@@ -150,6 +151,7 @@ const PRODUCT_SELECT = {
   priceNow: true,
   costPrice: true,
   floorPrice: true,
+  agencyStock: true,
   isVisible: true,
   lastScrapedAt: true,
 } as const;
@@ -314,7 +316,7 @@ export async function priceWatchRows(db: any, opts?: { limit?: number }): Promis
             observedAt: reference.observedAt,
           },
         },
-        product: { costPrice: p.costPrice, floorPrice: p.floorPrice, category: p.category, subcategory: p.subcategory, isPoa },
+        product: { costPrice: p.costPrice, floorPrice: p.floorPrice, category: p.category, subcategory: p.subcategory, isPoa, mandated: p.agencyStock === true },
         poaNames,
         config: cfg,
         now,
