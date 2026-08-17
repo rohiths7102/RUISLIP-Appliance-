@@ -3,6 +3,7 @@ import { searchIndex } from "@/lib/rag/index";
 import { getBusiness } from "@/lib/repo";
 import { buildSystemPrompt, buildContextBlock, extractSources } from "@/lib/chat/prompt";
 import { callGroq, groqConfigured, type ChatMsg } from "@/lib/chat/groq";
+import { shortlistHits } from "@/lib/chat/shortlist";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,17 @@ export async function POST(req: Request) {
   if (!groqConfigured()) return NextResponse.json({ reply: `I can't reach the assistant right now — please call the store on ${business.phone} and we'll help straight away.`, sources: [] });
 
   try {
-    const hits = await searchIndex(userMsg, 6);
+    // Keyword hits, PLUS a structured lookup for "X under £Y" questions. BM25
+    // cannot reason about price, so on its own it answered "we have no washing
+    // machines under £500" while the shop had 51 from £239.99 — it had scored
+    // spare-part documents on the word "washing". shortlistHits asks the
+    // database instead and leads the context with real, in-budget products.
+    const [shortlist, keyword] = await Promise.all([
+      shortlistHits(userMsg, 6).catch(() => [] as Awaited<ReturnType<typeof shortlistHits>>),
+      searchIndex(userMsg, 6),
+    ]);
+    const seen = new Set(shortlist.map((h) => h.doc.sourceId));
+    const hits = [...shortlist, ...keyword.filter((h) => !seen.has(h.doc.sourceId))].slice(0, 8);
     const system = `${buildSystemPrompt(business)}\n\nSTORE CONTEXT:\n${buildContextBlock(hits)}`;
     const messages: ChatMsg[] = [{ role: "system", content: system }, ...(history.length ? history : [{ role: "user", content: userMsg } as ChatMsg])];
     const reply = await callGroq(messages, { timeoutMs: 20000 });
