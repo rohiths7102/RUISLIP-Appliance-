@@ -147,6 +147,7 @@ const PRODUCT_SELECT = {
   brand: true,
   productCode: true,
   gtin: true,
+  sourceUrl: true,
   category: true,
   subcategory: true,
   priceNow: true,
