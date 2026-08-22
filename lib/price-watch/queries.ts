@@ -114,6 +114,7 @@ type ProductRow = {
   brand: string;
   productCode: string;
   gtin: string;
+  sourceUrl: string;
   category: string;
   subcategory: string;
   priceNow: number | null;
@@ -371,6 +372,9 @@ export type WorklistProduct = {
    *  ingest endpoint and the n8n workflow both use. `id` is kept as an alias. */
   productId: string;
   id: string;
+  /** Where this product's data originally came from — the manufacturer collector
+   *  fetches THIS page rather than searching, so no matching step can go wrong. */
+  sourceUrl: string;
   slug: string;
   title: string;
   brand: string;
@@ -435,6 +439,7 @@ export async function worklistProducts(db: any, opts: { limit: number; sourceId:
     due.push({
       productId: p.id,
       id: p.id,
+      sourceUrl: p.sourceUrl || "",
       slug: p.slug,
       title: p.title,
       brand: p.brand,

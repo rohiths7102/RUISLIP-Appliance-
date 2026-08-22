@@ -555,7 +555,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ── Sign Auto Apply ──────────────────────────────────────────────────────────\n// After the night's observations are stored, ask the app to apply what is safe.\n// The endpoint re-runs EVERY guard server-side and only an authorised source\n// with the owner's \"Automatic\" switch on can change anything; more than the\n// change budget halts the whole run. So this call is a nudge, not an override.\nlet crypto;\ntry { crypto = require('crypto'); }\ncatch (e) { throw new Error('Set NODE_FUNCTION_ALLOW_BUILTIN=crypto on the n8n container.'); }\n\nconst cfg = $('Run Config').first().json;\nconst envName = 'PRICE_INGEST_SECRET_' + String(cfg.keyId).toUpperCase().replace(/[^A-Z0-9]/g, '_');\nconst secret = $env[envName];\nif (!secret) throw new Error('No secret in ' + envName);\n\nconst rawBody = JSON.stringify({ sourceId: cfg.sourceId, maxChanges: 25 });\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update('auto-apply.' + timestamp + '.' + rawBody, 'utf8')\n  .digest('hex');\n\nreturn [{ json: {\n  url: cfg.appBaseUrl + '/api/price-ingest/auto-apply',\n  rawBody, headers: { 'x-pw-key': cfg.keyId, 'x-pw-timestamp': timestamp, 'x-pw-signature': signature, 'content-type': 'application/json' },\n} }];"
+        "jsCode": "// ── Sign Auto Apply ──────────────────────────────────────────────────────────\n// After the night's observations are stored, ask the app to apply what is safe.\n// The endpoint re-runs EVERY guard server-side and only an authorised source\n// with the owner's \"Automatic\" switch on can change anything; more than the\n// change budget halts the whole run. So this call is a nudge, not an override.\nlet crypto;\ntry { crypto = require('crypto'); }\ncatch (e) { throw new Error('Set NODE_FUNCTION_ALLOW_BUILTIN=crypto on the n8n container.'); }\n\nconst cfg = $('Run Config').first().json;\nconst envName = 'PRICE_INGEST_SECRET_' + String(cfg.keyId).toUpperCase().replace(/[^A-Z0-9]/g, '_');\nconst secret = $env[envName];\nif (!secret) throw new Error('No secret in ' + envName);\n\nconst rawBody = JSON.stringify({ sourceId: cfg.sourceId, maxChanges: 25 });\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update('auto-apply.' + timestamp + '.' + rawBody, 'utf8')\n  .digest('hex');\n\nreturn [{ json: {\n  url: cfg.appBaseUrl + '/api/price-ingest/auto-apply',\n  keyId: cfg.keyId,\n  timestamp,\n  signature,\n  rawBody,\n} }];"
       },
       "id": "pw-20-sign-auto-apply",
       "name": "Sign Auto Apply",
@@ -571,20 +571,43 @@
         "method": "POST",
         "url": "={{ $json.url }}",
         "sendHeaders": true,
-        "specifyHeaders": "json",
-        "jsonHeaders": "={{ JSON.stringify($json.headers) }}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pw-key",
+              "value": "={{ $json.keyId }}"
+            },
+            {
+              "name": "x-pw-timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "x-pw-signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "user-agent",
+              "value": "={{ $('Run Config').first().json.userAgent }}"
+            }
+          ]
+        },
         "sendBody": true,
-        "specifyBody": "string",
+        "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ $json.rawBody }}",
         "options": {
+          "timeout": 30000,
           "response": {
             "response": {
               "fullResponse": true,
-              "neverError": true
+              "neverError": true,
+              "responseFormat": "text"
             }
-          },
-          "timeout": 30000
+          }
         }
       },
       "id": "pw-21-post-auto-apply",
