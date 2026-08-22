@@ -12,6 +12,7 @@ import PriceWatchAdmin, {
   type PriceWatchObservation,
   type PriceWatchRow,
   type PriceWatchSource,
+  type AutoChange,
 } from "@/components/admin/PriceWatchAdmin";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,7 @@ export default async function AdminPriceWatch() {
 
   let rows: PriceWatchRow[] = [];
   let sources: PriceWatchSource[] = [];
+  let autoChanges: AutoChange[] = [];
   let dbUp = true;
 
   try {
@@ -110,11 +112,39 @@ export default async function AdminPriceWatch() {
       label: String(s.label || s.id),
       kind: String(s.kind || "advisory"),
       enabled: Boolean(s.enabled),
+      allowAutoApply: Boolean(s.allowAutoApply),
       lastRunLabel: s.lastRunAt
         ? `last checked ${seenLabel(new Date(s.lastRunAt), now).replace(/^seen /, "")}`
         : "never checked",
       lastRunStatus: String(s.lastRunStatus || ""),
     }));
+
+    // The agent's recent work, straight from the audit trail — the same rows a
+    // dispute would be settled from, not a separate "activity" table that could
+    // drift from reality.
+    const autoAudit = await db.adminAuditLog.findMany({
+      where: { action: "price-watch:auto-apply" },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    });
+    const productIds = [...new Set(autoAudit.map((a: any) => String(a.entityId)))] as string[];
+    const auditProducts = productIds.length
+      ? await db.product.findMany({ where: { id: { in: productIds } }, select: { id: true, title: true, productCode: true } })
+      : [];
+    const byId = new Map((auditProducts as any[]).map((p) => [p.id, p]));
+    autoChanges = autoAudit.map((a: any) => {
+      const p = byId.get(String(a.entityId));
+      const prev = (a.previousValue || {}) as any;
+      const next = (a.newValue || {}) as any;
+      return {
+        when: seenLabel(new Date(a.createdAt), now),
+        title: p?.title || "(deleted product)",
+        productCode: p?.productCode || "",
+        from: typeof prev.priceNow === "number" ? prev.priceNow : null,
+        to: typeof next.priceNow === "number" ? next.priceNow : null,
+        sourceLabel: String(next.sourceLabel || next.sourceId || ""),
+      };
+    });
 
     rows = queryRows.map((r) => {
       const observations: PriceWatchObservation[] = r.observations.map((o) => ({
@@ -157,7 +187,7 @@ export default async function AdminPriceWatch() {
 
   return (
     <AdminShell active="/admin/price-watch" email={admin.email}>
-      <PriceWatchAdmin rows={rows} sources={sources} dbUp={dbUp} />
+      <PriceWatchAdmin rows={rows} sources={sources} autoChanges={autoChanges} dbUp={dbUp} />
     </AdminShell>
   );
 }

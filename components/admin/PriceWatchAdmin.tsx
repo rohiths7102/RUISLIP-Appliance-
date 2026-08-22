@@ -58,8 +58,19 @@ export type PriceWatchSource = {
   label: string;
   kind: string;
   enabled: boolean;
+  allowAutoApply: boolean;
   lastRunLabel: string;
   lastRunStatus: string;
+};
+
+/** One automatic change, read back from the audit trail. */
+export type AutoChange = {
+  when: string;
+  title: string;
+  productCode: string;
+  from: number | null;
+  to: number | null;
+  sourceLabel: string;
 };
 
 type ApplyResult = {
@@ -157,10 +168,12 @@ function gapOf(ourPrice: number | null, theirPrice: number | null): Gap {
 export default function PriceWatchAdmin({
   rows,
   sources,
+  autoChanges,
   dbUp,
 }: {
   rows: PriceWatchRow[];
   sources: PriceWatchSource[];
+  autoChanges: AutoChange[];
   dbUp: boolean;
 }) {
   const router = useRouter();
@@ -173,6 +186,32 @@ export default function PriceWatchAdmin({
   const [confirming, setConfirming] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  // Local mirror of each source's auto-apply switch so the toggle feels
+  // instant; the server value is re-read on next navigation.
+  const [autoFlags, setAutoFlags] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(sources.map((s) => [s.id, s.allowAutoApply])),
+  );
+  const [togglingId, setTogglingId] = useState("");
+
+  async function toggleAuto(src: PriceWatchSource) {
+    const next = !autoFlags[src.id];
+    setTogglingId(src.id);
+    setErr("");
+    try {
+      const r = await fetch("/api/admin/price-watch/sources", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: src.id, allowAutoApply: next }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || "Could not change the setting");
+      setAutoFlags((f) => ({ ...f, [src.id]: Boolean(j.allowAutoApply) }));
+    } catch (e: any) {
+      setErr(String(e?.message || e));
+    } finally {
+      setTogglingId("");
+    }
+  }
   const [results, setResults] = useState<ApplyResult[] | null>(null);
 
   const source = sources.find((s) => s.id === sourceId) ?? null;
@@ -299,8 +338,81 @@ export default function PriceWatchAdmin({
 
       <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-muted">
         What other shops are charging for the same appliances, newest reading first. Nothing here changes
-        your website until you press Apply — and a price is only offered when every safety check passes.
+        your website until you press Apply — or until you switch a trusted source to automatic below.
       </p>
+
+      {/* ---------------------------------------------- the price agent
+        * The owner's window onto the automation: per source, whether the
+        * nightly agent may apply that source's prices by itself, when it last
+        * ran, and — from the audit trail, not a parallel activity table — what
+        * it actually changed. The toggle is the ONLY way auto-apply turns on.
+        */}
+      <Card className="mt-5 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-[15px] font-bold text-ink">Automatic pricing</h2>
+          <span className="text-[11.5px] text-muted">
+            Runs nightly · at most 25 changes per run, more than that stops and waits for you
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2.5">
+          {sources.map((src) => {
+            const on = Boolean(autoFlags[src.id]);
+            const eligible = src.kind === "authorised";
+            return (
+              <div key={src.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white px-3.5 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-semibold text-ink">
+                    {src.label}
+                    {!src.enabled && <span className="ml-2 text-[11px] font-medium text-muted">(switched off)</span>}
+                  </p>
+                  <p className="mt-0.5 text-[11.5px] text-muted">
+                    {src.lastRunLabel}
+                    {src.lastRunStatus ? ` · ${src.lastRunStatus}` : ""}
+                  </p>
+                </div>
+                {eligible ? (
+                  <button
+                    onClick={() => toggleAuto(src)}
+                    disabled={togglingId === src.id || !src.enabled}
+                    aria-pressed={on}
+                    className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition-colors disabled:opacity-50 ${
+                      on ? "bg-success text-white" : "border border-ink/25 bg-white text-ink hover:border-blue"
+                    }`}
+                  >
+                    {togglingId === src.id ? "Saving…" : on ? "Automatic ✓" : "Manual only"}
+                  </button>
+                ) : (
+                  <span className="shrink-0 text-[11.5px] text-muted">information only — can never set prices</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {autoChanges.length > 0 && (
+          <div className="mt-4 border-t border-line pt-3">
+            <p className="mb-2 text-[12px] font-semibold text-ink">What the agent changed recently</p>
+            <ul className="grid gap-1.5">
+              {autoChanges.map((c, i) => (
+                <li key={i} className="flex flex-wrap items-baseline gap-x-2 text-[12.5px] text-ink/80">
+                  <span className="text-muted">{c.when}</span>
+                  <span className="font-medium text-ink">{c.title.slice(0, 48)}</span>
+                  {c.productCode && <span className="font-mono text-[11px] text-muted">{c.productCode}</span>}
+                  <span className="tabular-nums">
+                    {money(c.from)} → <strong className="text-ink">{money(c.to)}</strong>
+                  </span>
+                  {c.sourceLabel && <span className="text-[11px] text-muted">from {c.sourceLabel}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {autoChanges.length === 0 && (
+          <p className="mt-3 border-t border-line pt-3 text-[12px] text-muted">
+            No automatic changes yet — turn a trusted source to Automatic and the nightly run takes it from there.
+          </p>
+        )}
+      </Card>
 
       {!dbUp && (
         <Notice tone="warning" className="mt-4">

@@ -339,7 +339,12 @@ export function evaluateGuards(input: GuardInput): GuardResult {
   // non-authorised source outright, so gating this one on "advisory only" made
   // it unreachable decoration: it could never change a verdict, and never fired
   // for the authorised sources that are the only ones able to move a price.
-  if (obs.deliveryCost == null) blocking.push("unknown_delivery");
+  //
+  // Mandated (agency) stock is exempt for the same reason as the cost floor:
+  // there is no landed-price DECISION being made — the buying group's retail
+  // price applies regardless of anyone's delivery terms, so an unknown delivery
+  // figure cannot make compliance less correct.
+  if (!mandated && obs.deliveryCost == null) blocking.push("unknown_delivery");
 
   // --- 5. advisory_source --------------------------------------------------
   // Only an authorised source (our own distributor feeds) may ever move a
