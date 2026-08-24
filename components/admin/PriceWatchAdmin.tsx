@@ -192,6 +192,28 @@ export default function PriceWatchAdmin({
     () => Object.fromEntries(sources.map((s) => [s.id, s.allowAutoApply])),
   );
   const [togglingId, setTogglingId] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [newKind, setNewKind] = useState<"advisory" | "authorised">("advisory");
+  const [adding, setAdding] = useState(false);
+
+  async function addSource() {
+    if (!newLabel.trim()) return;
+    setAdding(true); setErr("");
+    try {
+      const r = await fetch("/api/admin/price-watch/sources", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: newLabel.trim(), kind: newKind }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || "Could not add that shop");
+      setNewLabel("");
+      router.refresh();
+    } catch (e: any) {
+      setErr(String(e?.message || e));
+    } finally {
+      setAdding(false);
+    }
+  }
 
   async function toggleAuto(src: PriceWatchSource) {
     const next = !autoFlags[src.id];
@@ -412,6 +434,43 @@ export default function PriceWatchAdmin({
             No automatic changes yet — turn a trusted source to Automatic and the nightly run takes it from there.
           </p>
         )}
+
+        {/* Add a shop to watch. The two choices are the owner's own distinction:
+            his suppliers set his prices; a competitor is only ever information. */}
+        <div className="mt-4 border-t border-line pt-3.5">
+          <p className="mb-2 text-[12px] font-semibold text-ink">Watch another shop</p>
+          <div className="flex flex-wrap items-end gap-2.5">
+            <label className="flex-1 min-w-[190px]">
+              <span className="mb-1 block text-[11.5px] text-muted">Shop name</span>
+              <input
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="e.g. Currys"
+                className="w-full rounded-lg border border-ink/25 px-3 py-2 text-[13px] text-ink placeholder:text-muted focus:border-blue focus:outline-none"
+              />
+            </label>
+            <label className="min-w-[230px]">
+              <span className="mb-1 block text-[11.5px] text-muted">What should it do?</span>
+              <select
+                value={newKind}
+                onChange={(e) => setNewKind(e.target.value as "advisory" | "authorised")}
+                className="w-full rounded-lg border border-ink/25 bg-white px-3 py-2 text-[13px] text-ink focus:border-blue focus:outline-none"
+              >
+                <option value="advisory">Just tell me their price</option>
+                <option value="authorised">It can set my price (my supplier)</option>
+              </select>
+            </label>
+            <Button onClick={addSource} disabled={adding || !newLabel.trim()}>
+              {adding ? "Adding…" : "Add shop"}
+            </Button>
+          </div>
+          <p className="mt-2 text-[11.5px] leading-relaxed text-muted">
+            Pick <strong className="text-ink">&ldquo;just tell me their price&rdquo;</strong> for competitors like Currys — you will see
+            what they charge next to your own price, and nothing changes on your website. Only your own suppliers
+            (Euronics, Bosch, Neff) should ever be allowed to set prices, and even then only once you switch them to
+            Automatic above.
+          </p>
+        </div>
       </Card>
 
       {!dbUp && (

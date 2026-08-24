@@ -59,3 +59,47 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
+
+/**
+ * Create a place to watch prices.
+ *
+ * The owner's own words for the distinction this enforces: Euronics, Bosch and
+ * Neff "update the price"; Currys "just says what they charge, it doesn't
+ * update". That is exactly `kind`:
+ *   authorised — our supplier/buying group; may (with the switch on) set prices
+ *   advisory   — anyone else; informs a human and can never write a price
+ * A new source is always created switched OFF for auto-apply, whatever its
+ * kind, so adding one can never move a price by itself.
+ */
+export async function POST(req: Request) {
+  const admin = await getAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body = await req.json().catch(() => ({}));
+  const label = typeof body?.label === "string" ? body.label.trim().slice(0, 80) : "";
+  const kind = body?.kind === "authorised" ? "authorised" : "advisory";
+  const priceIncludesVat = body?.priceIncludesVat !== false;
+  if (!label) return NextResponse.json({ error: "Give the source a name, e.g. “Currys”." }, { status: 400 });
+
+  // id is derived from the label so it is readable in logs and in the feed
+  // scripts, which address sources by id.
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+  if (!id) return NextResponse.json({ error: "That name has no letters or numbers in it." }, { status: 400 });
+
+  try {
+    const db = await getPrisma();
+    if (await db.priceSource.findUnique({ where: { id } })) {
+      return NextResponse.json({ error: `“${label}” is already on the list.` }, { status: 409 });
+    }
+    const created = await db.priceSource.create({
+      data: { id, label, kind, priceIncludesVat, enabled: true, allowAutoApply: false },
+    });
+    await writeAudit(db, {
+      entityType: "price-source", entityId: id, action: "price-watch:source-create",
+      changedFields: ["label", "kind"], previousValue: {},
+      newValue: { label, kind, allowAutoApply: false }, changedBy: admin.email,
+    });
+    return NextResponse.json({ id: created.id, label: created.label, kind: created.kind });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
