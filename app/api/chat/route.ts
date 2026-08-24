@@ -38,7 +38,11 @@ export async function POST(req: Request) {
     const messages: ChatMsg[] = [{ role: "system", content: system }, ...(history.length ? history : [{ role: "user", content: userMsg } as ChatMsg])];
     const reply = await callGroq(messages, { timeoutMs: 20000 });
     return NextResponse.json({ reply: reply || `Please call ${business.phone} to confirm.`, sources: extractSources(hits) });
-  } catch {
+  } catch (e) {
+    // Log it. A silent catch here is exactly how the assistant sat dead for days
+    // behind a friendly sentence — the customer sees the fallback either way,
+    // but we should never have to guess why.
+    console.error("chat: replying with fallback —", String((e as Error)?.message || e));
     return NextResponse.json({ reply: `Sorry — I'm having trouble right now. Please call the store on ${business.phone} and we'll help.`, sources: [] });
   }
 }
