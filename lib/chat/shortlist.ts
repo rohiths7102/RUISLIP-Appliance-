@@ -60,11 +60,37 @@ export function parseCategory(q: string): string | null {
   return null;
 }
 
+/**
+ * Brands the shop actually stocks. Without this a question naming a brand was
+ * answered from the whole category: "do you sell neff ovens?" returned Bosch
+ * ovens, and the model correctly reported that it could see no Neff — while 17
+ * Neff ovens sat in the catalogue. Denying stock you hold is the worst answer
+ * this assistant can give, so the brand is now part of the query.
+ */
+const BRANDS = [
+  "Bosch", "Neff", "Siemens", "Smeg", "AEG", "Beko", "Blomberg", "Samsung", "LG",
+  "Hotpoint", "Hisense", "Miele", "Liebherr", "Haier", "Sony", "Caple", "Zanussi",
+  "Indesit", "Candy", "Hoover", "Sharp", "Whirlpool", "Rangemaster", "Quooker",
+  "Fisher & Paykel", "Dyson", "Shark", "Ninja", "CDA", "Elica", "Stoves",
+];
+
+export function parseBrand(q: string): string | null {
+  // Word-boundary match on a normalised string; no regex is built from the
+  // brand text itself, so "Fisher & Paykel" needs no escaping.
+  const words = new Set(q.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" "));
+  for (const b of BRANDS) {
+    const parts = b.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ");
+    if (parts.every((w) => words.has(w))) return b;
+  }
+  return null;
+}
+
 /** Products matching the question's category and price ceiling, cheapest first. */
 export async function shortlistHits(query: string, take = 6): Promise<Hit[]> {
   const cap = parsePriceCap(query);
   const category = parseCategory(query);
-  if (cap === null && !category) return [];
+  const brand = parseBrand(query);
+  if (cap === null && !category && !brand) return [];
 
   const db = await getPrisma();
   // Never surface a call-for-price line with a number attached — same rule the
@@ -76,6 +102,7 @@ export async function shortlistHits(query: string, take = 6): Promise<Hit[]> {
       isVisible: true,
       priceNow: cap === null ? { gt: 0 } : { gt: 0, lte: cap },
       ...(category ? { OR: [{ subcategory: category }, { category: category }] } : {}),
+      ...(brand ? { brand: { equals: brand } } : {}),
       ...(poa.length ? { NOT: [{ category: { in: poa } }, { subcategory: { in: poa } }] } : {}),
     },
     select: {
