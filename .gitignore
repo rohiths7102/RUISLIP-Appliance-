@@ -43,3 +43,4 @@ tsconfig.tsbuildinfo
 
 .vercel
 .env*
+euronics-coverage.json
