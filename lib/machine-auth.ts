@@ -46,6 +46,11 @@ export const REPLAY_WINDOW_SECONDS = 300;
 const ROUTE_GRANTS: Record<string, { routes: string[]; sources: string[] }> = {
   collector: { routes: ["worklist", "observations", "auto-apply"], sources: ["euronics", "google-benchmark", "manufacturer-rrp"] },
   supplier: { routes: ["observations", "supplier-prices"], sources: ["cih"] },
+  // The owner relaying a price from WhatsApp. This key carries HUMAN authority —
+  // it is the only machine key that may set Product.priceNow — so it is scoped
+  // to that one route, holds its own secret, and its route requires an explicit
+  // second confirm call. It writes no observations, hence no sources.
+  owner: { routes: ["owner-update"], sources: [] },
 };
 
 /** PRICE_INGEST_SECRET_COLLECTOR for keyId "collector". */
