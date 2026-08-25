@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Phone, Menu, X, Star, ChevronDown } from "lucide-react";
+import { Phone, Menu, X, ChevronDown } from "lucide-react";
 import { telHref } from "@/lib/format";
 import OpenNow from "@/components/OpenNow";
 import SearchBar from "@/components/SearchBar";
@@ -59,10 +59,13 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
               so the lockup is rebuilt in HTML at a size that actually reads */}
           <span className="hidden items-center gap-2 border-l border-line pl-4 md:flex">
             <span className="text-[10.5px] leading-tight text-muted">A member of</span>
-            <span role="img" aria-label="Euronics — the home of electricals"
-              className="flex items-center gap-1 rounded-lg bg-[#1e80c6] px-2.5 py-[7px]">
-              <Star size={12} className="fill-[#ffd200] text-[#ffd200]" aria-hidden />
-              <span className="text-[14px] font-bold lowercase leading-none tracking-tight text-white">euronics</span>
+            {/* The real Euronics lockup, never a rebuild of it: the supplied PNG is
+                white-on-transparent, so it sits on the brand blue it was drawn for
+                rather than being redrawn in HTML on our white bar. */}
+            <span className="flex items-center rounded-[5px] bg-[#1e80c6] px-2.5 py-[7px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/euronics-logo.png" alt="Euronics — the home of electricals"
+                width={290} height={74} className="h-[26px] w-auto" />
             </span>
           </span>
 
