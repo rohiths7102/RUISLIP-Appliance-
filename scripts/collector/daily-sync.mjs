@@ -5,6 +5,7 @@
  *                                                   product pages (RRP)
  *   node daily-sync.mjs --source euronics           Euronics-carried lines
  *   ...add --dry-run to fetch and report without posting anything.
+ *   ...add --auto-apply to let the server adopt what was just observed.
  *
  * WHY IT LIVES HERE AND NOT IN THE APP
  * A full sweep is ~1,300 pages at 1/sec — far past any serverless request
@@ -13,10 +14,19 @@
  * so it is safe to run on a box that should never hold DB access.
  *
  * WHAT IT MAY AND MAY NOT DO
- * It OBSERVES. It cannot set a price. The ingest endpoint refuses to write
- * Product.priceNow, and the "collector" key is scoped to advisory sources, so
- * every number it reports lands in /admin/price-watch behind the deterministic
- * guards for a human to accept. A stolen collector secret cannot move a price.
+ * Collecting only OBSERVES: /api/price-ingest/observations refuses to write
+ * Product.priceNow, so every number lands in /admin/price-watch behind the
+ * deterministic guards for a human to accept.
+ *
+ * --auto-apply additionally asks the server to adopt what it just observed.
+ * It is OFF by default, and that default is not a formality: ROUTE_GRANTS in
+ * lib/machine-auth.ts DOES grant the "collector" key the auto-apply route, so
+ * this secret can move a live price. What stops it is the SOURCE, not the key —
+ * autoApplySource refuses unless the source is kind=authorised, enabled and
+ * allowAutoApply, a switch only the admin panel can flip. Today that is euronics
+ * alone; manufacturer-rrp is advisory, so --auto-apply there is a no-op that
+ * comes back halted with a reason. Every applied row still passes the full guard
+ * set, and a run wanting more than the change budget applies NOTHING.
  *
  * OUTPUT
  * A JSON summary on the last line (marked SUMMARY_JSON:) for the n8n workflow
@@ -35,6 +45,7 @@ const SOURCE = arg("--source", "manufacturer-rrp");
 const LIMIT = Number(arg("--limit", "500")) || 500;
 const DELAY_MS = Number(arg("--delay", "1000")) || 1000;
 const DRY = args.includes("--dry-run");
+const AUTO_APPLY = args.includes("--auto-apply");
 
 const SITE = (process.env.SITE_URL || "").replace(/\/+$/, "");
 const SECRET = process.env.PRICE_INGEST_SECRET_COLLECTOR || "";
@@ -179,6 +190,23 @@ if (!DRY && observations.length) {
   }
 }
 
+// Adopting is a SECOND, separately audited step, and it runs only once this
+// run's observations are safely posted — so what the server adopts is what we
+// just saw, not a half-written batch. The server decides eligibility; an
+// advisory source comes back halted rather than erroring.
+let autoApply = null;
+if (!DRY && AUTO_APPLY && posted) {
+  const rawBody = JSON.stringify({ sourceId: SOURCE });
+  const r = await fetch(`${SITE}/api/price-ingest/auto-apply`, {
+    method: "POST",
+    headers: { ...authHeaders("auto-apply", rawBody), "Content-Type": "application/json", "User-Agent": UA },
+    body: rawBody,
+  });
+  const text = await r.text();
+  try { autoApply = JSON.parse(text); } catch { autoApply = { body: text.slice(0, 200) }; }
+  if (!r.ok) autoApply = { error: `auto-apply ${r.status}`, ...autoApply };
+}
+
 changes.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 const summary = {
   source: SOURCE, startedAt: started, finishedAt: new Date().toISOString(),
@@ -187,10 +215,16 @@ const summary = {
   weAreOver: changes.filter((c) => c.diff < 0).length,
   weAreUnder: changes.filter((c) => c.diff > 0).length,
   topChanges: changes.slice(0, 20),
+  autoApply,
   reviewUrl: `${SITE}/admin/price-watch`,
 };
 
 console.log(`priced=${priced} failed=${failed} posted=${posted} changes=${changes.length}`);
+if (autoApply) {
+  console.log(autoApply.error
+    ? `auto-apply FAILED: ${autoApply.error}`
+    : `auto-apply applied=${(autoApply.applied || []).length} unchanged=${autoApply.unchanged ?? 0}${autoApply.halted ? ` HALTED: ${autoApply.haltReason}` : ""}`);
+}
 for (const c of changes.slice(0, 10)) {
   console.log(`  ${String(c.code).padEnd(16)} ours £${String(c.ours).padEnd(9)} supplier £${String(c.supplier).padEnd(9)} ${c.diff > 0 ? "+" : ""}${c.diff}`);
 }

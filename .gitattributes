@@ -1,0 +1,5 @@
+# The collector ships to a Linux box and is run there. A CRLF checkout on this
+# Windows working tree would commit CRLF and the shebang would fail with
+# "bad interpreter: /usr/bin/env bash^M". Pin these to LF in the repo.
+scripts/collector/*.sh  text eol=lf
+scripts/collector/*.mjs text eol=lf
