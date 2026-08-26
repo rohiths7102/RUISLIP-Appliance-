@@ -103,11 +103,34 @@ async function fetchPage(url) {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Which hosts legitimately back each source. The worklist is ordered by
+ * staleness and price, NOT by where a product came from, so most of what it
+ * returns for "manufacturer-rrp" is now Euronics-sourced stock. Fetching those
+ * and filing them under manufacturer-rrp would label a Euronics retail price as
+ * a manufacturer RRP — the wrong number under the wrong source, which the guards
+ * would then reason about incorrectly. So each source only ever reads its own hosts.
+ */
+const HOSTS = {
+  "manufacturer-rrp": [/(^|\.)bosch-home\.co\.uk$/i, /(^|\.)neff-home\.com$/i],
+  euronics: [/(^|\.)euronics\.co\.uk$/i],
+};
+
 const started = new Date().toISOString();
 const work = await getWorklist();
 // Only products whose own source page we can re-read. No searching, no guessing:
 // a wrong match here would report another appliance's price against this one.
-const targets = work.filter((p) => /^https:\/\//.test(p.sourceUrl || ""));
+const allowed = HOSTS[SOURCE] || [];
+const targets = work.filter((p) => {
+  if (!/^https:\/\//.test(p.sourceUrl || "")) return false;
+  if (!allowed.length) return true; // a source with no host rule reads whatever it is given
+  let host = "";
+  try { host = new URL(p.sourceUrl).hostname; } catch { return false; }
+  return allowed.some((re) => re.test(host));
+});
+if (work.length && !targets.length) {
+  console.log(`worklist had ${work.length} products but none are hosted on this source's own site — nothing to do.`);
+}
 console.log(`source=${SOURCE} worklist=${work.length} fetchable=${targets.length}${DRY ? " (dry run)" : ""}`);
 
 const observations = [];
