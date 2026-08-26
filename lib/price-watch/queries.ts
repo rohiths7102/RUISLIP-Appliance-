@@ -405,6 +405,38 @@ export type WorklistProduct = {
  * names. The observation set is reduced to a max(observedAt) per product in
  * JS rather than one lookup per product.
  */
+/**
+ * Which hosts a source can actually read a price from.
+ *
+ * The sort below is by staleness then price, NOT by where a product came from,
+ * so the top 500 are whatever is oldest across the whole catalogue. Every one of
+ * those is Euronics-hosted today, and the collector then discards anything not
+ * on its own source's site — correctly, because filing a Euronics retail price
+ * under manufacturer-rrp would label it an RRP and the guards would reason about
+ * it wrongly. The result was that manufacturer-rrp received 500 products a night
+ * and could use NONE of them: "worklist had 500 products but none are hosted on
+ * this source's own site". It had never checked a single Bosch or NEFF product.
+ *
+ * So the filter belongs here, where the page is chosen, not only in the worker
+ * that fetches it. The collector keeps its own copy as a second line of defence;
+ * if the two ever disagree the collector's is the stricter one and simply reads
+ * less. Any source without a rule is unfiltered, as before.
+ */
+const SOURCE_HOSTS: Record<string, RegExp[]> = {
+  euronics: [/(^|\.)euronics\.co\.uk$/i],
+  "manufacturer-rrp": [/(^|\.)bosch-home\.co\.uk$/i, /(^|\.)neff-home\.com$/i],
+};
+
+/** Can this source read a price from this product's own page? */
+function readableBySource(sourceId: string, sourceUrl: string): boolean {
+  const allowed = SOURCE_HOSTS[sourceId];
+  if (!allowed) return true;
+  if (!/^https:\/\//i.test(sourceUrl || "")) return false;
+  let host = "";
+  try { host = new URL(sourceUrl).hostname; } catch { return false; }
+  return allowed.some((re) => re.test(host));
+}
+
 export async function worklistProducts(db: any, opts: { limit: number; sourceId: string }): Promise<WorklistProduct[]> {
   const limit = isPositive(opts?.limit) ? Math.floor(opts.limit) : 50;
   const sourceId = (opts?.sourceId || "").trim();
@@ -436,6 +468,7 @@ export async function worklistProducts(db: any, opts: { limit: number; sourceId:
   for (const p of products) {
     if (!p.productCode || !p.productCode.trim()) continue;
     if (isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory })) continue;
+    if (!readableBySource(sourceId, p.sourceUrl || "")) continue;
     const last = lastSeen.get(p.id) || null;
     due.push({
       productId: p.id,
