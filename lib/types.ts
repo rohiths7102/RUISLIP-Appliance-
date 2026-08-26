@@ -19,7 +19,7 @@ export interface Category {
   id: string; name: string; slug: string; sourceUrl: string; parentCategory: string;
   children: string[]; description: string; productCount: number; image: string;
   seoTitle: string; seoDescription: string;
-  /** Owner-set: products here show "Call for price" instead of a price. */
+  /** Owner-set: products here show the call-for-pricing label instead of a price. */
   priceOnApplication?: boolean;
 }
 export interface Brand {

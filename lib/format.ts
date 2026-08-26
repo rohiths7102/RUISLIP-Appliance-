@@ -9,11 +9,13 @@ export const formatPrice = (n: number) =>
   }).format(n);
 
 /** Unpriced items: a label, not a number — callers style it distinctly from real prices. */
-// The owner's own words ("just call to ask", "call for price in this section").
-export const PRICE_ON_APPLICATION = "Call for price";
+// The owner's own words ("just call to ask", "call for price in this section"),
+// phrased as an invitation rather than a gap: an unpriced line should read as a
+// reason to ring the shop, which is where he wins the sale.
+export const PRICE_ON_APPLICATION = "Call for best pricing";
 
 export const gbp = (n: number | null) =>
-  n === null || Number.isNaN(n) ? "Call for price" : formatPrice(n);
+  n === null || Number.isNaN(n) ? PRICE_ON_APPLICATION : formatPrice(n);
 
 /**
  * Phone-first wording. These states come from the manufacturer's own catalogue,

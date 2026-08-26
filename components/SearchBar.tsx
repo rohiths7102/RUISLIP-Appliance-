@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Phone, LayoutGrid, Tag, ArrowUpRight } from "lucide-react";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, PRICE_ON_APPLICATION } from "@/lib/format";
 
 type Hit = {
   slug: string; title: string; brand: string; productCode: string;
@@ -14,7 +14,7 @@ type Sug = { kind: "category" | "brand"; name: string; href: string; count: numb
  * Header search — the owner asked for the official Euronics site's format, and
  * this is the part that makes it feel alive: a debounced type-ahead dropdown of
  * department/brand shortcuts and real products (thumbnail · name · price, or
- * "Call for price" — never a number the owner withholds). One keyboard index
+ * the call-for-pricing label — never a number the owner withholds). One keyboard index
  * runs down the whole list: suggestions first, then products. Enter with
  * nothing highlighted, or the "See all" footer, lands on /products?q=… — the
  * same entry point the sitelinks SearchAction schema advertises to Google.
@@ -182,7 +182,7 @@ export default function SearchBar({ className = "" }: { className?: string }) {
                     <span className="shrink-0 text-right">
                       {h.poa || h.priceNow === null ? (
                         <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-blue-deep">
-                          <Phone size={11} strokeWidth={2.4} aria-hidden /> Call for price
+                          <Phone size={11} strokeWidth={2.4} aria-hidden /> {PRICE_ON_APPLICATION}
                         </span>
                       ) : (
                         <span className="text-[13.5px] font-semibold tabular-nums text-ink">{formatPrice(h.priceNow)}</span>

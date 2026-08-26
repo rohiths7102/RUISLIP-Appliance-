@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Phone } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
-import { gbp, availabilityDot, telHref, STORE_PHONE } from "@/lib/format";
+import { gbp, availabilityDot, telHref, STORE_PHONE, PRICE_ON_APPLICATION } from "@/lib/format";
 import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
 
 const TONE_BG = { success: "bg-success", warning: "bg-warning", danger: "bg-danger" } as const;
@@ -61,7 +61,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
           <p className="mb-3.5 font-mono text-[10px] tracking-[0.06em] text-ink/70">Code {p.productCode}</p>
           {poa ? (
             <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue">
-              <Phone size={13} strokeWidth={2.4} /> Call for price
+              <Phone size={13} strokeWidth={2.4} /> {PRICE_ON_APPLICATION}
             </span>
           ) : (
             <div className="flex items-baseline gap-2.5">

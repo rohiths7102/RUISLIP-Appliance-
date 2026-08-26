@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ArrowRight, Phone } from "lucide-react";
+import { PRICE_ON_APPLICATION } from "@/lib/format";
 
 export type Slide = {
   slug: string;
@@ -17,7 +18,7 @@ export type Slide = {
 };
 
 const gbp = (n: number | null) =>
-  n === null ? "Call for price" : new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: n % 1 ? 2 : 0 }).format(n);
+  n === null ? PRICE_ON_APPLICATION : new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: n % 1 ? 2 : 0 }).format(n);
 
 /**
  * Flagship carousel that lives INSIDE the hero, in front of the 4K video.
