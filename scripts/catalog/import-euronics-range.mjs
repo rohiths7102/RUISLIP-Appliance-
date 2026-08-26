@@ -127,9 +127,17 @@ const modelOf = (e) => { const pre = prefixOf.get(e.brandSlug); return pre && e.
 
 // ---- what we hold ----------------------------------------------------------
 const poaNames = new Set((await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } })).map((c) => c.name));
-const existing = await db.product.findMany({ select: { id: true, productCode: true, slug: true, priceNow: true, category: true, subcategory: true, adminOverrideFields: true } });
+const existing = await db.product.findMany({ select: { id: true, productCode: true, slug: true, sourceUrl: true, priceNow: true, category: true, subcategory: true, adminOverrideFields: true } });
 const byCode = new Map();
 for (const p of existing) byCode.set(norm(p.productCode), p);
+// One Euronics page is one product, so a row already pointing at this page IS
+// the product — whatever shape its code is in. The prefix below is learned by
+// longest-common-prefix, and every Haden model already starts with H
+// (HK240W, HL316WH, HR111W), so it learns "HADH" and strips a character too
+// many. Matching on the URL as well stops that recreating a second row on
+// every run.
+const byUrl = new Map();
+for (const p of existing) if (p.sourceUrl) byUrl.set(String(p.sourceUrl).split("?")[0].replace(/\/+$/, "").toLowerCase(), p);
 const haveSlug = new Set(existing.map((p) => p.slug));
 
 let work = euro;
@@ -143,7 +151,7 @@ const problems = [];
 
 for (const e of work) {
   const model = modelOf(e);
-  const mine = byCode.get(model) || byCode.get(e.sku);
+  const mine = byCode.get(model) || byCode.get(e.sku) || byUrl.get(e.url.split("?")[0].replace(/\/+$/, "").toLowerCase());
 
   // Fast path: an existing product whose price the owner has fixed by hand.
   if (mine && ((mine.adminOverrideFields) || []).includes?.("priceNow")) { lockedSkipped++; continue; }
