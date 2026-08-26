@@ -3,6 +3,7 @@
  *
  *   node scripts/catalog/import-euronics-range.mjs --dry-run [--limit N]
  *   node scripts/catalog/import-euronics-range.mjs                        (full sync)
+ *   node scripts/catalog/import-euronics-range.mjs --category laundry,dishwashers
  *
  * The client is a Euronics member, so the group's range is what he can sell and
  * the group's price is the price he shows. One pass does both halves:
@@ -36,6 +37,11 @@ const argNum = (n, d) => { const i = args.indexOf(n); return i >= 0 ? (Number(ar
 const DRY = args.includes("--dry-run");
 const LIMIT = argNum("--limit", 0);
 const DELAY_MS = argNum("--delay", 850);
+// Top-level Euronics departments to restrict this run to. The owner's core
+// ranges are worth completing to 100% on their own, without paying for a walk
+// of all ~4,800 pages to reach them.
+const CATEGORIES = (args.indexOf("--category") >= 0 ? (args[args.indexOf("--category") + 1] || "") : "")
+  .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 const SITEMAP = "https://www.euronics.co.uk/sitemap.xml";
 const UA = "JyotsnaElectricalBot/1.0 (+catalogue sync, Euronics member; contact rohith@kroneuszerotrust.com)";
@@ -55,7 +61,15 @@ function extract(html) {
   let p = null;
   const walk = (o) => { if (!o || typeof o !== "object") return; const t = o["@type"];
     if (t === "Product" || (Array.isArray(t) && t.includes("Product"))) p = p || o; for (const k in o) walk(o[k]); };
-  for (const b of blocks) { try { walk(JSON.parse(b)); } catch { /* malformed block */ } }
+  // Euronics emits RAW newlines inside JSON-LD string values, which is invalid
+  // JSON, and roughly a third of pages in some departments carry one. A control
+  // character can only ever be whitespace OUTSIDE a string literal, so blanking
+  // them is safe either way, and it is the difference between reading a product
+  // and silently not seeing it at all.
+  const blankCtrl = (s) => Array.from(s, (c) => (c.charCodeAt(0) < 32 ? " " : c)).join("");
+  const lenient = (s) => { try { return JSON.parse(s); } catch { /* repair below */ }
+    try { return JSON.parse(blankCtrl(s)); } catch { return null; } };
+  for (const b of blocks) { const j = lenient(b); if (j) walk(j); }
   if (!p) return null;
   const offer = Array.isArray(p.offers) ? p.offers[0] : p.offers;
   const price = offer ? Number(offer.price ?? offer.lowPrice) : NaN;
@@ -84,10 +98,18 @@ for (const m of maps) {
   if (xml) for (const u of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) urls.add(u[1]);
   await sleep(250);
 }
-const euro = [];
+let euro = [];
 for (const u of urls) {
   const m = u.match(/\/catalogue\/(.+?)\/([^/]+)\/p\/([A-Za-z0-9._-]+)$/);
   if (m) euro.push({ url: u, brandSlug: m[2].split("-")[0].toLowerCase(), sku: norm(m[3]) });
+}
+if (CATEGORIES.length) {
+  // Filter AFTER the full list is built: the brand prefixes below are learned
+  // from every SKU a brand has, and narrowing the sample first would learn a
+  // wrong prefix and stop products matching what we already hold.
+  const before = euro.length;
+  euro = euro.filter((e) => CATEGORIES.includes((e.url.split("/catalogue/")[1] || "").split("/")[0]));
+  console.log(`--category ${CATEGORIES.join(",")}: ${euro.length} of ${before} Euronics pages`);
 }
 
 // Learn each brand's SKU prefix so a SKU reduces to a manufacturer model number.

@@ -94,7 +94,15 @@ function extract(html) {
     if (t === "Product" || (Array.isArray(t) && t.includes("Product"))) product = product || o;
     for (const k in o) walk(o[k]);
   };
-  for (const b of blocks) { try { walk(JSON.parse(b)); } catch { /* malformed block — skip */ } }
+  // Euronics emits RAW newlines inside JSON-LD string values, which is invalid
+  // JSON, and roughly a third of pages in some departments carry one. A control
+  // character can only ever be whitespace OUTSIDE a string literal, so blanking
+  // them is safe either way, and it is the difference between reading a product
+  // and silently not seeing it at all.
+  const blankCtrl = (s) => Array.from(s, (c) => (c.charCodeAt(0) < 32 ? " " : c)).join("");
+  const lenient = (s) => { try { return JSON.parse(s); } catch { /* repair below */ }
+    try { return JSON.parse(blankCtrl(s)); } catch { return null; } };
+  for (const b of blocks) { const j = lenient(b); if (j) walk(j); }
   if (!product) return null;
   const offer = Array.isArray(product.offers) ? product.offers[0] : product.offers;
   if (!offer) return null;
