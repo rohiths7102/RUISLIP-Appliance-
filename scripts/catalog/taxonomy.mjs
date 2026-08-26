@@ -187,7 +187,7 @@ export const TEXT_RULES = [
 
   // "Cooler" collides three ways: FrostVault cool box vs wine cooler vs fridge.
   [/frostvault|cooler with dry zone|wheeled cooler|hard cooler/i, "coolers"],
-  [/wine cooler/i, "wine-coolers"],
+  [/wine cooler|wine cabinet|wine fridge|vinidor/i, "wine-coolers"],
 
   // Countertop cooking before built-in — a Ninja "Multifunction Oven" is not an oven,
   // and a "Multi-Cooker" is not a cooker.

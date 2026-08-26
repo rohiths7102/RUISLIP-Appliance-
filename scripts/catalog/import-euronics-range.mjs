@@ -175,11 +175,20 @@ for (const e of work) {
 
   // ---- not on the site: create it ----
   let category = "", subcategory = "";
-  try {
-    const { leaf } = classify({ name: `${d.brand} ${d.title}`, description: d.description || d.title, source: "euronics", key: e.sku });
-    const hit = LEAF.get(leaf);
-    if (hit) { category = hit.topName; subcategory = hit.leafName; }
-  } catch { /* handled below */ }
+  // Ask the TITLE first, and only fall back to the description. Marketing copy
+  // routinely names other appliances ("...activated carbon filter", "...while
+  // your coffee brews"), and those words reached a rule before the title did:
+  // an LG washing machine was filed as bean-to-cup and a Liebherr wine cooler
+  // as cooker-hood-accessories. Both then landed in a call-for-price category
+  // and were skipped, so the product never appeared on the site at all.
+  const named = `${d.brand} ${d.title}`;
+  for (const text of [named, d.description || d.title]) {
+    try {
+      const { leaf } = classify({ name: named, description: text, source: "euronics", key: e.sku });
+      const hit = LEAF.get(leaf);
+      if (hit) { category = hit.topName; subcategory = hit.leafName; break; }
+    } catch { /* try the description, then give up below */ }
+  }
   if (!category) { unclassified++; problems.push(`${e.sku}: unclassifiable — ${d.title.slice(0, 46)}`); await sleep(DELAY_MS); continue; }
   if (poaNames.has(category) || poaNames.has(subcategory)) { poaSkipped++; await sleep(DELAY_MS); continue; }
   if (d.price === null) noPrice++;
