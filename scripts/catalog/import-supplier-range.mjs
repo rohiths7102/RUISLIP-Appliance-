@@ -97,7 +97,11 @@ const SUPPLIERS = {
   quooker: {
     brand: "Quooker",
     sitemaps: ["https://www.quooker.co.uk/sitemap.xml"],
-    keep: (u) => /\/(taps|tanks)\//.test(u),
+    // Exactly one path segment under /taps or /tanks. Going deeper picks up
+    // support pages -- /tanks/cube/compatibility is the FAQ "Is the CUBE
+    // compatible with my existing Quooker-system?", which the h1 reader
+    // happily turned into a product.
+    keep: (u) => /^https:\/\/www\.quooker\.co\.uk\/(taps|tanks)\/[^/]+$/.test(u),
     // No JSON-LD anywhere on the site, so the h1 is the product name. Images
     // are Contentful; the _next/image proxy URL is skipped in favour of the
     // original, which does not depend on their renderer staying up.
