@@ -14,7 +14,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const { products } = await loadCatalog();
   const p = getProduct(products, slug);
-  if (!p) return { title: "Product not found" };
+  // notFound() here, not just in the page body: loading.tsx makes this route
+  // stream, so the 200 headers are already sent by the time the body runs and
+  // notFound() can no longer set the status. generateMetadata is awaited BEFORE
+  // streaming starts, so this is the last place a real 404 can be returned.
+  // Without it every dead product URL was a soft 404 — which matters most at
+  // the domain cutover, when old URLs start arriving.
+  if (!p) notFound();
   return {
     title: p.seoTitle || p.title,
     description: p.seoDescription || p.shortDescription,
