@@ -56,6 +56,24 @@ async function get(url, timeoutMs = 25000) {
   catch { return null; } finally { clearTimeout(t); }
 }
 
+// Euronics JSON-LD carries HTML-escaped markup inside name/description
+// ("&lt;p&gt;…", "85&#034;"). Decode entities and drop tags at the door, or the
+// storefront renders the escaping as literal text — which it did, on ~2,900
+// products, until the owner photographed it.
+const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "’", lsquo: "‘", ndash: "–", mdash: "—", deg: "°", pound: "£", trade: "™", reg: "®", hellip: "…" };
+function cleanText(s) {
+  let t = String(s ?? "");
+  for (let i = 0; i < 4; i++) {
+    const d = t
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+      .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+      .replace(/&([a-zA-Z]+);/g, (m, n) => ENT[n.toLowerCase()] ?? m);
+    if (d === t) break;
+    t = d;
+  }
+  return t.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function extract(html) {
   const blocks = [...html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
   let p = null;
@@ -76,10 +94,10 @@ function extract(html) {
   const img = Array.isArray(p.image) ? p.image[0] : p.image;
   const meta = (n) => (html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${n}["'][^>]*content=["']([^"']*)["']`, "i")) || [])[1] || "";
   return {
-    title: String(p.name || "").trim(),
+    title: cleanText(p.name),
     brand: String(typeof p.brand === "object" ? p.brand?.name : p.brand || "").trim(),
     gtin: String(p.gtin13 || p.gtin || p.gtin12 || p.gtin14 || "").replace(/[^0-9]/g, ""),
-    description: String(p.description || meta("og:description") || "").trim(),
+    description: cleanText(p.description || meta("og:description")),
     image: typeof img === "string" ? img : String(img?.url || ""),
     price: Number.isFinite(price) && price > 0 ? Math.round(price * 100) / 100 : null,
     inStock: /InStock/i.test(String(offer?.availability || "")),

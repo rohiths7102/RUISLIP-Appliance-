@@ -108,7 +108,7 @@ export default function SearchBar({ className = "" }: { className?: string }) {
           aria-controls="header-search-listbox"
           // 16px on phones: iOS Safari auto-zooms the whole page when a focused
           // input is under 16px, and the zoom does not reverse on blur.
-          className="min-w-0 flex-1 bg-transparent px-4 py-2 text-base text-ink placeholder:text-muted outline-none lg:text-sm"
+          className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-base text-ink placeholder:text-muted outline-none lg:text-[15px]"
         />
         <button type="submit" aria-label="Search" className="m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-paper transition-colors hover:bg-blue">
           <Search size={15} strokeWidth={2.4} />

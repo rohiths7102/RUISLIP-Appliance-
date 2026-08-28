@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Phone, Truck, Wrench, ShieldCheck, Package, Users, Boxes } from "lucide-react";
-import { loadCatalog } from "@/lib/repo";
+import { getBusiness } from "@/lib/repo";
 import { telHref } from "@/lib/format";
 import PageHead from "@/components/PageHead";
 import { faqJsonLd, jsonLdScript } from "@/lib/seo";
@@ -22,7 +22,7 @@ const CARDS = [
 ] as const;
 
 export default async function DeliveryPage() {
-  const { business } = await loadCatalog();
+  const business = await getBusiness();
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(faqJsonLd([

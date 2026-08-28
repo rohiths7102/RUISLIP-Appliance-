@@ -23,7 +23,7 @@ import ChatWidget from "@/components/ChatWidget";
 import UspStrip from "@/components/UspStrip";
 import CallTracker from "@/components/CallTracker";
 import ConsentAnalytics from "@/components/ConsentAnalytics";
-import { getBusiness, loadCatalog } from "@/lib/repo";
+import { getBusiness, getNav } from "@/lib/repo";
 import { topCategories, childCategories } from "@/lib/select";
 import type { NavData } from "@/components/MegaMenu";
 import { jsonLdScript } from "@/lib/seo";
@@ -147,7 +147,7 @@ function LocalBusinessSchema({ business }: { business: any }) {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { business, categories, brands } = await loadCatalog();
+  const { business, categories, brands } = await getNav();
   // Department -> sub-categories (with photos and live counts) for the nav
   // fly-outs, plus the owner's main brands — loadCatalog already pins those
   // first. Same vocabulary as the category and brand pages the panel links to.

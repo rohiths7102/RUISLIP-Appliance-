@@ -4,6 +4,7 @@
  * site resilient (works before `prisma generate`/`db:seed`) and lets it build in
  * environments without a live DB. The database is the source of truth in production.
  */
+import { cache } from "react";
 import * as seed from "./data";
 import type { Product, Category, Brand, Business, Service } from "./types";
 
@@ -63,6 +64,16 @@ function mapProduct(r: any): Product {
     meta: {}, scrapedAt: r.lastScrapedAt ? String(r.lastScrapedAt) : "",
   };
 }
+function mapBusiness(biz: any): Business {
+  return {
+    businessName: biz.businessName, tradingName: biz.tradingName, phone: biz.phone, email: biz.email,
+    address: biz.address, openingHours: biz.openingHours,
+    delivery: { radius: biz.deliveryRadius, notes: biz.deliveryNotes, timescale: "" },
+    socialLinks: biz.socialLinks, mapQuery: biz.mapQuery, googleMapsEmbedUrl: biz.googleMapsEmbedUrl, googleMapsDirectionsUrl: biz.googleMapsDirectionsUrl,
+    companyNumber: biz.companyNumber || "", placeOfRegistration: biz.placeOfRegistration || "",
+    registeredOffice: biz.registeredOffice || "", vatNumber: biz.vatNumber || "",
+  };
+}
 function mapCategory(r: any): Category {
   return { id: r.id, name: r.name, slug: r.slug, sourceUrl: r.sourceUrl, parentCategory: r.parentId || "",
     children: [], description: r.description, productCount: r.productCount, image: r.image, seoTitle: r.seoTitle, seoDescription: r.seoDescription,
@@ -71,7 +82,7 @@ function mapCategory(r: any): Category {
 
 export interface Catalog { products: Product[]; categories: Category[]; brands: Brand[]; business: Business; services: Service[]; source: "database" | "seed"; }
 
-export async function loadCatalog(): Promise<Catalog> {
+async function readCatalog(): Promise<Catalog> {
   const fallback: Catalog = { products: seed.products, categories: seed.categories, brands: seed.brands, business: seed.business, services: seed.services, source: "seed" };
   const db = await getDb();
   if (!db) return fallback;
@@ -84,14 +95,7 @@ export async function loadCatalog(): Promise<Catalog> {
       db.businessInfo.findUnique({ where: { id: "business" } }), db.serviceAddOn.findMany(),
     ]);
     if (!prod.length) return fallback;
-    const business: Business = biz ? {
-      businessName: biz.businessName, tradingName: biz.tradingName, phone: biz.phone, email: biz.email,
-      address: biz.address, openingHours: biz.openingHours,
-      delivery: { radius: biz.deliveryRadius, notes: biz.deliveryNotes, timescale: "" },
-      socialLinks: biz.socialLinks, mapQuery: biz.mapQuery, googleMapsEmbedUrl: biz.googleMapsEmbedUrl, googleMapsDirectionsUrl: biz.googleMapsDirectionsUrl,
-      companyNumber: biz.companyNumber || "", placeOfRegistration: biz.placeOfRegistration || "",
-      registeredOffice: biz.registeredOffice || "", vatNumber: biz.vatNumber || "",
-    } : seed.business;
+    const business: Business = biz ? mapBusiness(biz) : seed.business;
     return {
       products: prod.map(mapProduct), categories: cats.map(mapCategory),
       brands: brds.map((b: any) => ({ id: b.id, name: b.name, slug: b.slug, sourceUrl: b.sourceUrl, logo: b.logo, productCount: b.productCount })),
@@ -102,4 +106,55 @@ export async function loadCatalog(): Promise<Catalog> {
     return fallback;
   }
 }
-export async function getBusiness(): Promise<Business> { return (await loadCatalog()).business; }
+/**
+ * Request-scoped memoisation. generateMetadata, the root layout and the page
+ * body all render in ONE React pass, so a product page pulled the whole
+ * catalogue three or four times per render — at ~13 MB a pull that alone put
+ * the free database tier's monthly egress inside a day of modest traffic, and
+ * it is most of why a cold product page took 3–6 seconds ("pages don't open").
+ * React's cache() collapses those to one read and dies with the request:
+ * nothing persists between requests, so an admin edit still shows on the very
+ * next render and a seed-fallback result can never be frozen in. Outside a
+ * React render (route handlers, scripts) it is a pass-through.
+ */
+export const loadCatalog = cache(readCatalog);
+
+/** The one business row, without dragging 5,000 products along for the ride. */
+export const getBusiness = cache(async (): Promise<Business> => {
+  const db = await getDb();
+  if (!db) return seed.business;
+  try {
+    const biz = await db.businessInfo.findUnique({ where: { id: "business" } });
+    return biz ? mapBusiness(biz) : seed.business;
+  } catch {
+    return seed.business;
+  }
+});
+
+/** What the root layout actually needs: nav categories, nav brands, business.
+ *  ~9 KB instead of the full catalogue on every render of every page. The
+ *  explicit shape keeps the seed-fallback branches (full Category/Brand rows)
+ *  and the narrow db projection converging on one type. */
+export type NavCategory = { id: string; name: string; parentCategory: string; image: string; productCount: number };
+export type NavBrand = { name: string; slug: string; productCount: number };
+export const getNav = cache(async (): Promise<{ business: Business; categories: NavCategory[]; brands: NavBrand[] }> => {
+  const db = await getDb();
+  if (!db) {
+    return { business: seed.business, categories: seed.categories, brands: seed.brands };
+  }
+  try {
+    const [cats, brds, business] = await Promise.all([
+      db.category.findMany({ where: { isVisible: true }, select: { id: true, name: true, parentId: true, image: true, productCount: true } }),
+      db.brand.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }], select: { name: true, slug: true, productCount: true } }),
+      getBusiness(),
+    ]);
+    if (!cats.length) return { business, categories: seed.categories, brands: seed.brands };
+    return {
+      business,
+      categories: cats.map((c: any) => ({ id: c.id, name: c.name, parentCategory: c.parentId || "", image: c.image || "", productCount: c.productCount })),
+      brands: brds.map((b: any) => ({ name: b.name, slug: b.slug, productCount: b.productCount })),
+    };
+  } catch {
+    return { business: seed.business, categories: seed.categories, brands: seed.brands };
+  }
+});

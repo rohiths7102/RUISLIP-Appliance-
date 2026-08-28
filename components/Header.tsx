@@ -49,10 +49,13 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
       <div className="border-b border-line bg-paper">
         <div className="container-x flex h-[72px] items-center gap-4">
           <Link href="/" onClick={() => setOpen(false)} aria-label="Jyotsna Electrical — Euronics Ruislip, home" className="flex shrink-0 items-center gap-3">
-            <span className="flex flex-col leading-none">
-              <span className="font-display text-[22px] font-semibold tracking-tight text-navy">Jyotsna Electrical</span>
-              <span className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.22em] text-blue-deep">Est. 1977 · South Ruislip</span>
-            </span>
+            {/* The shop's own mark, from their existing site — the owner asked for
+                "name and logo similar to this", and this IS that logo, not a
+                rebuild. The JPG is white-backed, same as this bar. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/jyotsna-logo.jpg" alt="Jyotsna Electrical"
+              width={300} height={150} className="h-[52px] w-auto" />
+            <span className="hidden font-mono text-[8.5px] uppercase leading-tight tracking-[0.22em] text-blue-deep xl:block">Est. 1977<br />South Ruislip</span>
           </Link>
 
           {/* member-of mark — the 512px badge tile is illegible at header scale,
@@ -69,7 +72,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
             </span>
           </span>
 
-          <SearchBar className="mx-auto hidden w-full max-w-[440px] lg:flex" />
+          <SearchBar className="mx-auto hidden w-full max-w-[560px] lg:flex" />
 
           <div className="ml-auto flex shrink-0 items-center gap-3">
             <div className="flex flex-col items-end gap-1">

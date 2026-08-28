@@ -1,7 +1,9 @@
 import type { MetadataRoute } from "next";
 import { loadCatalog } from "@/lib/repo";
 import { slugOf } from "@/lib/select";
-export const dynamic = "force-dynamic";
+// Crawlers hit this constantly and each hit pulled the full catalogue.
+// An hour of staleness in lastmod hints is nothing; the egress was not.
+export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const { products, categories, brands } = await loadCatalog();
