@@ -33,6 +33,14 @@ export const TREE = [
     { id: "cooker-hoods", name: "Cooker Hoods & Extractors" },
     { id: "warming-drawers", name: "Warming Drawers" },
   ]},
+  // The owner sells Caple sinks/taps and the full Quooker boiling-water range,
+  // neither of which is an "appliance" — they had nowhere to live and would have
+  // been thrown out by classify() rather than guessed at.
+  { id: "sinks-taps", name: "Sinks & Taps", blurb: "Kitchen sinks, mixer taps and boiling water taps, supplied and fitted.", children: [
+    { id: "kitchen-sinks", name: "Kitchen Sinks" },
+    { id: "kitchen-taps", name: "Kitchen Taps" },
+    { id: "boiling-water-taps", name: "Boiling Water Taps" },
+  ]},
   { id: "coffee-machines", name: "Coffee Machines", blurb: "Bean-to-cup, filter, pod machines and grinders.", children: [
     { id: "bean-to-cup", name: "Bean to Cup & Espresso" },
     { id: "tassimo", name: "Tassimo & Pod Machines" },
@@ -188,6 +196,12 @@ export const TEXT_RULES = [
   // "Cooler" collides three ways: FrostVault cool box vs wine cooler vs fridge.
   [/frostvault|cooler with dry zone|wheeled cooler|hard cooler/i, "coolers"],
   [/wine cooler|wine cabinet|wine fridge|vinidor/i, "wine-coolers"],
+  // Boiling-water first: a Quooker is a "boiling water tap", and the plain
+  // /tap/ rule below would otherwise claim it. Sink before tap, because a
+  // "sink and tap pack" is bought as a sink.
+  [/boiling water tap|instant hot water tap|\bquooker\b|\b100\s*°?c\s*tap/i, "boiling-water-taps"],
+  [/\bsink\b|undermount bowl|inset bowl|belfast|drainer/i, "kitchen-sinks"],
+  [/\btaps?\b|mixer tap|monobloc|pull[- ]out spray/i, "kitchen-taps"],
 
   // Countertop cooking before built-in — a Ninja "Multifunction Oven" is not an oven,
   // and a "Multi-Cooker" is not a cooker.
@@ -310,7 +324,7 @@ export const GLOBAL_PRE = [
   [/waste ?disposal|multigrind/i, "food-prep"],
   // Boiling-water taps and the CUBE sparkling/chilled unit that plumbs into them
   // sit with the taps. The SCR descaler stays under cleaning — it is a consumable.
-  [/quooker (pro|flex|fusion|front|classic|combi|cube)|quooker.*(sparkling|chilled)/i, "kettles"],
+  [/quooker (pro|flex|fusion|front|classic|combi|cube)|quooker.*(sparkling|chilled)/i, "boiling-water-taps"],
 ];
 
 /**

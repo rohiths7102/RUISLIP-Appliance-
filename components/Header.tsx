@@ -19,8 +19,8 @@ import type { Business } from "@/lib/types";
 // Stable department slugs (same set the footer links); Brands/Delivery ride the blue row too.
 const DEPARTMENTS = [
   ["laundry", "Laundry"], ["refrigeration", "Refrigeration"], ["dishwashers", "Dishwashers"],
-  ["cooking", "Cooking"], ["tv-audio", "TV & Audio"], ["floorcare", "Floorcare"],
-  ["small-appliances", "Small Appliances"], ["accessories-parts", "Accessories"],
+  ["cooking", "Cooking"], ["sinks-taps", "Sinks & Taps"], ["tv-audio", "TV & Audio"],
+  ["floorcare", "Floorcare"], ["small-appliances", "Small Appliances"], ["accessories-parts", "Accessories"],
 ] as const;
 const UTILITY = [
   { href: "/brands", label: "Brands" },

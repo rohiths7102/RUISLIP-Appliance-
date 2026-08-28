@@ -4,8 +4,8 @@ import type { Business } from "@/lib/types";
 
 const CATS = [
   ["laundry", "Laundry"], ["refrigeration", "Refrigeration"], ["dishwashers", "Dishwashers"],
-  ["cooking", "Cooking"], ["tv-audio", "TV & Audio"], ["floorcare", "Floorcare"],
-  ["small-appliances", "Small Appliances"], ["accessories-parts", "Accessories & Spare Parts"],
+  ["cooking", "Cooking"], ["sinks-taps", "Sinks & Taps"], ["tv-audio", "TV & Audio"],
+  ["floorcare", "Floorcare"], ["small-appliances", "Small Appliances"], ["accessories-parts", "Accessories & Spare Parts"],
 ];
 
 export default function Footer({ business }: { business: Business }) {
