@@ -17,6 +17,13 @@ const nextConfig = {
       { protocol: "https", hostname: "www.kitchen-appliances.co.uk" },
       // Prod catalog shots live on Vercel Blob; dev serves local /catalog paths.
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      // Every catalogue image that is not a local /catalog path. next/image
+      // refuses any host not listed here with a 400, which rendered ~2,270
+      // products -- over half the shop -- with no picture at all while the
+      // images themselves were serving fine on 200.
+      { protocol: "https", hostname: "cdn.media.amplience.net" },   // Euronics
+      { protocol: "https", hostname: "media3.bsh-group.com" },      // Bosch / NEFF
+      { protocol: "https", hostname: "images.eu.ctfassets.net" },   // Quooker
     ],
   },
   async redirects() {
