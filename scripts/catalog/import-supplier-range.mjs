@@ -108,7 +108,11 @@ const SUPPLIERS = {
     read: (html) => {
       const h1 = cleanText((html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || [])[1] || "");
       if (!h1) return null;
-      const img = (html.match(/https:\/\/images\.eu\.ctfassets\.net\/[^"'\s?]+/) || [])[0] || "";
+      // Take the first RASTER image: Quooker_Logo.svg and the nav icons are all
+      // SVG and sit above the product photography, so the first match without
+      // this filter was the logo -- and thirteen taps shared one red rectangle.
+      const img = [...new Set([...html.matchAll(/https:\/\/images\.eu\.ctfassets\.net\/[^"'\s?\\]+/g)].map((m) => m[0]))]
+        .find((u) => /\.(jpg|jpeg|png|webp)$/i.test(u)) || "";
       return { title: h1, code: "", image: img, description: cleanText(meta(html, "description")) };
     },
   },
