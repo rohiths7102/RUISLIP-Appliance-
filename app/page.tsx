@@ -259,8 +259,7 @@ export default async function Home() {
             <p className="mt-5 max-w-[560px] text-[16.5px] leading-relaxed text-white/80">
               Some models are priced over the phone rather than online. Ring the shop and we
               will quote you our best price on the day, tell you what is actually in stock, and
-              price delivery and fitting in the same call — you will be speaking to the family
-              who runs the shop, not a call centre.
+              price delivery and fitting in the same call.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={telHref(business.phone)}

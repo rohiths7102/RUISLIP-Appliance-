@@ -36,12 +36,24 @@ for (const [from, to] of Object.entries(MERGE)) {
 }
 
 const onShelf = await db.product.groupBy({ by: ["brand"], _count: { _all: true } });
-const have = new Set((await db.brand.findMany({ select: { name: true } })).map((b) => b.name));
+// Keyed case-insensitively: production carried a row spelled "CATA" and 17
+// products spelled "Cata", and creating a row for the second collides on the
+// slug they share. A brand differing only in case is the same brand, so those
+// products move onto the row's spelling instead of getting a second row.
+const have = new Map((await db.brand.findMany({ select: { name: true } })).map((b) => [b.name.toLowerCase(), b.name]));
 
-let made = 0;
+let made = 0, folded = 0;
 for (const { brand, _count } of onShelf.sort((a, b) => b._count._all - a._count._all)) {
   const name = MERGE[brand] || brand;
-  if (!name || have.has(name)) continue;
+  if (!name) continue;
+  const existing = have.get(name.toLowerCase());
+  if (existing) {
+    if (existing === brand) continue;
+    console.log(`${DRY ? "would fold" : "folded"} ${_count._all} products: "${brand}" -> "${existing}"`);
+    if (!DRY) await db.product.updateMany({ where: { brand }, data: { brand: existing } });
+    folded++;
+    continue;
+  }
   const slug = slugOf(name);
   console.log(`${DRY ? "would create" : "created"} ${name} (${_count._all} products) -> /brands/${slug}`);
   if (!DRY) {
@@ -51,7 +63,8 @@ for (const { brand, _count } of onShelf.sort((a, b) => b._count._all - a._count.
       data: { id: slug, name, slug, order: 100 },
     });
   }
+  have.set(name.toLowerCase(), name);
   made++;
 }
-console.log(`${DRY ? "would create" : "created"} ${made} brand rows`);
+console.log(`${DRY ? "would create" : "created"} ${made} brand rows${folded ? `; ${DRY ? "would fold" : "folded"} ${folded} case-only duplicate${folded > 1 ? "s" : ""}` : ""}`);
 await db.$disconnect();
