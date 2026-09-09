@@ -206,7 +206,13 @@ export const TEXT_RULES = [
   // Countertop cooking before built-in — a Ninja "Multifunction Oven" is not an oven,
   // and a "Multi-Cooker" is not a cooker.
   [/bbq|smoker|outdoor cooking/i, "grills-bbq"],
-  [/\bwok\b|cookware|frying pan/i, "cookware"],
+  // "cookware" as a bare word is a common noun in appliance marketing copy -- a
+  // hob "suitable for all cookware", a microwave that "handles cookware
+  // effortlessly" -- and this rule sits 36 rules above /microwave/ and /cooker/,
+  // so an incidental mention beat the actual product type: a Beko gas cooker, a
+  // Blomberg dishwasher and a Russell Hobbs solo microwave all landed here.
+  // Real cookware names itself in the title, so require that shape.
+  [/\bwok\b|cookware set|cookware \d|frying pan|espresso maker/i, "cookware"],
   [/toaster/i, "toasters"],
   [/kettle/i, "kettles"],
   // A SLUSHi frozen-drink maker chills and churns; it neither air-fries nor cooks.

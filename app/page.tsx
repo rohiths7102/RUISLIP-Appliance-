@@ -4,15 +4,27 @@ import { loadCatalog } from "@/lib/repo";
 import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
 import { telHref } from "@/lib/format";
 import Reveal from "@/components/Reveal";
-import RotatingWord from "@/components/RotatingWord";
 import CountUp from "@/components/CountUp";
-import ShowroomReel from "@/components/ShowroomReel";
 import DiscoverPanel from "@/components/DiscoverPanel";
+import PromoBanners from "@/components/PromoBanners";
+import HeroSlides from "@/components/HeroSlides";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
+import featuredSync from "@/data/featured-products.json";
+import categoryHeroes from "@/data/category-heroes.json";
 export const revalidate = 300;
+
+/** The current Euronics agent-sales campaigns, as run on the shop's own
+ *  storefront. Liebherr ends 31.10.26; swap the artwork and the link when
+ *  Euronics issues the next one. */
+const PROMOS = [
+  { href: "/brands/liebherr", alt: "Liebherr — 10-year guarantee on all household appliances",
+    wide: "/promo/liebherr-wide.png", mobile: "/promo/liebherr-mobile.png" },
+  { href: "/brands/schonhaus", alt: "Schonhaus — beautifully at home, 5-year guarantee",
+    wide: "/promo/schonhaus-wide.png", mobile: "/promo/schonhaus-mobile.png" },
+];
 
 const STEPS = [
   ["01", "Choose your appliance", "Browse the range and find the model that fits your kitchen."],
@@ -23,16 +35,6 @@ const STEPS = [
 
 const AREAS = ["Ruislip", "South Ruislip", "Eastcote", "Northolt", "Pinner", "Ickenham", "Ruislip Manor"];
 
-// The hero headline rolls through the real departments — merchandising in the
-// H1 itself. Assistive tech and crawlers read the static "appliances" instead.
-const HERO_WORDS = [
-  "washing machines", "fridge freezers", "ovens & hobs", "dishwashers",
-  "coffee machines", "TVs & soundbars", "vacuum cleaners", "appliances",
-];
-
-/** Never front the shop with a spare part — a water-hardness test strip is not a showcase. */
-const ACCESSORIES = "Accessories & Spare Parts";
-
 export default async function Home() {
   const { products, categories, brands, business } = await loadCatalog();
   const cats = topCategories(categories);
@@ -41,16 +43,16 @@ export default async function Home() {
   // shelf reads as a showroom rather than a bin of filters. Call-for-price
   // categories are excluded — the slideshow leads with the price.
   const poaSet = poaNamesFrom(categories);
-  const realCats = cats.filter((c) => c.name !== ACCESSORIES);
-  const featured = realCats
-    .map((c) =>
-      products
-        .filter((p) => p.category === c.name && p.image && p.priceNow !== null &&
-          !poaSet.has(p.category) && !poaSet.has(p.subcategory))
-        .sort((a, b) => (b.priceNow ?? 0) - (a.priceNow ?? 0))[0]
-    )
-    .filter(Boolean)
-    .slice(0, 8);
+  // The featured row is the owner's own promotion, not ours: it mirrors the
+  // "featured products" carousel on his Euronics storefront, in his order, with
+  // the Euronics best-seller flags. scripts/catalog/sync-featured.mjs refreshes
+  // data/featured-products.json (and the prices) from that page.
+  const bestSellers = new Set(featuredSync.items.filter((i) => i.bestSeller).map((i) => i.code));
+  const byCode = new Map(products.map((p) => [p.productCode, p]));
+  const featured = featuredSync.items
+    .map((i) => byCode.get(i.code))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p && p.image))
+    .slice(0, 12);
 
   // Best offers — real was/now savings, dearest saving first. The owner asked
   // for value over "premium": lead with what people actually save.
@@ -61,9 +63,7 @@ export default async function Home() {
     .slice(0, 8)
     .map((p) => toCardItem(p, poaSet));
 
-  const reelProducts = featured.concat(
-    products.filter((p) => p.image && p.priceNow !== null && !featured.includes(p)).slice(0, 20)
-  );
+  const brandTape = [...brands].sort((a, b) => b.productCount - a.productCount);
 
   // Department -> sub-category names for the finder; one vocabulary with the
   // category pages and the /products browser.
@@ -72,47 +72,95 @@ export default async function Home() {
     subs: childCategories(categories, c.id).map((s) => s.name),
   }));
 
+  // Brand promotions, the way the shop's own site ran them: one brand, one
+  // product type, one click to that shelf. A single portrait cutout cannot fill
+  // a wide band -- both reference sites use wide artwork -- so each slide shows a
+  // RANGE: the lead product (the one the button sells) front and tallest, two
+  // more of the same brand staggered behind it, all on one floor line. Every
+  // code is a verified cutout; on a dark ground an opaque shot shows a white box.
+  const SLIDES: { codes: string[]; eyebrow: string; line: string; sub: string; cta: string;
+                  href?: string; wide?: boolean; logo?: string; chipText?: string; logoLight?: boolean }[] = [
+    { codes: ["RF605QNUVX1", "SMS6ZCI10G", "WRB247C9GB"], eyebrow: "Euronics Ruislip",
+      logo: "/brand/euronics-logo.png", logoLight: true, chipText: "Ruislip", line: "Proper appliances, properly fitted.",
+      sub: "Bosch, Neff, Miele and the brands you trust — at Euronics prices, delivered and fitted by our own team.",
+      cta: "Browse appliances", href: "/products" },
+    { codes: ["KFD96APEA", "KFI96APEAG", "KIN96NSE0G"], eyebrow: "Bosch", line: "American fridge freezers",
+      sub: "Series 6 and Series 8, delivered in our own van and fitted by our own team.", cta: "Shop Bosch fridge freezers" },
+    { codes: ["C24MT73G0B", "U2ACH7AG7B", "U2ACH7AN7B"], eyebrow: "Neff", line: "Built-in ovens",
+      sub: "Slide&Hide and CircoTherm, built for the kitchen you\u2019ve planned. Installed and tested by us.", cta: "Shop Neff ovens" },
+    { codes: ["WEE385WCS", "WEG885 WCS", "WED385WCS"], eyebrow: "Miele", line: "Washing machines",
+      sub: "Made to last twenty years. Delivered, fitted, and the old one taken away.", cta: "Shop Miele washing machines" },
+    { codes: ["WF90F09C4SU1", "WW11DB8B95GHU1", "WW11DB8B95GBU1"], eyebrow: "Samsung", line: "Washing machines",
+      sub: "AI Wash and 11kg drums, delivered in our own van and fitted by our own team.", cta: "Shop Samsung washing machines" },
+  ];
+  // Every code above is a verified cutout (transparent background). Catalogue
+  // shots on a white plate look like a floating white box on this blue, so the
+  // dearest model is not always the one that can go in the hero.
+  const slides = SLIDES.flatMap((sl) => {
+    const found = sl.codes.map((c) => products.find((x) => x.productCode === c && x.image)).filter(Boolean);
+    const lead = found[0];
+    if (!lead) return [];
+    const href = sl.href ?? `/products?cat=${encodeURIComponent(lead.subcategory)}&brand=${encodeURIComponent(lead.brand)}`;
+    // A brand slide shows the brand's own tile; the shop slide (eyebrow is not a
+    // brand) keeps its wordmark as text.
+    const logo = sl.logo ?? (sl.eyebrow === lead.brand ? (brands.find((b) => b.name === lead.brand)?.logo || "") : "");
+    return [{ eyebrow: sl.eyebrow, line: sl.line, sub: sl.sub, cta: sl.cta, href, logo, chipText: sl.chipText, logoLight: sl.logoLight, wide: sl.wide,
+              images: found.map((p) => ({ src: p!.image, alt: p!.title })) }];
+  });
+
   return (
     <>
-      {/* ------- HERO — one solid royal band, the finder front and centre.
-                 The layout the owner chose leads with "help me find it",
-                 not with a film. ------- */}
-      <section className="bg-blue">
-        <div className="container-x flex flex-col gap-7 py-14 lg:py-[72px]">
-          <div className="reveal max-w-[860px]">
-            <p className="mb-4 inline-flex items-center gap-2 border border-white/20 px-3.5 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.22em] text-sky">
-              <span className="h-1.5 w-1.5 rounded-full bg-cta" /> Euronics Ruislip · South Ruislip · since 1977
-            </p>
-            <h1 className="font-display text-[clamp(30px,4vw,50px)] leading-[1.08] text-white">
-              Big-brand <RotatingWord words={HERO_WORDS} fallback="appliances" className="text-sky" />,{" "}
-              <em className="shimmer not-italic italic">honest local prices.</em>
-            </h1>
-            <p className="mt-4 max-w-[560px] text-[15.5px] leading-relaxed text-white/80">
-              Browse {products.length.toLocaleString("en-GB")} appliances, check the price and product code,
-              then call us — we confirm stock, delivery and fitting in one conversation.
-            </p>
-          </div>
+      {/* ------- HERO — the showroom window, lit like one. Dark ground so the
+                 appliance is the only bright thing on the screen; the product
+                 bleeds past the grid so it reads as a room, not a thumbnail.
+                 No .shot/multiply here — that is for light grounds; this image
+                 is a true cutout and needs no blend. ------- */}
+      <section className="relative overflow-hidden bg-[#1b3d7d]">
+        <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
+        <HeroSlides slides={slides} />
+        {/* Delivery reach only. A second Call button here would repeat the one in
+            the sticky header, which is on screen at every scroll position. */}
+        <div className="container-x wide border-t border-white/15 py-6">
+          <PostcodeCheck phone={business.phone} />
+        </div>
+      </section>
 
-          <div className="reveal">
-            <DiscoverPanel departments={departments} />
-          </div>
+      {/* ------- SUPPLIER CAMPAIGNS — the Euronics agent-sales banners the shop
+                 already runs on its own storefront, full width under the hero
+                 where the guarantee is the first thing after the range. The
+                 artwork is Euronics', sized by them; refresh it from
+                 kitchen-appliances.co.uk when a campaign ends. ------- */}
+      <PromoBanners promos={PROMOS} />
 
-          <div className="reveal flex flex-wrap items-center gap-3">
-            <a href={telHref(business.phone)}
-              className="inline-flex items-center gap-2.5 bg-cta px-6 py-[13px] text-sm font-bold text-white transition-colors hover:bg-cta-deep">
-              <Phone size={16} /> Call {business.phone}
-            </a>
-            <Link href="/products"
-              className="group inline-flex items-center gap-2 border border-white/30 px-6 py-[13px] text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white hover:text-blue">
-              Browse everything
-              <ArrowRight size={16} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] group-hover:translate-x-[3px]" />
-            </Link>
-          </div>
+      {/* ------- FINDER — the "help me find it" the owner chose, full width under the hero ------- */}
+      <section className="border-y border-line bg-card">
+        <div className="container-x py-6 lg:py-7">
+          <DiscoverPanel departments={departments} />
+        </div>
+      </section>
 
-          {/* honest inline coverage check — replaces the old auto-opening modal */}
-          <div className="reveal">
-            <PostcodeCheck phone={business.phone} />
-          </div>
+      {/* ------- SERVICES — installation, fitting, recycling, front and centre
+                 (owner: "make the installation fitting recycling more prominent") ------- */}
+      <section className="border-y border-line bg-card">
+        <div className="container-x grid gap-[18px] py-14 md:grid-cols-3">
+          {[
+            [Wrench, "Installation & fitting", "Freestanding and built-in appliances installed, tested, and your old one disconnected."],
+            [Recycle, "Removal & recycling", "We take the old appliance and every scrap of packaging away with us."],
+            [Truck, "Own-van local delivery", "Our own crew delivers around Ruislip — same-day possible, arranged on the phone."],
+          ].map(([Icon, title, body], i) => (
+            <Reveal key={title as string} delay={i * 70} className="flex items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue/10">
+                <Icon size={21} className="text-blue-deep" />
+              </span>
+              <div>
+                <h3 className="mb-1 font-display text-[22px] font-medium leading-tight">{title as string}</h3>
+                <p className="text-[13.5px] leading-relaxed text-muted">{body as string}</p>
+                <Link href="/delivery-services" className="mt-1.5 inline-block text-[12.5px] font-semibold text-blue-deep hover:text-blue">
+                  How it works →
+                </Link>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </section>
 
@@ -157,36 +205,45 @@ export default async function Home() {
         </section>
       )}
 
-      {/* ------- SERVICES — installation, fitting, recycling, front and centre
-                 (owner: "make the installation fitting recycling more prominent") ------- */}
-      <section className="border-y border-line bg-card">
-        <div className="container-x grid gap-[18px] py-14 md:grid-cols-3">
-          {[
-            [Wrench, "Installation & fitting", "Freestanding and built-in appliances installed, tested, and your old one disconnected."],
-            [Recycle, "Removal & recycling", "We take the old appliance and every scrap of packaging away with us."],
-            [Truck, "Own-van local delivery", "Our own crew delivers around Ruislip — same-day possible, arranged on the phone."],
-          ].map(([Icon, title, body], i) => (
-            <Reveal key={title as string} delay={i * 70} className="flex items-start gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue/10">
-                <Icon size={21} className="text-blue-deep" />
-              </span>
-              <div>
-                <h3 className="mb-1 font-display text-[22px] font-medium leading-tight">{title as string}</h3>
-                <p className="text-[13.5px] leading-relaxed text-muted">{body as string}</p>
-                <Link href="/delivery-services" className="mt-1.5 inline-block text-[12.5px] font-semibold text-blue-deep hover:text-blue">
-                  How it works →
-                </Link>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
       {/* real Google reviews only — renders nothing until genuine data exists */}
       <GoogleReviews />
 
-      {/* ---------------- SHOWROOM REEL (the design movement) ---------------- */}
-      <ShowroomReel products={reelProducts} />
+      {/* ------- FEATURED — the same row the owner runs on his Euronics
+                 storefront: his products, his order, his best-seller flags,
+                 and the offer prices synced from that page. ------- */}
+      {featured.length > 0 && (
+        <section className="bg-card py-20">
+          <div className="container-x">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— This month&rsquo;s offers</p>
+                <h2 className="font-display text-[clamp(30px,3.6vw,44px)] font-normal leading-[1.08]">
+                  Jyotsna Electrical featured products
+                </h2>
+              </div>
+              <Link href="/products" className="text-sm font-semibold text-blue-deep hover:text-blue">
+                Browse everything →
+              </Link>
+            </div>
+            <div className="-mx-6 flex snap-x snap-mandatory gap-[14px] overflow-x-auto px-6 pb-3 [scrollbar-width:thin]">
+              {featured.map((p) => {
+                const c = toCardItem(p, poaSet);
+                return (
+                  <div key={c.id} className="relative w-[78vw] shrink-0 snap-start sm:w-[320px] lg:w-[calc((100%-42px)/4)]">
+                    {bestSellers.has(p.productCode) && (
+                      /* The Euronics best-seller stamp, same as his storefront. */
+                      <span className="pointer-events-none absolute right-3 top-3 z-10 flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full bg-blue text-center font-display text-[9px] font-bold uppercase leading-[1.1] tracking-[0.06em] text-white shadow-[0_6px_16px_rgba(10,39,136,.35)]">
+                        Best<br />seller
+                      </span>
+                    )}
+                    <ProductCard p={c as never} energyClass={c.energyClass} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ---------------- CATEGORIES ---------------- */}
       <section className="container-x pb-10 pt-24">
@@ -199,26 +256,41 @@ export default async function Home() {
             View all appliances →
           </Link>
         </Reveal>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {cats.map((c, i) => (
-            <Reveal key={c.id} delay={(i % 4) * 70}>
+        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
+            Euronics storefront runs its department panels — the appliance stands
+            on the light half, the name sits on the blue. No black anywhere. */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {cats.map((c, i) => {
+            // A cutout can stand on the blue; a catalogue shot on white cannot,
+            // so those departments get the light panel and multiply instead.
+            const cutout = (categoryHeroes as Record<string, string>)[c.id];
+            const shot = cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image;
+            return (
+            <Reveal key={c.id} delay={(i % 3) * 70}>
               <Link href={`/categories/${c.id}`}
-                className="card-lift group relative block aspect-[3/4] overflow-hidden rounded-[4px] bg-navy-2">
-                {c.image ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={c.image} alt="" aria-hidden loading="lazy"
-                    className="absolute inset-0 h-full w-full object-contain p-8 opacity-90 transition-transform duration-700 group-hover:scale-105" />
-                ) : null}
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,24,48,.15)_30%,rgba(4,24,48,.9))]" />
-                <div className="absolute inset-x-0 bottom-0 p-[22px]">
-                  <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-sky">
-                    {c.productCount} models
-                  </p>
-                  <h3 className="font-display text-[25px] font-medium leading-[1.05] text-paper">{c.name}</h3>
+                className="card-lift group block h-full overflow-hidden rounded-[4px] border border-line bg-white">
+                <div className={`relative aspect-[16/10] ${cutout
+                  ? "bg-[linear-gradient(112deg,#1b3d7d_0%,#1b3d7d_46%,#eef2f9_46.2%,#eef2f9_100%)]"
+                  : "bg-[linear-gradient(112deg,#dde4f3_0%,#dde4f3_46%,#f6f8fc_46.2%,#f6f8fc_100%)]"}`}>
+                  {shot ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={shot} alt="" aria-hidden loading="lazy"
+                      className={`absolute inset-0 h-full w-full object-contain p-7 transition-transform duration-700 group-hover:scale-105 ${cutout ? "drop-shadow-[0_14px_22px_rgba(0,0,0,.4)]" : "shot"}`} />
+                  ) : null}
+                </div>
+                <div className="flex items-center justify-between gap-3 px-[22px] py-5">
+                  <div>
+                    <h3 className="font-display text-[25px] font-medium leading-[1.05] text-ink">{c.name}</h3>
+                    <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-blue-deep">
+                      {c.productCount} models
+                    </p>
+                  </div>
+                  <ArrowRight size={20} className="shrink-0 text-blue transition-transform duration-300 group-hover:translate-x-1" />
                 </div>
               </Link>
             </Reveal>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -257,28 +329,35 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ---------------- BRAND GRID — real logos, like the reference site ---------------- */}
+      {/* ---------------- BRAND TAPE — real logos, running like a showroom window ---------------- */}
       <section className="border-y border-line bg-paper-2 py-16">
         <div className="container-x">
           <Reveal className="mb-9 text-center">
             <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The brands we stock</p>
             <h2 className="font-display text-[40px] font-normal">{brands.length} trusted appliance brands</h2>
           </Reveal>
-          <div className="mx-auto grid max-w-[1180px] grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
-            {[...brands].sort((a, b) => b.productCount - a.productCount).map((b, i) => (
-              <Reveal key={b.id} delay={(i % 7) * 70}>
-                <Link href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
-                  className="card-lift flex h-[72px] items-center justify-center rounded-lg border border-line bg-white px-5">
-                  {b.logo ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={b.logo} alt={`${b.name} logo`} loading="lazy" className="max-h-[38px] max-w-[80%] object-contain" />
-                  ) : (
-                    <span className="text-center text-[15px] font-bold uppercase tracking-[0.08em] text-navy">{b.name}</span>
-                  )}
-                </Link>
-              </Reveal>
+        </div>
+        {/* A running tape of the brands, the way a showroom window rotates them.
+            The track is the list twice over, so translating it half its width
+            loops seamlessly; hovering stops it, and it holds still for anyone
+            who asks for reduced motion (see .marquee in globals.css). */}
+        <div className="group/tape relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)]">
+          <div className="marquee flex w-max gap-3 group-hover/tape:[animation-play-state:paused]">
+            {[...brandTape, ...brandTape].map((b, i) => (
+              <Link key={`${b.id}-${i}`} href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
+                aria-hidden={i >= brandTape.length} tabIndex={i >= brandTape.length ? -1 : undefined}
+                className="flex h-[76px] w-[150px] shrink-0 items-center justify-center rounded-lg border border-line bg-white px-5 transition-colors hover:border-blue">
+                {b.logo ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={b.logo} alt={`${b.name} logo`} loading="lazy" className="max-h-[38px] max-w-[86%] object-contain" />
+                ) : (
+                  <span className="text-center text-[13px] font-bold uppercase leading-tight tracking-[0.08em] text-blue-deep">{b.name}</span>
+                )}
+              </Link>
             ))}
           </div>
+        </div>
+        <div className="container-x">
           <div className="mt-8 text-center">
             <Link href="/brands" className="inline-flex items-center gap-2 border-b border-blue pb-1 text-[13px] font-semibold text-blue-deep hover:text-blue">
               See all brands <ArrowRight size={15} />

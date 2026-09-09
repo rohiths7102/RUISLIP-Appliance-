@@ -38,9 +38,16 @@ export async function GET(req: Request) {
       .map(([, b]) => ({ kind: "brand" as const, name: b.name, href: `/brands/${b.slug}`, count: b.productCount })),
   ];
 
+  // Every word has to appear somewhere, rather than the whole phrase appearing
+  // contiguously. The haystack is "title brand productCode" IN THAT ORDER, so a
+  // single includes() only matched a query whose words were already adjacent in
+  // that order: "bosch dishwasher" found 0 of 4,482 products while "bosch" found
+  // 843 and "dishwasher" 263 — every natural brand-plus-category search was dead.
+  const terms = q.split(/\s+/).filter(Boolean);
   const scored: [number, (typeof products)[number]][] = [];
   for (const p of products) {
-    if (!`${p.title} ${p.brand} ${p.productCode}`.toLowerCase().includes(q)) continue;
+    const hay = `${p.title} ${p.brand} ${p.productCode} ${p.category} ${p.subcategory}`.toLowerCase();
+    if (!terms.every((t) => hay.includes(t))) continue;
     let s = 1;
     if (p.productCode.toLowerCase().startsWith(q)) s += 4;
     const brand = p.brand.toLowerCase();

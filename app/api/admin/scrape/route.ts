@@ -245,9 +245,29 @@ export type Found = {
 
 const clean = (s: unknown) => String(s ?? "").replace(/\s+/g, " ").trim();
 const decodeEntities = (s: string) =>
-  s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+  // &amp; LAST: decoding it first turns "&amp;lt;" into a real "<" in one pass,
+  // which is the opposite of what a double-escaped source needs.
+  s.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
    .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&nbsp;/g, " ")
-   .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)));
+   .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
+   .replace(/&amp;/g, "&");
+
+/**
+ * Supplier copy arrives escaped -- Euronics ships "&lt;p&gt;Discover the..." inside
+ * its JSON-LD description to this day. `clean` only collapses whitespace, so that
+ * string was stored verbatim and the product page printed the tags as visible
+ * text. Decode repeatedly (the source is double-escaped in places), then strip
+ * the tags the decode reveals.
+ */
+const cleanText = (v: unknown) => {
+  let t = String(v ?? "");
+  for (let i = 0; i < 4; i++) {
+    const d = decodeEntities(t);
+    if (d === t) break;
+    t = d;
+  }
+  return t.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+};
 
 /**
  * Price from a STRUCTURED value only. The verified fact for this catalogue:
@@ -343,11 +363,11 @@ function extract(html: string, finalUrl: string): Found {
 
   if (ld) {
     source = "structured data";
-    title = clean(ld.name);
+    title = cleanText(ld.name);
     brand = clean(typeof ld.brand === "object" ? ld.brand?.name : ld.brand);
     productCode = clean(ld.mpn || ld.sku || ld.productID || ld.model);
     gtin = clean(ld.gtin13 || ld.gtin || ld.gtin12 || ld.gtin14 || ld.gtin8);
-    description = clean(ld.description);
+    description = cleanText(ld.description);
     image = clean(ldImage(ld.image));
     const offer = firstOffer(ld.offers);
     if (offer) {

@@ -22,7 +22,7 @@
  * suffix-stripped matches are 0.8 so the guards HOLD them for review.
  *
  * Match key: Euronics SKUs are <BRAND-CODE><MODEL> (BEKEDP503W = BEK + EDP503W).
- * The brand code is LEARNED per brand from the common prefix of its SKUs, then
+ * The brand code is LEARNED per brand as the most common 3-letter SKU opener, then
  * stripped to recover the model, which joins to our productCode. Brand must agree.
  *
  * Runs against whatever DATABASE_URL / PRISMA_CLIENT_DIR points at (local or prod).
@@ -37,8 +37,12 @@ const SITEMAP = "https://www.euronics.co.uk/sitemap.xml";
 const UA = "JyotsnaElectricalBot/1.0 (+catalogue reconciliation; contact rohith@kroneuszerotrust.com)";
 const args = process.argv.slice(2);
 const WITH_PRICES = args.includes("--prices");
-const brandArg = (args[args.indexOf("--brand") + 1] || "").toLowerCase();
-const limitArg = Number(args[args.indexOf("--limit") + 1]) || 0;
+// indexOf returns -1 when a flag is absent, so `args[-1 + 1]` silently read
+// args[0] -- the price pass filtered for a brand named "--prices", matched
+// nothing, and reported success having fetched zero pages every time it ran.
+const argOf = (n) => { const i = args.indexOf(n); return i >= 0 ? (args[i + 1] ?? "") : ""; };
+const brandArg = argOf("--brand").toLowerCase();
+const limitArg = Number(argOf("--limit")) || 0;
 
 const norm = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -98,13 +102,23 @@ console.log(`Euronics range: ${euro.length} products`);
 // Learn each brand's SKU prefix, then index by recovered model
 const byBrandSku = new Map();
 for (const e of euro) { if (!byBrandSku.has(e.brandSlug)) byBrandSku.set(e.brandSlug, []); byBrandSku.get(e.brandSlug).push(e.sku); }
+// Euronics brand codes are THREE letters (BEKEDP503W = BEK + EDP503W); 57 of the
+// 77 brands the old learner resolved landed on 3, and every longer one was wrong.
+// Two things broke it:
+//   - it took the prefix common to ALL of a brand's SKUs, so one stray code (a
+//     Hoover "HVRH…" filed under the haier slug) shrank Haier's to "H" and lost
+//     all 52 of its products;
+//   - where a brand's models happen to share an opening letter it ate that too:
+//     FGMMCF198 is FGM + MCF198, and stripping "FGMM" left a model no product
+//     code could ever equal.
+// Taking the most common 3-letter opener fixes both, and needs no minimum SKU
+// count, so the 23 brands with one or two products stop being skipped.
 const prefixOf = new Map();
 for (const [b, skus] of byBrandSku) {
-  if (skus.length < 3) continue;
-  let p = skus[0];
-  for (const s of skus) { let i = 0; while (i < p.length && i < s.length && p[i] === s[i]) i++; p = p.slice(0, i); if (!p) break; }
-  const alpha = (p.match(/^[A-Z]+/) || [""])[0].slice(0, 5);
-  if (alpha.length >= 2) prefixOf.set(b, alpha);
+  const tally = new Map();
+  for (const s of skus) { const p = s.slice(0, 3); if (/^[A-Z]{3}$/.test(p)) tally.set(p, (tally.get(p) || 0) + 1); }
+  const best = [...tally.entries()].sort((x, y) => y[1] - x[1])[0];
+  if (best && best[1] / skus.length >= 0.5) prefixOf.set(b, best[0]);
 }
 const euroByModel = new Map();
 for (const e of euro) {
@@ -138,9 +152,27 @@ for (const e of missing) missBrand.set(e.brandSlug, (missBrand.get(e.brandSlug) 
 console.log(`\nBIGGEST GAPS (Euronics products we don't carry, by brand):`);
 for (const [b, n] of [...missBrand].sort((a, z) => z[1] - a[1]).slice(0, 12)) console.log(`  ${String(n).padStart(4)}  ${b}`);
 
+// Per brand, the three numbers the owner's sheet asks for: what Euronics lists,
+// what of it we carry, and what we carry that Euronics does not list at all.
+const euroBrand = new Map();
+for (const e of euro) euroBrand.set(e.brandSlug, (euroBrand.get(e.brandSlug) || 0) + 1);
+const matchedIds = new Set(matched.map((m) => m.p.id));
+const ourBrand = new Map(), ourOffRange = new Map();
+for (const p of prods) {
+  ourBrand.set(p.brand, (ourBrand.get(p.brand) || 0) + 1);
+  if (!matchedIds.has(p.id)) ourOffRange.set(p.brand, (ourOffRange.get(p.brand) || 0) + 1);
+}
+const matchedBrand = new Map();
+for (const m of matched) matchedBrand.set(m.p.brand, (matchedBrand.get(m.p.brand) || 0) + 1);
+
 writeFileSync("euronics-coverage.json", JSON.stringify({
   generatedFor: "reconcile-euronics",
+  generatedAt: new Date().toISOString(),
   euronicsRange: euro.length, matched: matched.length, missing: missing.length,
+  euronicsByBrand: Object.fromEntries([...euroBrand].sort((a, z) => z[1] - a[1])),
+  ourByBrand: Object.fromEntries([...ourBrand].sort((a, z) => z[1] - a[1])),
+  matchedByBrand: Object.fromEntries([...matchedBrand].sort((a, z) => z[1] - a[1])),
+  ourNotInEuronicsByBrand: Object.fromEntries([...ourOffRange].sort((a, z) => z[1] - a[1])),
   missingByBrand: Object.fromEntries([...missBrand].sort((a, z) => z[1] - a[1])),
   missingSample: missing.slice(0, 200).map((e) => ({ sku: e.sku, brand: e.brandSlug, cat: e.cat, url: e.url })),
 }, null, 2));

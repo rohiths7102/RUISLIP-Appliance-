@@ -14,13 +14,13 @@ export const metadata: Metadata = {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; cat?: string; max?: string }>;
+  searchParams: Promise<{ q?: string; cat?: string; max?: string; brand?: string }>;
 }) {
   // Google's sitelinks search box (WebSite SearchAction in the layout) lands
   // here as /products?q=… — the query must genuinely pre-fill the search.
   // cat/max arrive from the homepage "Discover products" finder and must
   // genuinely pre-select the browser's own filters.
-  const { q, cat, max } = await searchParams;
+  const { q, cat, max, brand } = await searchParams;
   const { products, categories } = await loadCatalog();
   const brandNames = [...new Set(products.map((p) => p.brand).filter(Boolean))].sort();
   const catNames = topCategories(categories).map((c) => c.name);
@@ -41,12 +41,13 @@ export default async function ProductsPage({
             useState, leaving the old results on screen. Remounting on q resets
             every filter to match the new search, like a fresh landing. */}
         <ProductBrowser
-          key={`${q || "all"}|${cat || "all"}|${max || "0"}`}
+          key={`${q || "all"}|${cat || "all"}|${brand || "all"}|${max || "0"}`}
           items={items}
           brands={brandNames}
           categories={catNames}
           initialQuery={q || ""}
           initialCategory={cat || "all"}
+          initialBrand={brand || "all"}
           initialMax={Math.max(0, Number(max) || 0)}
         />
       </div>

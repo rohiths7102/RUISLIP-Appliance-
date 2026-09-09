@@ -40,18 +40,37 @@ const TERMS: [RegExp, string][] = [
   [/\bwasher[- ]?dryers?\b/, "Washer Dryers"],
   [/\bwashing machines?\b|\bwashers?\b/, "Washing Machines"],
   [/\btumble dryers?\b|\bdryers?\b/, "Tumble Dryers"],
+  [/\bamerican([- ]style)? fridge[- ]?freezers?\b|\bside[- ]by[- ]side\b/, "American Style Fridge Freezers"],
   [/\bfridge[- ]?freezers?\b/, "Fridge Freezers"],
+  [/\bwine (coolers?|cabinets?|fridges?)\b|\bwine coolers?\b/, "Wine Coolers"],
   [/\bfreezers?\b/, "Freezers"],
   [/\bfridges?\b|\brefrigerators?\b/, "Fridges"],
+  [/\b(integrated|built[- ]?in) dishwashers?\b/, "Integrated Dishwashers"],
+  [/\b(freestanding|free[- ]standing) dishwashers?\b/, "Freestanding Dishwashers"],
   [/\bdishwashers?\b/, "Dishwashers"],
-  [/\bovens?\b|\bcookers?\b/, "Ovens"],
+  [/\brange cookers?\b|\bcookers?\b/, "Cookers"],
+  [/\bovens?\b/, "Ovens"],
+  [/\bwarming drawers?\b/, "Warming Drawers"],
   [/\bhobs?\b|\bcooktops?\b/, "Hobs"],
   [/\bmicrowaves?\b/, "Microwaves"],
   [/\b(cooker )?hoods?\b|\bextractors?\b/, "Cooker Hoods & Extractors"],
   [/\btvs?\b|\btelevisions?\b/, "Televisions"],
   [/\bsoundbars?\b|\bspeakers?\b/, "Soundbars & Speakers"],
+  [/\bcordless vacuums?\b|\bstick vacuums?\b/, "Cordless Vacuums"],
+  [/\brobot vacuums?\b|\brobo(t)? cleaners?\b/, "Robot Vacuums"],
   [/\bvacuums?\b|\bhoovers?\b/, "Vacuum Cleaners"],
+  [/\bbean[- ]to[- ]cup\b|\bespresso machines?\b/, "Bean to Cup & Espresso"],
   [/\bcoffee machines?\b/, "Coffee Machines"],
+  [/\bair fryers?\b|\bmulti[- ]?cookers?\b/, "Air Fryers & Multi Cookers"],
+  [/\bkettles?\b/, "Kettles"],
+  [/\btoasters?\b/, "Toasters"],
+  // Sinks & Taps is newer than this table, so the department was invisible here:
+  // "do you have kitchen sinks?" matched nothing, fell through to BM25 and was
+  // answered "no" over 178 of them. Boiling-water first -- a Quooker is not a
+  // mixer tap -- and sink before tap, the same order taxonomy.mjs uses.
+  [/\bboiling water taps?\b|\binstant hot water taps?\b|\bsteaming (hot )?water taps?\b|\bquooker\b/, "Boiling Water Taps"],
+  [/\bsinks?\b/, "Kitchen Sinks"],
+  [/\btaps?\b/, "Kitchen Taps"],
 ];
 
 export function parseCategory(q: string): string | null {
@@ -68,10 +87,10 @@ export function parseCategory(q: string): string | null {
  * this assistant can give, so the brand is now part of the query.
  */
 const BRANDS = [
-  "Bosch", "Neff", "Siemens", "Smeg", "AEG", "Beko", "Blomberg", "Samsung", "LG",
-  "Hotpoint", "Hisense", "Miele", "Liebherr", "Haier", "Sony", "Caple", "Zanussi",
-  "Indesit", "Candy", "Hoover", "Sharp", "Whirlpool", "Rangemaster", "Quooker",
-  "Fisher & Paykel", "Dyson", "Shark", "Ninja", "CDA", "Elica", "Stoves",
+  "Bosch", "Neff", "Siemens", "AEG", "Beko", "Blomberg", "Samsung", "LG",
+  "Hotpoint", "Hisense", "Miele", "Liebherr", "Haier", "Sony", "Caple",
+  "Indesit", "Candy", "Hoover", "Sharp", "Quooker",
+  "Fisher & Paykel", "Dyson", "Shark", "Ninja", "ASKO", "Schonhaus",
 ];
 
 export function parseBrand(q: string): string | null {
@@ -100,7 +119,7 @@ export async function shortlistHits(query: string, take = 6): Promise<Hit[]> {
   const rows = await db.product.findMany({
     where: {
       isVisible: true,
-      priceNow: cap === null ? { gt: 0 } : { gt: 0, lte: cap },
+      ...(cap === null ? {} : { priceNow: { gt: 0, lte: cap } }),
       ...(category ? { OR: [{ subcategory: category }, { category: category }] } : {}),
       ...(brand ? { brand: { equals: brand } } : {}),
       ...(poa.length ? { NOT: [{ category: { in: poa } }, { subcategory: { in: poa } }] } : {}),
@@ -123,7 +142,7 @@ export async function shortlistHits(query: string, take = 6): Promise<Hit[]> {
       content: [
         `${p.brand} ${p.title}`.trim(),
         `Product code: ${p.productCode}`,
-        `Price: £${Number(p.priceNow).toFixed(2)}`,
+        p.priceNow === null ? "Price: call the shop for best pricing" : `Price: £${Number(p.priceNow).toFixed(2)}`,
         `Category: ${p.subcategory || p.category}`,
         p.availabilityRaw ? `Availability (confirm by phone): ${p.availabilityRaw}` : "",
         p.warranty ? `Warranty: ${p.warranty}` : "",

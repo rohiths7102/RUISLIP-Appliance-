@@ -19,7 +19,7 @@ type Sug = { kind: "category" | "brand"; name: string; href: string; count: numb
  * nothing highlighted, or the "See all" footer, lands on /products?q=… — the
  * same entry point the sitelinks SearchAction schema advertises to Google.
  */
-export default function SearchBar({ className = "" }: { className?: string }) {
+export default function SearchBar({ className = "", shelfSize = 0 }: { className?: string; shelfSize?: number }) {
   const [v, setV] = useState("");
   const [sugs, setSugs] = useState<Sug[]>([]);
   const [hits, setHits] = useState<Hit[]>([]);
@@ -100,7 +100,7 @@ export default function SearchBar({ className = "" }: { className?: string }) {
             else if (e.key === "ArrowUp") { e.preventDefault(); if (count) { setOpen(true); setActive((a) => (a <= 0 ? count - 1 : a - 1)); } }
             else if (e.key === "Escape") { cancelPending(); setOpen(false); setActive(-1); }
           }}
-          placeholder="Search 1,800+ appliances…"
+          placeholder={`Search ${shelfSize >= 100 ? `${(Math.floor(shelfSize / 100) * 100).toLocaleString("en-GB")}+ ` : ""}appliances…`}
           aria-label="Search products"
           role="combobox"
           aria-autocomplete="list"
@@ -108,9 +108,9 @@ export default function SearchBar({ className = "" }: { className?: string }) {
           aria-controls="header-search-listbox"
           // 16px on phones: iOS Safari auto-zooms the whole page when a focused
           // input is under 16px, and the zoom does not reverse on blur.
-          className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-base text-ink placeholder:text-muted outline-none lg:text-[15px]"
+          className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-base text-ink placeholder:text-muted outline-none lg:py-3 lg:text-[16px]"
         />
-        <button type="submit" aria-label="Search" className="m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-paper transition-colors hover:bg-blue">
+        <button type="submit" aria-label="Search" className="m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy lg:h-9 lg:w-9 text-paper transition-colors hover:bg-blue">
           <Search size={15} strokeWidth={2.4} />
         </button>
       </form>

@@ -30,6 +30,7 @@ export default function ProductBrowser({
   brands,
   categories = [],
   initialCategory = "all",
+  initialBrand = "all",
   initialQuery = "",
   initialMax = 0,
 }: {
@@ -37,12 +38,13 @@ export default function ProductBrowser({
   brands: string[];
   categories?: string[];
   initialCategory?: string;
+  initialBrand?: string;
   initialQuery?: string;
   /** 0 = no cap. Call-for-price items carry no number, so a cap hides them. */
   initialMax?: number;
 }) {
   const [q, setQ] = useState(initialQuery);
-  const [brand, setBrand] = useState("all");
+  const [brand, setBrand] = useState(initialBrand);
   const [cat, setCat] = useState(initialCategory);
   const [avail, setAvail] = useState("all");
   const [energy, setEnergy] = useState("all");
@@ -59,9 +61,14 @@ export default function ProductBrowser({
   }, [items]);
 
   const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
+    // Same all-words rule as /api/search, so the grid never disagrees with the
+    // dropdown that sent the customer here.
+    const terms = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     let list = items.filter((p) => {
-      if (needle && !`${p.title} ${p.brand} ${p.productCode}`.toLowerCase().includes(needle)) return false;
+      if (terms.length) {
+        const hay = `${p.title} ${p.brand} ${p.productCode} ${p.category} ${p.subcategory}`.toLowerCase();
+        if (!terms.every((t) => hay.includes(t))) return false;
+      }
       if (brand !== "all" && p.brand !== brand) return false;
       if (cat !== "all" && p.category !== cat && p.subcategory !== cat) return false;
       if (avail !== "all" && p.availabilityNormalised !== avail) return false;
@@ -83,7 +90,7 @@ export default function ProductBrowser({
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const current = Math.min(page, pages);
   const shown = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
-  const dirty = q !== "" || brand !== "all" || cat !== initialCategory || avail !== "all" || energy !== "all" || max !== initialMax;
+  const dirty = q !== "" || brand !== initialBrand || cat !== initialCategory || avail !== "all" || energy !== "all" || max !== initialMax;
 
   // A category handed in from the homepage finder may be a sub-category name
   // that isn't in the department list — it still has to appear as the selected

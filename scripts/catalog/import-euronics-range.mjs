@@ -42,6 +42,10 @@ const DELAY_MS = argNum("--delay", 850);
 // of all ~4,800 pages to reach them.
 const CATEGORIES = (args.indexOf("--category") >= 0 ? (args[args.indexOf("--category") + 1] || "") : "")
   .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+// The owner's sheet names the brands he wants carried at Euronics' full depth,
+// so a run can be scoped to those rather than the whole 4,800-page range.
+const BRANDS = (args.indexOf("--brand") >= 0 ? (args[args.indexOf("--brand") + 1] || "") : "")
+  .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 const SITEMAP = "https://www.euronics.co.uk/sitemap.xml";
 const UA = "JyotsnaElectricalBot/1.0 (+catalogue sync, Euronics member; contact rohith@kroneuszerotrust.com)";
@@ -120,6 +124,12 @@ let euro = [];
 for (const u of urls) {
   const m = u.match(/\/catalogue\/(.+?)\/([^/]+)\/p\/([A-Za-z0-9._-]+)$/);
   if (m) euro.push({ url: u, brandSlug: m[2].split("-")[0].toLowerCase(), sku: norm(m[3]) });
+}
+if (BRANDS.length) {
+  // Filtered after the list is built, for the same reason as --category below.
+  const before = euro.length;
+  euro = euro.filter((e) => BRANDS.some((b) => e.brandSlug.startsWith(b)));
+  console.log(`--brand ${BRANDS.join(",")}: ${euro.length} of ${before} Euronics pages`);
 }
 if (CATEGORIES.length) {
   // Filter AFTER the full list is built: the brand prefixes below are learned

@@ -18,7 +18,7 @@
   /* dark ground (hero, header, footer) — royal-blue family */
   --color-navy: #081538;
   --color-navy-2: #0e2166;
-  --color-navy-3: #050d24;
+  --color-navy-3: #1b3d7d;  /* footer ground — the shop's blue, never black */
 
   /* light ground */
   --color-paper: #ffffff;
@@ -79,27 +79,13 @@ body {
    under the old serif look. */
 .font-display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; }
 
-.container-x { width: 100%; max-width: 1280px; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem; }
-
-/* royal-blue shimmer on the hero's italic line — one pass, then the headline settles */
-@keyframes blueShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-.shimmer {
-  background: linear-gradient(100deg, #c7d2f7 0%, #93a8ef 30%, #ffffff 50%, #93a8ef 70%, #c7d2f7 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  animation: blueShimmer 7s linear 1 forwards;
-}
+.container-x { width: 100%; max-width: 1520px; margin: 0 auto; padding-left: clamp(1.5rem, 4vw, 3.5rem); padding-right: clamp(1.5rem, 4vw, 3.5rem); }
+.container-x.wide { max-width: 1760px; }
 
 /* slideshow active dot — scaleX fill over the slide interval (duration set inline)
    so the auto-advance cadence has a visible affordance */
 @keyframes dotFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .dot-fill { transform-origin: left; animation: dotFill linear both; }
-
-/* the reel — "design movement" from the reference, both directions */
-@keyframes reelRight { 0% { transform: translate3d(-33.333%,0,0); } 100% { transform: translate3d(0,0,0); } }
-@keyframes reelLeft  { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-33.333%,0,0); } }
-.reel-right { animation: reelRight 52s linear infinite; }
-.reel-left  { animation: reelLeft 44s linear infinite; }
 
 /* hero video/overlay ambience */
 @keyframes heroGlow { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-10%, 8%); } }
@@ -110,7 +96,7 @@ body {
 .hero-ken { animation: heroKen 26s ease-in-out infinite alternate; will-change: transform; }
 
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-.marquee { animation: marquee 38s linear infinite; }
+.marquee { animation: marquee 70s linear infinite; }
 
 @keyframes ctaUp { 0% { transform: translateY(120%); } 100% { transform: translateY(0); } }
 .cta-up { animation: ctaUp .5s cubic-bezier(.2,.8,.2,1); }
@@ -139,7 +125,7 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--color-blue); }
 
 /* Reduced motion — WCAG targets movement, not all feedback: jump the
-   transform/opacity-heavy animations (reels, marquee, ken burns, reveals) to
+   transform/opacity-heavy animations (marquee, ken burns, reveals) to
    their end state, but leave simple color/opacity transitions working. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; }

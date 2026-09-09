@@ -45,4 +45,16 @@ export const availabilityDot = (a: AvailabilityNormalised): string => {
 /** Phone-first: build tel: href from a display phone. */
 export const telHref = (phone: string) => "tel:" + phone.replace(/[^0-9+]/g, "");
 
+/**
+ * wa.me link from the same display phone. WhatsApp needs the number in full
+ * international form with no punctuation, so a UK "0208…" becomes "44208…".
+ * Derived from the one phone field, so changing the number fixes call and
+ * WhatsApp together rather than leaving a second copy to drift.
+ */
+export const waHref = (phone: string) => {
+  const digits = phone.replace(/[^0-9]/g, "");
+  const intl = digits.startsWith("44") ? digits : digits.replace(/^0/, "44");
+  return `https://wa.me/${intl}`;
+};
+
 export const STORE_PHONE = "0208 864 5763";

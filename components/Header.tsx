@@ -3,8 +3,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Phone, Menu, X, ChevronDown } from "lucide-react";
-import { telHref } from "@/lib/format";
+import { telHref, waHref } from "@/lib/format";
 import OpenNow from "@/components/OpenNow";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import SearchBar from "@/components/SearchBar";
 import MegaMenu, { type NavData } from "@/components/MegaMenu";
 import type { Business } from "@/lib/types";
@@ -20,6 +21,7 @@ import type { Business } from "@/lib/types";
 const DEPARTMENTS = [
   ["laundry", "Laundry"], ["refrigeration", "Refrigeration"], ["dishwashers", "Dishwashers"],
   ["cooking", "Cooking"], ["sinks-taps", "Sinks & Taps"], ["tv-audio", "TV & Audio"],
+  ["coffee-machines", "Coffee Machines"],
   ["floorcare", "Floorcare"], ["small-appliances", "Small Appliances"], ["accessories-parts", "Accessories"],
 ] as const;
 const UTILITY = [
@@ -29,8 +31,28 @@ const UTILITY = [
   { href: "/contact", label: "Contact" },
 ];
 
+/** Call (green, the action colour) and WhatsApp (its own green, so it reads as
+ *  WhatsApp and not a second "call us"). Both 44px tap targets. The number is
+ *  spelt out only from 1024px: between 640 and 1024 the bar has no room for it. */
+function ContactButtons({ phone, className = "" }: { phone: string; className?: string }) {
+  return (
+    <span className={`flex items-center gap-1.5 ${className}`}>
+      <a href={telHref(phone)} className="flex min-h-11 items-center gap-2 rounded-sm bg-cta px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-cta-deep">
+        <Phone size={15} strokeWidth={2.2} />
+        <span className="hidden lg:inline">{phone}</span>
+      </a>
+      <a href={waHref(phone)} target="_blank" rel="noopener noreferrer"
+        aria-label="Message us on WhatsApp"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-[#25D366] text-white transition-colors hover:bg-[#1da851]">
+        <WhatsAppIcon />
+      </a>
+    </span>
+  );
+}
+
 export default function Header({ business, nav }: { business: Business; nav?: NavData }) {
   const [open, setOpen] = useState(false);
+  const shelfSize = nav?.departments.reduce((t, d) => t + d.subs.reduce((s, x) => s + x.count, 0), 0) ?? 0;
   // Which department's fly-out is showing. Opens on hover OR keyboard focus;
   // closes on a short delay so the diagonal mouse path from trigger to panel
   // doesn't shut it mid-travel.
@@ -47,42 +69,37 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
     <header className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
       {/* ---- white bar: name · member mark · search · phone ---- */}
       <div className="border-b border-line bg-paper">
-        <div className="container-x flex h-[72px] items-center gap-4">
-          <Link href="/" onClick={() => setOpen(false)} aria-label="Jyotsna Electrical — Euronics Ruislip, home" className="flex shrink-0 items-center gap-3">
-            {/* The shop's own mark, from their existing site — the owner asked for
-                "name and logo similar to this", and this IS that logo, not a
-                rebuild. The JPG is white-backed, same as this bar. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/jyotsna-logo.jpg" alt="Jyotsna Electrical"
-              width={300} height={150} className="h-[52px] w-auto" />
-            <span className="hidden font-mono text-[8.5px] uppercase leading-tight tracking-[0.22em] text-blue-deep xl:block">Est. 1977<br />South Ruislip</span>
-          </Link>
+        <div className="container-x flex h-[72px] items-center gap-2 md:gap-4 lg:h-[88px]">
+          {/* The lockup: shop name, then "A member of Euronics". Side by side from
+              640px; stacked on a phone, where the two would otherwise push the
+              menu button off the right edge of a 360px screen. */}
+          <div className="flex shrink-0 flex-col items-start gap-[3px] sm:flex-row sm:items-center sm:gap-3">
+            <Link href="/" onClick={() => setOpen(false)} aria-label="Jyotsna Electrical — Euronics Ruislip, home" className="flex shrink-0 items-center gap-3">
+              {/* The owner wants the name written, not the old JPG mark, and big. */}
+              <span className="shrink-0 font-display text-[19px] font-bold uppercase leading-none tracking-[0.1em] text-navy sm:text-[22px] sm:tracking-[0.11em] lg:text-[28px] lg:tracking-[0.13em]">
+                Jyotsna Electrical
+              </span>
+              <span className="hidden font-mono text-[8.5px] uppercase leading-tight tracking-[0.22em] text-blue-deep xl:block">Est. 1977<br />South Ruislip</span>
+            </Link>
 
-          {/* member-of mark — the 512px badge tile is illegible at header scale,
-              so the lockup is rebuilt in HTML at a size that actually reads */}
-          <span className="hidden items-center gap-2 border-l border-line pl-4 md:flex">
-            <span className="text-[10.5px] leading-tight text-muted">A member of</span>
-            {/* The real Euronics lockup, never a rebuild of it: the supplied PNG is
-                white-on-transparent, so it sits on the brand blue it was drawn for
-                rather than being redrawn in HTML on our white bar. */}
-            <span className="flex items-center rounded-[5px] bg-[#1e80c6] px-2.5 py-[7px]">
+            {/* The shop's own "A member of euronics" lockup, taken from their live
+                site -- blue on white, the version the owner asked for. Needs no
+                blue chip behind it: it was drawn for a white bar. */}
+            <span className="flex shrink-0 items-center sm:border-l sm:border-line sm:pl-3 md:pl-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/euronics-logo.png" alt="Euronics — the home of electricals"
-                width={290} height={74} className="h-[26px] w-auto" />
+              <img src="/brand/euronics-member.png" alt="A member of Euronics"
+                width={320} height={110} className="h-[28px] w-auto shrink-0 sm:h-[38px] md:h-[46px] lg:h-[54px]" />
             </span>
-          </span>
+          </div>
 
-          <SearchBar className="mx-auto hidden w-full max-w-[560px] lg:flex" />
+          <SearchBar shelfSize={shelfSize} className="mx-auto hidden w-full max-w-[560px] lg:flex" />
 
           <div className="ml-auto flex shrink-0 items-center gap-3">
-            <div className="flex flex-col items-end gap-1">
-              {/* min-h-11 = 44px: the primary action on a phone-first shop.
-                  Green is the action colour in this design — call is the action. */}
-              <a href={telHref(business.phone)} className="flex min-h-11 items-center gap-2 rounded-sm bg-cta px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-cta-deep">
-                <Phone size={15} strokeWidth={2.2} />
-                <span className="hidden sm:inline">{business.phone}</span>
-              </a>
-              <OpenNow business={business} tone="light" className="hidden sm:flex" />
+            <div className="hidden flex-col items-end gap-1 sm:flex">
+              <ContactButtons phone={business.phone} />
+              <span className="hidden md:block">
+                <OpenNow business={business} tone="light" />
+              </span>
             </div>
             <button
               className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-ink/15 text-navy lg:hidden"
@@ -98,10 +115,12 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
         {/* Phones and portrait tablets get their own full-width search row. The
             desktop bar's SearchBar is lg:flex, so below 1024px search used to
             live two taps deep inside the hamburger — the shop's customers search
-            by model code, so it has to be on screen from a cold load. Its own
-            row costs no horizontal space, leaving the green call CTA untouched. */}
-        <div className="container-x pb-3 lg:hidden">
-          <SearchBar />
+            by model code, so it has to be on screen from a cold load. On a phone
+            the call and WhatsApp buttons sit on this row too: the top bar has
+            room for the lockup and the menu, nothing more. */}
+        <div className="container-x flex items-center gap-2 pb-3 lg:hidden">
+          <SearchBar shelfSize={shelfSize} className="min-w-0 flex-1" />
+          <ContactButtons phone={business.phone} className="sm:hidden" />
         </div>
       </div>
 
@@ -113,7 +132,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
       <nav aria-label="Departments" className="relative hidden bg-blue lg:block"
         onMouseLeave={scheduleClose}
         onKeyDown={(e) => { if (e.key === "Escape") showDept(null); }}>
-        <div className="container-x flex items-center gap-6 overflow-x-auto whitespace-nowrap">
+        <div className="container-x flex items-center gap-6 overflow-x-auto whitespace-nowrap lg:gap-8">
           {DEPARTMENTS.map(([slug, label]) => {
             const current = pathname === `/categories/${slug}`;
             const dept = nav?.departments.find((d) => d.id === slug);
@@ -124,9 +143,9 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
                 aria-expanded={hasPanel ? openNow : undefined}
                 onMouseEnter={() => (hasPanel ? showDept(slug) : scheduleClose())}
                 onFocus={() => (hasPanel ? showDept(slug) : setOpenDept(null))}
-                className={`relative flex items-center gap-1 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current || openNow ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
+                className={`relative flex items-center gap-1 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white lg:py-[18px] lg:text-[16px] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current || openNow ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
                 {label}
-                {hasPanel && <ChevronDown size={12} strokeWidth={2.4} className={`transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${openNow ? "rotate-180" : ""}`} aria-hidden />}
+                {hasPanel && <ChevronDown size={13} strokeWidth={2.4} className={`transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${openNow ? "rotate-180" : ""}`} aria-hidden />}
               </Link>
             );
           })}
@@ -135,7 +154,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
             const current = pathname === u.href;
             return (
               <Link key={u.href} href={u.href} aria-current={current ? "page" : undefined}
-                className={`relative py-2.5 text-[12px] font-medium text-white after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
+                className={`relative py-2.5 text-[12px] font-medium text-white lg:py-[18px] lg:text-[14px] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
                 {u.label}
               </Link>
             );

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Phone, MessageCircle, Check } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { getProduct, relatedFor, toCardItem, poaNamesFrom } from "@/lib/select";
-import { gbp, formatPrice, PRICE_ON_APPLICATION, availabilityLabel, availabilityDot, telHref } from "@/lib/format";
+import { gbp, formatPrice, PRICE_ON_APPLICATION, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import { breadcrumbJsonLd, jsonLdScript, SITE } from "@/lib/seo";
@@ -122,13 +123,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </p>
           </div>
 
-          <div className="mb-7 flex flex-col gap-3 sm:flex-row">
+          <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a href={telHref(business.phone)}
-              className="inline-flex flex-1 items-center justify-center gap-2.5 rounded-sm bg-blue px-6 py-4 text-[15px] font-bold text-white transition-colors hover:bg-blue-deep">
+              className="inline-flex flex-1 basis-[230px] items-center justify-center gap-2.5 rounded-sm bg-blue px-6 py-4 text-[15px] font-bold text-white transition-colors hover:bg-blue-deep">
               <Phone size={17} strokeWidth={2.2} /> Call {business.phone}
             </a>
+            {/* Opens WhatsApp with the product code already typed, so the shop
+                knows which model the message is about. */}
+            <a href={`${waHref(business.phone)}?text=${encodeURIComponent(`Hi, I'm asking about ${p.productCode} — ${p.title}`)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex flex-1 basis-[230px] items-center justify-center gap-2.5 rounded-sm bg-[#25D366] px-6 py-4 text-[15px] font-bold text-white transition-colors hover:bg-[#1da851]">
+              <WhatsAppIcon size={18} /> WhatsApp us
+            </a>
             <Link href={enquiryHref}
-              className="inline-flex flex-1 items-center justify-center gap-2.5 rounded-sm border border-ink/20 px-6 py-4 text-[15px] font-semibold transition-colors hover:border-blue hover:text-blue-deep">
+              className="inline-flex flex-1 basis-[230px] items-center justify-center gap-2.5 rounded-sm border border-ink/20 px-6 py-4 text-[15px] font-semibold transition-colors hover:border-blue hover:text-blue-deep">
               <MessageCircle size={17} /> Ask about this product
             </Link>
           </div>

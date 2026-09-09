@@ -1,0 +1,213 @@
+{
+  "source": "https://www.kitchen-appliances.co.uk/",
+  "syncedAt": "2026-09-09T14:15:16.188Z",
+  "items": [
+    {
+      "code": "ZDWI600",
+      "title": "Zenith ZDWI600 Integrated Full Size Dishwasher - 13 Place Settings",
+      "price": 279.99,
+      "priceWas": 309.99,
+      "saving": 30,
+      "bestSeller": false,
+      "order": 0
+    },
+    {
+      "code": "PUG61RAA5B",
+      "title": "Bosch PUG61RAA5B 59.2cm Plug & Play Induction Hob - Black",
+      "price": 329,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 1
+    },
+    {
+      "code": "BCHF220GB",
+      "title": "Bosch Readyy'y Series 2 BCHF220GB 2in1 Cordless Vacuum Cleaner, 44 Min runtime - Black",
+      "price": 99.99,
+      "priceWas": 189.99,
+      "saving": 90,
+      "bestSeller": false,
+      "order": 2
+    },
+    {
+      "code": "KGN34NLEAG",
+      "title": "Bosch KGN34NLEAG 60cm 50/50 Frost Free Fridge Freezer - Silver",
+      "price": 499,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 3
+    },
+    {
+      "code": "WAN28258GB",
+      "title": "Bosch WAN28258GB 8kg 1400 Spin Washing Machine - White",
+      "price": 449,
+      "priceWas": 479,
+      "saving": 30,
+      "bestSeller": false,
+      "order": 4
+    },
+    {
+      "code": "HQA574BS3B",
+      "title": "Bosch HQA574BS3B 59.4cm Built In Electric Single Oven - Stainless Steel",
+      "price": 499,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 5
+    },
+    {
+      "code": "SMS4EMW06G",
+      "title": "Bosch SMS4EMW06G WiFi-enabled Dishwasher - White - 14 Place Settings",
+      "price": 599,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 6
+    },
+    {
+      "code": "WGG254Z1GB",
+      "title": "Bosch WGG254Z1GB 10kg 1400 Spin Washing Machine - White",
+      "price": 549,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 7
+    },
+    {
+      "code": "WAN28259",
+      "title": "BOSCH 9 KG 1400 SPIN",
+      "price": 499,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 8
+    },
+    {
+      "code": "WGE03408GB",
+      "title": "Bosch WGE03408GB 8kg 1400 Spin Washing Machine - White",
+      "price": 399,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": true,
+      "order": 9
+    },
+    {
+      "code": "SMV2HTX02G",
+      "title": "Bosch SMV2HTX02G Built In Dishwasher - 13 Place Settings - White",
+      "price": 449,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": true,
+      "order": 10
+    },
+    {
+      "code": "SMS26AW08G",
+      "title": "Bosch SMS26AW08G 60cm Dishwasher - White 12 Place Settings",
+      "price": 399,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": true,
+      "order": 11
+    },
+    {
+      "code": "B3ACE4AG3B",
+      "title": "Neff B3ACE4AG3B Slide & Hide 59.4cm Built In Electric Single Oven - Graphite Grey",
+      "price": 699,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": true,
+      "order": 12
+    },
+    {
+      "code": "BMN3T3823W",
+      "title": "Beko BMN3T3823W 8kg Heat Pump Tumble Dryer - White",
+      "price": 449,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 13
+    },
+    {
+      "code": "CEP5304X",
+      "title": "Beko CaffeExperto CEP5304X Manual Espresso with Steam Wand - Black",
+      "price": 189.99,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 14
+    },
+    {
+      "code": "LWA18461W",
+      "title": "Blomberg LWA18461W 8kg 1400 SpinSave Washing Machine - White",
+      "price": 379.99,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 15
+    },
+    {
+      "code": "LWA29461W",
+      "title": "Blomberg LWA29461W 9kg 1400 Spin SpinSave Washing Machine - White",
+      "price": 399.99,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 16
+    },
+    {
+      "code": "GGRN655N",
+      "title": "Blomberg GGRN655N 60cm Double Oven Gas Cooker with Gas Hob - Anthracite",
+      "price": 549.99,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 17
+    },
+    {
+      "code": "BCS71HYGGB",
+      "title": "Bosch Unlimited 7 BCS71HYGGB Aqua Vacuum & Mop - White",
+      "price": 499.99,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 18
+    },
+    {
+      "code": "WEB365 WCS",
+      "title": "Miele WEB365 WCS 8kg 1400 Spin Washing Machine - Lotus White",
+      "price": 999,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 19
+    },
+    {
+      "code": "GGRN655W",
+      "title": "Blomberg GGRN655W 60cm Double Oven Gas Cooker with Gas Hob - White",
+      "price": 539.99,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 20
+    },
+    {
+      "code": "HVT3CLECKIHW",
+      "title": "Hoover HVT3CLECKIHW 54.5cm 50/50 Low Frost Fridge Freezer - White",
+      "price": 349.99,
+      "priceWas": null,
+      "saving": null,
+      "bestSeller": false,
+      "order": 21
+    },
+    {
+      "code": "HHF113BR0B",
+      "title": "Bosch HHF113BR0B 59.4cm Series 2 Built In Electric Single Oven with 3D Hot Air - Stainless Steel",
+      "price": 279,
+      "priceWas": 329,
+      "saving": 50,
+      "bestSeller": true,
+      "order": 22
+    }
+  ]
+}
