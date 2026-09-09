@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
-import { telHref } from "@/lib/format";
+import { telHref, waHref } from "@/lib/format";
 import Reveal from "@/components/Reveal";
 import CountUp from "@/components/CountUp";
 import DiscoverPanel from "@/components/DiscoverPanel";
 import PromoBanners from "@/components/PromoBanners";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import HeroSlides from "@/components/HeroSlides";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
@@ -244,6 +245,48 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      {/* ------- BEST PRICE — the answer to the "Call for best pricing" a
+                 customer has just seen on a card. No price-match promise is
+                 made here: the shop quotes its own best price on the call. ------- */}
+      <section className="bg-[#1b3d7d]">
+        <div className="container-x wide grid gap-10 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
+          <div>
+            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-white/60">— Our prices</p>
+            <h2 className="font-display text-[clamp(30px,3.4vw,44px)] font-semibold leading-[1.06] text-white">
+              Call us for the best price
+            </h2>
+            <p className="mt-5 max-w-[560px] text-[16.5px] leading-relaxed text-white/80">
+              Some models are priced over the phone rather than online. Ring the shop and we
+              will quote you our best price on the day, tell you what is actually in stock, and
+              price delivery and fitting in the same call — you will be speaking to the family
+              who runs the shop, not a call centre.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href={telHref(business.phone)}
+                className="inline-flex items-center gap-2.5 rounded-sm bg-cta px-7 py-4 text-[15px] font-bold text-white transition-colors hover:bg-cta-deep">
+                <Phone size={17} strokeWidth={2.2} /> {business.phone}
+              </a>
+              <a href={waHref(business.phone)} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 rounded-sm bg-[#25D366] px-7 py-4 text-[15px] font-bold text-white transition-colors hover:bg-[#1da851]">
+                <WhatsAppIcon size={18} /> Ask on WhatsApp
+              </a>
+            </div>
+          </div>
+          <ul className="grid gap-4">
+            {[
+              ["Our best price, quoted on the call", "The price you see is never the end of it. Tell us the model and we will do our sharpest number for you."],
+              ["Stock confirmed while you are on the phone", "We check the shop and the supplier there and then, so you know what you are getting and when."],
+              ["Delivery and fitting priced together", "Our own vans and our own fitters, quoted with the appliance — no surprises at the door."],
+            ].map(([title, body]) => (
+              <li key={title} className="border border-white/15 bg-white/[0.06] p-6">
+                <p className="font-display text-[19px] font-semibold leading-snug text-white">{title}</p>
+                <p className="mt-2 text-[14.5px] leading-relaxed text-white/70">{body}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
       {/* ---------------- CATEGORIES ---------------- */}
       <section className="container-x pb-10 pt-24">
