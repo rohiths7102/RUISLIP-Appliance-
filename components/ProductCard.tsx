@@ -4,7 +4,8 @@ import Image from "next/image";
 import { Phone } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
-import { gbp, availabilityDot, telHref, STORE_PHONE, PRICE_ON_APPLICATION } from "@/lib/format";
+import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION } from "@/lib/format";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
 
 const TONE_BG = { success: "bg-success", warning: "bg-warning", danger: "bg-danger" } as const;
@@ -81,6 +82,14 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
         <a href={telHref(STORE_PHONE)} aria-label={`Call to check stock for ${p.productCode}`}
           className="inline-flex min-h-11 items-center gap-1.5 bg-cta px-3.5 text-[12.5px] font-bold text-white transition-colors hover:bg-cta-deep">
           <Phone size={13} strokeWidth={2.2} /> Call
+        </a>
+        {/* The message names the appliance, so the shop can see which one the
+            customer is asking about instead of a bare "hello". */}
+        <a href={`${waHref(STORE_PHONE)}?text=${encodeURIComponent(`Hi, I'm asking about ${p.productCode} — ${p.title}`)}`}
+          target="_blank" rel="noopener noreferrer"
+          aria-label={`Ask about ${p.productCode} on WhatsApp`}
+          className="inline-flex min-h-11 w-11 shrink-0 items-center justify-center bg-[#25D366] text-white transition-colors hover:bg-[#1da851]">
+          <WhatsAppIcon size={15} />
         </a>
       </div>
     </div>
