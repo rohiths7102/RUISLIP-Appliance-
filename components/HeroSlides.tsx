@@ -69,7 +69,7 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
          is shot for white, so every catalogue image works here, and the blue
          becomes the frame rather than the whole picture. On a phone the studio
          is the top band and the blue the bottom. */
-      className="relative bg-[linear-gradient(180deg,#f4f6fa_0,#f4f6fa_300px,#1b3d7d_300px)] lg:bg-[linear-gradient(90deg,#1b3d7d_0,#1b3d7d_46%,#f4f6fa_46%)]"
+      className="relative bg-[linear-gradient(180deg,#f4f6fa_0,#f4f6fa_252px,#1b3d7d_252px)] lg:bg-[linear-gradient(90deg,#1b3d7d_0,#1b3d7d_46%,#f4f6fa_46%)]"
     >
       <div className="relative min-h-[900px] sm:min-h-[860px] lg:min-h-[640px] 2xl:min-h-[740px]">
         {slides.map((s, k) => {
@@ -77,7 +77,7 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
           return (
             <div key={k} aria-hidden={!on}
               aria-label={`Slide ${k + 1} of ${n}: ${s.eyebrow} ${s.line}`}
-              className={`group absolute inset-0 grid grid-rows-[300px_1fr] transition-opacity duration-1000 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] lg:grid-cols-[46%_54%] lg:grid-rows-none ${on ? "opacity-100" : "pointer-events-none opacity-0"}`}
+              className={`group absolute inset-0 grid grid-rows-[252px_1fr] transition-opacity duration-1000 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] lg:grid-cols-[46%_54%] lg:grid-rows-none ${on ? "opacity-100" : "pointer-events-none opacity-0"}`}
             >
               {/* The studio. A floor line at 84%, the range standing on it, and
                   its reflection below, clipped by the panel. Multiply blends the
@@ -107,7 +107,7 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
               </Link>
 
               {/* The words, on the blue. */}
-              <div className="order-2 flex flex-col justify-center px-6 pb-24 pt-9 lg:order-1 lg:pb-28 lg:pl-[clamp(40px,6vw,120px)] lg:pr-12 lg:pt-10">
+              <div className="order-2 flex flex-col justify-start px-6 pb-24 pt-5 lg:justify-center lg:order-1 lg:pb-28 lg:pl-[clamp(40px,6vw,120px)] lg:pr-12 lg:pt-10">
                 {s.logo && s.logoLight ? (
                   <span className="mb-6 inline-flex w-fit items-center gap-3.5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
