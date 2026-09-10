@@ -7,11 +7,13 @@ import { slugOf } from "@/lib/select";
 import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
+import { brandLogo } from "@/lib/brand-logo";
 
 const TONE_BG = { success: "bg-success", warning: "bg-warning", danger: "bg-danger" } as const;
 
 export default function ProductCard({ p, energyClass }: { p: Product; energyClass?: EnergyClass | null }) {
   const slug = slugOf(p);
+  const logo = brandLogo(p.brand);
   // Grid DTOs pass the class pre-computed; full-Product callers fall back to specs.
   const energy = energyClass ?? energyClassOf(p.specifications);
   // Owner-flagged category (accessories at cost price, coffee machines): no price
@@ -50,7 +52,15 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
         </div>
         <div className="p-[18px] pb-3.5">
           <div className="mb-2 flex items-center justify-between gap-2.5">
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-blue-deep">{p.brand}</span>
+            {/* The maker's own mark, as it is on the appliance. Twenty-one of
+                the smaller brands have no mark on file yet; those keep the name
+                set in type, so the row reads the same either way. */}
+            {logo ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={logo} alt={p.brand} loading="lazy" className="h-[19px] w-auto max-w-[104px] shrink-0 object-contain object-left" />
+            ) : (
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-blue-deep">{p.brand}</span>
+            )}
             <span className="flex shrink-0 items-center gap-1.5 text-[10.5px] font-semibold text-muted">
               <span className="h-[7px] w-[7px] rounded-full" style={{ background: availabilityDot(p.availabilityNormalised) }} />
               {p.availability || "Call to confirm"}
