@@ -21,14 +21,12 @@ export const revalidate = 300;
  *  storefront. Liebherr ends 31.10.26; swap the artwork and the link when
  *  Euronics issues the next one. */
 const PROMOS = [
-  // bg is each banner's own flat edge colour, so the padding that squares them
-  // up in one slot is invisible — see the note in PromoBanners.
   { href: "/products", alt: "Black Friday sale — offers coming soon on washing, cooking and refrigeration",
-    wide: "/promo/black-friday-wide.jpg", mobile: "/promo/black-friday-mobile.jpg", bg: "#050505" },
+    wide: "/promo/black-friday-wide.jpg", mobile: "/promo/black-friday-mobile.jpg" },
   { href: "/brands/liebherr", alt: "Liebherr — 10-year guarantee on all household appliances",
-    wide: "/promo/liebherr-wide.png", mobile: "/promo/liebherr-mobile.png", bg: "#003058" },
+    wide: "/promo/liebherr-wide.png", mobile: "/promo/liebherr-mobile.png" },
   { href: "/brands/schonhaus", alt: "Schonhaus — beautifully at home, 5-year guarantee",
-    wide: "/promo/schonhaus-wide.png", mobile: "/promo/schonhaus-mobile.png", bg: "#101920" },
+    wide: "/promo/schonhaus-wide.png", mobile: "/promo/schonhaus-mobile.png" },
 ];
 
 const STEPS = [

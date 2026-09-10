@@ -5,9 +5,8 @@ import Link from "next/link";
 export type Promo = {
   href: string;   // the shelf it sells on our own site
   alt: string;
-  wide: string;   // desktop artwork, used from 640px up
-  mobile: string; // the narrow cut, used below that
-  bg: string;     // the artwork's own edge colour, for the padding below
+  wide: string;   // 2220x355 artwork, used from 640px up
+  mobile: string; // 386x150 cut, used below that
 };
 
 const INTERVAL_MS = 7000;
@@ -35,24 +34,19 @@ export default function PromoBanners({ promos }: { promos: Promo[] }) {
     <div
       onMouseEnter={() => { paused.current = true; }} onMouseLeave={() => { paused.current = false; }}
       onFocus={() => { paused.current = true; }} onBlur={() => { paused.current = false; }}
-      /* The banners are not one shape: the Euronics agent artwork is a 6.25:1
-         letterbox, the Black Friday campaign a 2.4:1 hero. The slot is sized for
-         the tallest and each banner is contained inside it on its own edge
-         colour, so nothing is cropped and the padding is invisible — the
-         alternative, resizing the slot per slide, shifted the whole page every
-         seven seconds. */
-      className="relative aspect-[800/595] w-full overflow-hidden sm:aspect-[2400/945]"
+      /* The slot keeps the artwork's own 2220x355 / 386x150 proportions, so the
+         banner is never cropped and never letterboxed. */
+      className="relative aspect-[386/150] w-full overflow-hidden sm:aspect-[2220/355]"
     >
       {promos.map((p, k) => (
         <Link key={p.href} href={p.href} aria-hidden={k !== i} tabIndex={k === i ? 0 : -1}
-          style={{ backgroundColor: p.bg }}
           className={`absolute inset-0 transition-opacity duration-700 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${k === i ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
           <picture>
             <source media="(min-width: 640px)" srcSet={p.wide} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.mobile} alt={p.alt} width={2400} height={945} loading="lazy"
-              className="h-full w-full object-contain" />
+            <img src={p.mobile} alt={p.alt} width={2220} height={355} loading="lazy"
+              className="h-full w-full object-cover" />
           </picture>
         </Link>
       ))}
