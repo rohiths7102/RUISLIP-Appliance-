@@ -88,7 +88,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
             <span className="flex shrink-0 items-center sm:border-l sm:border-line sm:pl-3 md:pl-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/brand/euronics-member.png" alt="A member of Euronics"
-                width={320} height={110} className="h-[28px] w-auto shrink-0 sm:h-[38px] md:h-[46px] lg:h-[54px]" />
+                width={320} height={110} className="h-[44px] w-auto shrink-0 sm:h-[48px] md:h-[52px] lg:h-[58px]" />
             </span>
           </div>
 
