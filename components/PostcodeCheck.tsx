@@ -6,10 +6,26 @@ import { adSource } from "@/lib/ad-source";
 
 // Genuine own-van reach only (HA4 0QP shop). Wider prefixes go via the phone —
 // we'd sooner say "call us" than promise a van we can't send. Owner (Aug 2026):
-// "we deliver to certain WD, SL postcodes as well" — SL added; exact street is
-// still confirmed on the phone, which the result copy already says.
-const LOCAL = ["HA", "UB", "WD", "TW", "SL"];
-const outward = (pc: string) => pc.toUpperCase().replace(/\s+/g, "").match(/^[A-Z]{1,2}/)?.[0] || "";
+// "we deliver to certain WD, SL postcodes as well" — SL added. Sep 2026 he named
+// Greenford, Ealing, Southall and Watford and asked the site to say HA, UB,
+// W3-W6 and WD3-WD24, so W joins the list; the exact street is still confirmed
+// on the phone, which the result copy already says.
+const LOCAL = ["HA", "UB", "TW", "SL"];
+// W and WD are only partly ours: the owner's reach is W3-W6 and WD3-WD24, so
+// matching the bare letters would tell a W1 or a WD1 caller we deliver when the
+// rest of the page says we do not.
+const RANGES: [string, number, number][] = [["W", 3, 6], ["WD", 3, 24]];
+const isLocal = (pc: string) => {
+  // The inward code is always three characters, so dropping them is what leaves
+  // the district. Parsing the whole string instead read "W5 2AB" as district 52.
+  const clean = pc.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const outward = clean.length > 3 ? clean.slice(0, -3) : clean;
+  const m = outward.match(/^([A-Z]{1,2})(\d{1,2})?/);
+  if (!m) return false;
+  const [, area, num] = m;
+  if (LOCAL.includes(area)) return true;
+  return num !== undefined && RANGES.some(([a, lo, hi]) => a === area && +num >= lo && +num <= hi);
+};
 
 /** Inline hero postcode checker — a flat white strip on the royal-blue hero band. */
 export default function PostcodeCheck({ phone }: { phone: string }) {
@@ -20,7 +36,7 @@ export default function PostcodeCheck({ phone }: { phone: string }) {
     e.preventDefault();
     const pc = value.trim().toUpperCase();
     if (!pc) return;
-    const local = LOCAL.includes(outward(pc));
+    const local = isLocal(pc);
     setResult({ local, pc });
     // Same first-party "postcode_check" event the old prompt fired — the owner's
     // demand map and verify-analytics.mjs both depend on this exact shape.

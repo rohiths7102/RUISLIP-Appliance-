@@ -55,9 +55,10 @@ export default async function DeliveryPage() {
           <div className="max-w-[560px]">
             <h2 className="mb-2 font-display text-[28px]">Are we in your area?</h2>
             <p className="text-[14.5px] leading-relaxed text-[#44586f]">
-              We deliver locally around {business.address.postcode} and the surrounding Ruislip postcodes.
-              Rather than overpromise, we&apos;d sooner you call — we&apos;ll tell you honestly whether we
-              cover you, what it costs and when we can come.
+              We deliver to the HA, UB, W3&ndash;W6 and WD3&ndash;WD24 postcodes from {business.address.postcode} —
+              Ruislip, Greenford, Ealing, Southall, Watford and the towns between. Rather than overpromise,
+              we&apos;d sooner you call — we&apos;ll tell you honestly whether we cover you, what it costs and
+              when we can come.
             </p>
           </div>
           <a href={telHref(business.phone)}

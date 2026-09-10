@@ -41,7 +41,7 @@ export default function PromoBanners({ promos }: { promos: Promo[] }) {
          colour, so nothing is cropped and the padding reads as surround rather
          than a gap. On a phone all three are cut to the same 2.57:1, so nothing
          is padded there at all. */
-      className="relative aspect-[386/150] w-full overflow-hidden sm:aspect-[2220/664]"
+      className="relative aspect-[386/150] w-full overflow-hidden sm:aspect-[2220/416]"
     >
       {promos.map((p, k) => (
         <Link key={p.href} href={p.href} aria-hidden={k !== i} tabIndex={k === i ? 0 : -1}
@@ -51,7 +51,7 @@ export default function PromoBanners({ promos }: { promos: Promo[] }) {
           <picture>
             <source media="(min-width: 640px)" srcSet={p.wide} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.mobile} alt={p.alt} width={2220} height={664} loading="lazy"
+            <img src={p.mobile} alt={p.alt} width={2220} height={416} loading="lazy"
               className="h-full w-full object-contain" />
           </picture>
         </Link>

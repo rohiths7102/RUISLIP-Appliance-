@@ -39,7 +39,8 @@ const STEPS = [
   ["04", "Arrange delivery / fitting", "We book in delivery and installation that suits you."],
 ];
 
-const AREAS = ["Ruislip", "South Ruislip", "Eastcote", "Northolt", "Pinner", "Ickenham", "Ruislip Manor"];
+const AREAS = ["Ruislip", "South Ruislip", "Eastcote", "Northolt", "Pinner", "Ickenham", "Ruislip Manor",
+  "Greenford", "Ealing", "Southall", "Watford"];
 
 export default async function Home() {
   const { products, categories, brands, business } = await loadCatalog();
@@ -456,8 +457,10 @@ export default async function Home() {
             </h2>
             <p className="mb-7 text-base leading-relaxed text-muted">
               Our own local delivery and fitting covers Ruislip, South Ruislip, Eastcote, Northolt, Pinner,
-              Ickenham and the surrounding HA postcodes. Because we deliver ourselves, we can talk you through
-              dates, access and installation before anything leaves the shop.
+              Ickenham, Greenford, Ealing, Southall and Watford — the <strong className="font-semibold text-ink">HA</strong>,{" "}
+              <strong className="font-semibold text-ink">UB</strong>, <strong className="font-semibold text-ink">W3&ndash;W6</strong>{" "}
+              and <strong className="font-semibold text-ink">WD3&ndash;WD24</strong> postcodes. Because we deliver
+              ourselves, we can talk you through dates, access and installation before anything leaves the shop.
             </p>
             <div className="flex flex-wrap gap-2.5">
               {AREAS.map((a) => (
@@ -468,7 +471,7 @@ export default async function Home() {
           <div className="rounded-[4px] border border-ink/10 bg-card p-9">
             <h3 className="mb-3 font-display text-[28px]">Are we in your area?</h3>
             <p className="mb-6 text-[14.5px] leading-relaxed text-muted">
-              We deliver locally around {business.address.postcode} and the surrounding Ruislip postcodes.
+              We deliver to the HA, UB, W3&ndash;W6 and WD3&ndash;WD24 postcodes from {business.address.postcode}.
               Rather than overpromise, we&apos;d sooner you call — we&apos;ll tell you honestly whether we cover
               you, what it costs and when we can come.
             </p>
