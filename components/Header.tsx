@@ -76,7 +76,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
           <div className="flex shrink-0 flex-col items-start gap-[3px] sm:flex-row sm:items-center sm:gap-3">
             <Link href="/" onClick={() => setOpen(false)} aria-label="Jyotsna Electrical — Euronics Ruislip, home" className="flex shrink-0 items-center gap-3">
               {/* The owner wants the name written, not the old JPG mark, and big. */}
-              <span className="shrink-0 font-display text-[19px] font-bold uppercase leading-none tracking-[0.1em] text-navy sm:text-[22px] sm:tracking-[0.11em] lg:text-[28px] lg:tracking-[0.13em]">
+              <span className="shrink-0 font-brand text-[21px] font-bold leading-none tracking-[-0.015em] text-blue-deep sm:text-[25px] lg:text-[31px]">
                 Jyotsna Electrical
               </span>
               <span className="hidden font-mono text-[8.5px] uppercase leading-tight tracking-[0.22em] text-blue-deep xl:block">Est. 1977<br />South Ruislip</span>

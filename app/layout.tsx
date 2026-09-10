@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Hanken_Grotesk, Space_Mono } from "next/font/google";
+import { Cormorant_Garamond, Hanken_Grotesk, Poppins, Space_Mono } from "next/font/google";
 import "./globals.css";
 
 // Self-hosted at build time — zero requests to Google at runtime, no FOUT jump.
@@ -12,6 +12,12 @@ const cormorant = Cormorant_Garamond({
 const hanken = Hanken_Grotesk({
   subsets: ["latin"], weight: ["400", "500", "600", "700"],
   variable: "--font-hanken", display: "swap",
+});
+// The shop name only: the owner sent the wordmark he wants set in a geometric
+// sans, so it gets its own face rather than bending the body font to match.
+const poppins = Poppins({
+  subsets: ["latin"], weight: ["600", "700"],
+  variable: "--font-poppins", display: "swap",
 });
 const spaceMono = Space_Mono({
   subsets: ["latin"], weight: ["400", "700"],
@@ -160,7 +166,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     brands: brands.slice(0, 12).map((b) => ({ slug: b.slug, name: b.name })),
   };
   return (
-    <html lang="en-GB" className={`${cormorant.variable} ${hanken.variable} ${spaceMono.variable}`}>
+    <html lang="en-GB" className={`${cormorant.variable} ${hanken.variable} ${poppins.variable} ${spaceMono.variable}`}>
       <body>
         <LocalBusinessSchema business={business} />
         <BrandSchema business={business} />

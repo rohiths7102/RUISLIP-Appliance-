@@ -82,8 +82,8 @@ export default async function Home() {
   const SLIDES: { codes: string[]; eyebrow: string; line: string; sub: string; cta: string;
                   href?: string; wide?: boolean; logo?: string; chipText?: string; logoLight?: boolean }[] = [
     { codes: ["RF605QNUVX1", "SMS6ZCI10G", "WRB247C9GB"], eyebrow: "Euronics Ruislip",
-      logo: "/brand/euronics-logo.png", logoLight: true, chipText: "Ruislip", line: "Proper appliances, properly fitted.",
-      sub: "Bosch, Neff, Miele and the brands you trust — at Euronics prices, delivered and fitted by our own team.",
+      logo: "/brand/euronics-logo.png", logoLight: true, chipText: "South Ruislip", line: "Top brand, hand-picked appliances",
+      sub: "Professionally fitted (optional), and delivered within a day or two if it is in stock locally.",
       cta: "Browse appliances", href: "/products" },
     { codes: ["KFD96APEA", "KFI96APEAG", "KIN96NSE0G"], eyebrow: "Bosch", line: "American fridge freezers",
       sub: "Series 6 and Series 8, delivered in our own van and fitted by our own team.", cta: "Shop Bosch fridge freezers" },
@@ -93,6 +93,21 @@ export default async function Home() {
       sub: "Made to last twenty years. Delivered, fitted, and the old one taken away.", cta: "Shop Miele washing machines" },
     { codes: ["WF90F09C4SU1", "WW11DB8B95GHU1", "WW11DB8B95GBU1"], eyebrow: "Samsung", line: "Washing machines",
       sub: "AI Wash and 11kg drums, delivered in our own van and fitted by our own team.", cta: "Shop Samsung washing machines" },
+    { codes: ["WGH254A0GB", "WGH254ARGB", "WIW28502GB"], eyebrow: "Bosch", line: "Washing machines",
+      sub: "Series 6 and Series 8, i-DOS dosing and EcoSilence motors. Fitted and tested by us.", cta: "Shop Bosch washing machines" },
+    { codes: ["SMS6TCI02G", "SMS6ZCW10G", "SMS4EMI06G"], eyebrow: "Bosch", line: "Dishwashers",
+      sub: "Freestanding and integrated, 60cm. Plumbed in and tested before we leave.", cta: "Shop Bosch dishwashers" },
+    { codes: ["MBA578BS7B", "HBG7741B1B", "HBG7341B1B"], eyebrow: "Bosch", line: "Built-in ovens",
+      sub: "Series 6 and Series 8 singles and doubles, installed by our own team.", cta: "Shop Bosch ovens" },
+    { codes: ["FND479P", "FNT4454I", "KNE4554EVI"], eyebrow: "Blomberg", line: "Fridges, freezers & laundry",
+      sub: "Three-year guarantee as standard, delivered in our own van.", cta: "Shop Blomberg",
+      href: "/brands/blomberg" },
+    { codes: ["HIXI84700UP", "EDG6231W", "CNG4692VW"], eyebrow: "Beko", line: "Cooking, cooling & laundry",
+      sub: "The everyday range, priced keenly and fitted by our own team.", cta: "Shop Beko",
+      href: "/brands/beko" },
+    { codes: ["RF749N4SWSE", "RF815N4SESE", "RQ5P470SYFD"], eyebrow: "Hisense", line: "American fridge freezers & TVs",
+      sub: "Plumbed water and ice, and the TVs to match. Delivered locally.", cta: "Shop Hisense",
+      href: "/brands/hisense" },
   ];
   // Every code above is a verified cutout (transparent background). Catalogue
   // shots on a white plate look like a floating white box on this blue, so the
@@ -116,6 +131,24 @@ export default async function Home() {
                  bleeds past the grid so it reads as a room, not a thumbnail.
                  No .shot/multiply here — that is for light grounds; this image
                  is a true cutout and needs no blend. ------- */}
+      {/* ------- QUOOKER — the owner asked for this above everything else: the
+                 shop is a stockist and prices the range keenly. Quooker's own
+                 mark, as supplied by them. ------- */}
+      <Link href="/brands/quooker"
+        className="group block border-b border-line bg-paper-2 transition-colors hover:bg-[#e2e8f5]">
+        <div className="container-x wide flex flex-wrap items-center justify-center gap-x-5 gap-y-2 py-3.5 text-center sm:justify-start sm:text-left">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brands/quooker.svg" alt="Quooker" width={132} height={48} className="h-[30px] w-auto shrink-0" />
+          <p className="text-[15px] font-semibold text-navy">
+            Quooker stockist — unbeatable prices on the full range
+          </p>
+          <span className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-blue-deep">
+            See the taps
+            <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-[3px]" />
+          </span>
+        </div>
+      </Link>
+
       <section className="relative overflow-hidden bg-[#1b3d7d]">
         <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
         <HeroSlides slides={slides} />
@@ -131,6 +164,25 @@ export default async function Home() {
                  where the guarantee is the first thing after the range. The
                  artwork is Euronics', sized by them; refresh it from
                  kitchen-appliances.co.uk when a campaign ends. ------- */}
+      {/* ------- BLACK FRIDAY — the owner's own campaign artwork. It is a 2.4:1
+                 hero, not the 6.25:1 letterbox the Euronics agent banners use, so
+                 it gets its own block rather than being cropped into their
+                 rotation. Shown at its own proportions on a wide screen so
+                 nothing is cropped — the type runs from the very top of the
+                 frame to a footer line at the bottom — and on a phone the left
+                 third, which carries all the wording. ------- */}
+      <Link href="/products" aria-label="Black Friday sale — offers coming soon"
+        className="relative block aspect-[800/595] w-full overflow-hidden bg-black sm:aspect-[2400/1000]">
+        <picture>
+          <source media="(min-width: 640px)" srcSet="/promo/black-friday-wide.jpg" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/promo/black-friday-mobile.jpg"
+            alt="Black Friday sale — offers coming soon on washing, cooking and refrigeration"
+            width={2400} height={1000} loading="lazy"
+            className="h-full w-full object-cover object-left" />
+        </picture>
+      </Link>
+
       <PromoBanners promos={PROMOS} />
 
       {/* ------- FINDER — the "help me find it" the owner chose, full width under the hero ------- */}

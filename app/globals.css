@@ -14,6 +14,7 @@
   --font-sans: var(--font-hanken), system-ui, sans-serif;
   --font-display: var(--font-hanken), system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --font-brand: var(--font-poppins), system-ui, sans-serif;  /* the shop name */
 
   /* dark ground (hero, header, footer) — royal-blue family */
   --color-navy: #081538;
