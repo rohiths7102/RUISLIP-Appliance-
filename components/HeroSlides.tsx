@@ -15,6 +15,10 @@ export type HeroSlide = {
   images: { src: string; alt: string }[];
   logo?: string;   // the brand's own tile, shown in place of the text eyebrow
   chipText?: string;  // the shop's own word beside the mark, e.g. Euronics + Ruislip
+  // The brand's departments. One slide per brand with its shelves on it beats a
+  // slide per brand-and-department: the owner counted ten pages to flick through
+  // to see what one maker offers.
+  links?: { label: string; href: string }[];
   logoLight?: boolean; // the mark is drawn in white ink: it goes on the blue, no chip
   wide?: boolean;  // landscape products (televisions): stand them side by side
 };
@@ -71,16 +75,20 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
         {slides.map((s, k) => {
           const on = k === i;
           return (
-            <Link key={k} href={s.href} aria-hidden={!on} tabIndex={on ? 0 : -1}
+            <div key={k} aria-hidden={!on}
               aria-label={`Slide ${k + 1} of ${n}: ${s.eyebrow} ${s.line}`}
               className={`group absolute inset-0 grid grid-rows-[300px_1fr] transition-opacity duration-1000 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] lg:grid-cols-[46%_54%] lg:grid-rows-none ${on ? "opacity-100" : "pointer-events-none opacity-0"}`}
             >
               {/* The studio. A floor line at 84%, the range standing on it, and
                   its reflection below, clipped by the panel. Multiply blends the
                   white plate of a catalogue shot into the panel. */}
-              <div className={`relative order-1 overflow-hidden lg:order-2 transition-transform duration-[1300ms] [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${on ? "translate-x-0" : "translate-x-6"}`}>
+              <Link href={s.href} tabIndex={-1} aria-hidden
+                className={`relative order-1 overflow-hidden lg:order-2 transition-transform duration-[1300ms] [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${on ? "translate-x-0" : "translate-x-6"}`}>
                 <div aria-hidden className="pointer-events-none absolute inset-x-[6%] top-[84%] h-px bg-[linear-gradient(90deg,transparent,#c5cfe3_20%,#c5cfe3_80%,transparent)]" />
-                <div className="absolute inset-x-[8%] top-[9%] bottom-[16%] flex items-end justify-center">
+                {/* On a wide screen the range drops to make room for the price-check
+                    card pinned in the corner; on a phone the card is in normal flow
+                    below, so the band keeps its full height. */}
+                <div className="absolute inset-x-[8%] top-[9%] bottom-[16%] flex items-end justify-center lg:top-[27%]">
                   <div aria-hidden className="pointer-events-none absolute -bottom-2 left-1/2 h-[22px] w-[70%] -translate-x-1/2 rounded-[100%] bg-[#1b3d7d]/[.14] blur-[14px]" />
                   {s.images.map((im, j) => {
                     const step = (s.wide ? STEP_WIDE : STEP)[j];
@@ -96,7 +104,7 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
                     );
                   })}
                 </div>
-              </div>
+              </Link>
 
               {/* The words, on the blue. */}
               <div className="order-2 flex flex-col justify-center px-6 pb-24 pt-9 lg:order-1 lg:pb-28 lg:pl-[clamp(40px,6vw,120px)] lg:pr-12 lg:pt-10">
@@ -113,9 +121,9 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
                 ) : s.logo ? (
                   /* A white supplier chip: w-fit + explicit height, or the stretch
                      column pulls the tile wide and squashes the wordmark. */
-                  <span className="mb-6 inline-flex w-fit items-center gap-3 rounded-[3px] bg-white px-3.5 py-2 shadow-[0_8px_20px_rgba(0,0,0,.25)]">
+                  <span className="mb-6 inline-flex w-fit items-center gap-3 rounded-[3px] bg-white px-5 py-3 shadow-[0_8px_20px_rgba(0,0,0,.25)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.logo} alt={s.eyebrow} width={270} height={70} className="h-[26px] w-auto sm:h-[32px]" />
+                    <img src={s.logo} alt={s.eyebrow} width={270} height={70} className="h-[38px] w-auto sm:h-[46px]" />
                     {s.chipText ? (
                       <span className="border-l border-line pl-3 font-display text-[17px] font-bold uppercase leading-none tracking-[0.14em] text-[#1b3d7d] sm:text-[19px]">
                         {s.chipText}
@@ -131,10 +139,21 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
                   {s.line}
                 </p>
                 <p className="mt-5 max-w-[460px] text-[16px] leading-relaxed text-white/80 lg:text-[17px]">{s.sub}</p>
-                <span className="mt-8 inline-flex w-fit items-center gap-2.5 rounded-sm bg-white px-7 py-4 text-[15px] font-bold text-[#1b3d7d] shadow-[0_10px_24px_rgba(0,0,0,.22)] transition-colors group-hover:bg-[#eef2fa]">
+                {s.links?.length ? (
+                  <div className="mt-7 flex flex-wrap gap-2.5">
+                    {s.links.map((l) => (
+                      <Link key={l.href} href={l.href} tabIndex={on ? 0 : -1}
+                        className="rounded-sm border border-white/35 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:border-white hover:bg-white hover:text-[#1b3d7d]">
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+                <Link href={s.href} tabIndex={on ? 0 : -1}
+                  className="mt-7 inline-flex w-fit items-center gap-2.5 rounded-sm bg-white px-7 py-4 text-[15px] font-bold text-[#1b3d7d] shadow-[0_10px_24px_rgba(0,0,0,.22)] transition-colors hover:bg-[#eef2fa]">
                   {s.cta}
-                  <ArrowRight size={17} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] group-hover:translate-x-[3px]" />
-                </span>
+                  <ArrowRight size={17} className="transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)]" />
+                </Link>
                 {/* What a 40-to-50-year-old wants to know before trusting a shop. */}
                 <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium text-white/80">
                   {["Family-run since 1977", "Own-van local delivery", "Fitted by our own team"].map((t) => (
@@ -142,7 +161,7 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
                   ))}
                 </ul>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

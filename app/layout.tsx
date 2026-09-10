@@ -47,7 +47,12 @@ const AREAS_SERVED = [
 
 export async function generateMetadata(): Promise<Metadata> {
   const business = await getBusiness();
+  const { categories } = await getNav();
   const { postcode } = business.address;
+  // The share card claimed "1,500+" long after the shelf outgrew it. Leaf counts
+  // are the live figure, rounded down to the hundred so it never overstates.
+  const shelf = topCategories(categories).reduce((t, c) => t + c.productCount, 0);
+  const shelfSize = shelf >= 100 ? `${(Math.floor(shelf / 100) * 100).toLocaleString("en-GB")}+` : "";
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3005"),
     title: {
@@ -66,8 +71,8 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: { canonical: "/" },
     openGraph: {
       type: "website", siteName: business.tradingName, locale: "en_GB",
-      title: `${business.tradingName} — Kitchen & Home Appliances in Ruislip`,
-      description: `1,500+ appliances from ${business.tradingName}, the family-run appliance shop in South Ruislip since 1977. Call ${business.phone}.`,
+      title: `Euronics Jyotsna Electrical — Kitchen & Home Appliances in South Ruislip`,
+      description: `${shelfSize} appliances from Jyotsna Electrical, the family-run Euronics shop in South Ruislip since 1977. Call ${business.phone}.`,
       images: [{ url: "/og.jpg", width: 1200, height: 630, alt: `${business.tradingName} — big-brand kitchen appliances at honest local prices` }],
     },
     // Card type only — a title/image here would override every page's own og:*

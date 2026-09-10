@@ -35,6 +35,9 @@ const { PrismaClient } = require(process.env.PRISMA_CLIENT_DIR || "@prisma/clien
 const args = process.argv.slice(2);
 const argNum = (n, d) => { const i = args.indexOf(n); return i >= 0 ? (Number(args[i + 1]) || d) : d; };
 const DRY = args.includes("--dry-run");
+// Reprice what we already hold and create nothing: the owner asked for prices to
+// match Euronics, not for their whole catalogue to land on his shelf.
+const PRICES_ONLY = args.includes("--prices-only");
 const LIMIT = argNum("--limit", 0);
 const DELAY_MS = argNum("--delay", 850);
 // Top-level Euronics departments to restrict this run to. The owner's core
@@ -173,7 +176,7 @@ if (LIMIT) work = work.slice(0, LIMIT);
 console.log(`Euronics range: ${euro.length}   we hold: ${existing.length}   processing: ${work.length}${DRY ? "  (dry run)" : ""}\n`);
 
 // ---- sync ------------------------------------------------------------------
-let created = 0, repriced = 0, alreadyOk = 0, lockedSkipped = 0, poaSkipped = 0, unclassified = 0, fetchFailed = 0, noPrice = 0;
+let created = 0, repriced = 0, alreadyOk = 0, lockedSkipped = 0, poaSkipped = 0, unclassified = 0, fetchFailed = 0, noPrice = 0, skippedNew = 0;
 const priceMoves = [];
 const problems = [];
 
@@ -208,6 +211,8 @@ for (const e of work) {
     await sleep(DELAY_MS);
     continue;
   }
+
+  if (PRICES_ONLY) { skippedNew++; await sleep(DELAY_MS); continue; }
 
   // ---- not on the site: create it ----
   let category = "", subcategory = "";
@@ -258,6 +263,7 @@ for (const e of work) {
 
 console.log(`\n===== EURONICS SYNC ${DRY ? "(DRY RUN — nothing written)" : "COMPLETE"} =====`);
 console.log(`  products created      : ${created}`);
+if (PRICES_ONLY) console.log(`  not on our shelf, left: ${skippedNew}`);
 console.log(`  prices corrected      : ${repriced}`);
 console.log(`  already in sync       : ${alreadyOk}`);
 console.log(`  owner-set, left alone : ${lockedSkipped}`);

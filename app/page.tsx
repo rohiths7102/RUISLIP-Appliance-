@@ -85,48 +85,65 @@ export default async function Home() {
   // RANGE: the lead product (the one the button sells) front and tallest, two
   // more of the same brand staggered behind it, all on one floor line. Every
   // code is a verified cutout; on a dark ground an opaque shot shows a white box.
+  // One slide per brand, carrying that brand's own departments. The owner
+  // counted ten pages to flick through to see what one maker offers, so the
+  // slide became the brand's front door instead of a single shelf.
   const SLIDES: { codes: string[]; eyebrow: string; line: string; sub: string; cta: string;
-                  href?: string; wide?: boolean; logo?: string; chipText?: string; logoLight?: boolean }[] = [
+                  href?: string; wide?: boolean; logo?: string; chipText?: string; logoLight?: boolean;
+                  brand?: string }[] = [
     { codes: ["RF605QNUVX1", "SMS6ZCI10G", "WRB247C9GB"], eyebrow: "Euronics Ruislip",
       logo: "/brand/euronics-logo.png", logoLight: true, chipText: "South Ruislip", line: "Top brand, hand-picked appliances",
       sub: "Professionally fitted (optional), and delivered within a day or two if it is in stock locally.",
       cta: "Browse appliances", href: "/products" },
-    { codes: ["KFD96APEA", "KFI96APEAG", "KIN96NSE0G"], eyebrow: "Bosch", line: "American fridge freezers",
-      sub: "Series 6 and Series 8, delivered in our own van and fitted by our own team.", cta: "Shop Bosch fridge freezers" },
-    { codes: ["C24MT73G0B", "U2ACH7AG7B", "U2ACH7AN7B"], eyebrow: "Neff", line: "Built-in ovens",
-      sub: "Slide&Hide and CircoTherm, built for the kitchen you\u2019ve planned. Installed and tested by us.", cta: "Shop Neff ovens" },
-    { codes: ["WEE385WCS", "WEG885 WCS", "WED385WCS"], eyebrow: "Miele", line: "Washing machines",
-      sub: "Made to last twenty years. Delivered, fitted, and the old one taken away.", cta: "Shop Miele washing machines" },
-    { codes: ["WF90F09C4SU1", "WW11DB8B95GHU1", "WW11DB8B95GBU1"], eyebrow: "Samsung", line: "Washing machines",
-      sub: "AI Wash and 11kg drums, delivered in our own van and fitted by our own team.", cta: "Shop Samsung washing machines" },
-    { codes: ["WGH254A0GB", "WGH254ARGB", "WIW28502GB"], eyebrow: "Bosch", line: "Washing machines",
-      sub: "Series 6 and Series 8, i-DOS dosing and EcoSilence motors. Fitted and tested by us.", cta: "Shop Bosch washing machines" },
-    { codes: ["SMS6TCI02G", "SMS6ZCW10G", "SMS4EMI06G"], eyebrow: "Bosch", line: "Dishwashers",
-      sub: "Freestanding and integrated, 60cm. Plumbed in and tested before we leave.", cta: "Shop Bosch dishwashers" },
-    { codes: ["MBA578BS7B", "HBG7741B1B", "HBG7341B1B"], eyebrow: "Bosch", line: "Built-in ovens",
-      sub: "Series 6 and Series 8 singles and doubles, installed by our own team.", cta: "Shop Bosch ovens" },
-    { codes: ["FND479P", "FNT4454I", "KNE4554EVI"], eyebrow: "Blomberg", line: "Fridges, freezers & laundry",
-      sub: "Three-year guarantee as standard, delivered in our own van.", cta: "Shop Blomberg",
-      href: "/brands/blomberg" },
-    { codes: ["HIXI84700UP", "EDG6231W", "CNG4692VW"], eyebrow: "Beko", line: "Cooking, cooling & laundry",
-      sub: "The everyday range, priced keenly and fitted by our own team.", cta: "Shop Beko",
-      href: "/brands/beko" },
-    { codes: ["RF749N4SWSE", "RF815N4SESE", "RQ5P470SYFD"], eyebrow: "Hisense", line: "American fridge freezers & TVs",
-      sub: "Plumbed water and ice, and the TVs to match. Delivered locally.", cta: "Shop Hisense",
-      href: "/brands/hisense" },
+    { codes: ["KFD96APEA", "WGH254A0GB", "SMS6TCI02G"], brand: "Bosch", eyebrow: "Bosch", line: "The Bosch range",
+      sub: "Series 4, 6 and 8 across the kitchen — delivered in our own van and fitted by our own team.",
+      cta: "Shop all Bosch" },
+    { codes: ["C24MT73G0B", "U2ACH7AG7B", "V8540X0GB"], brand: "Neff", eyebrow: "Neff", line: "The Neff range",
+      sub: "Slide&Hide ovens and CircoTherm, built for the kitchen you\u2019ve planned. Installed and tested by us.",
+      cta: "Shop all Neff" },
+    { codes: ["KFD4953XD", "FND479P", "LWA18461W"], brand: "Blomberg", eyebrow: "Blomberg", line: "The Blomberg range",
+      sub: "Three-year guarantee as standard, across cooling, cooking and laundry.",
+      cta: "Shop all Blomberg" },
+    { codes: ["WEE385WCS", "WEG885 WCS", "G5611SC"], brand: "Miele", eyebrow: "Miele", line: "The Miele range",
+      sub: "Made to last twenty years. Delivered, fitted, and the old one taken away.",
+      cta: "Shop all Miele" },
+    { codes: ["WF90F09C4SU1", "RS90F66BETEU", "WW11DB8B95GBU1"], brand: "Samsung", eyebrow: "Samsung", line: "The Samsung range",
+      sub: "Televisions, fridge freezers and laundry, delivered locally by our own team.",
+      cta: "Shop all Samsung" },
+    { codes: ["HIXI84700UP", "EDG6231W", "CNG4692VW"], brand: "Beko", eyebrow: "Beko", line: "The Beko range",
+      sub: "The everyday range, priced keenly and fitted by our own team.",
+      cta: "Shop all Beko" },
+    { codes: ["RF749N4SWSE", "RF815N4SESE", "RQ5P470SYFD"], brand: "Hisense", eyebrow: "Hisense", line: "The Hisense range",
+      sub: "Big-screen televisions and American fridge freezers, delivered locally.",
+      cta: "Shop all Hisense" },
   ];
-  // Every code above is a verified cutout (transparent background). Catalogue
-  // shots on a white plate look like a floating white box on this blue, so the
-  // dearest model is not always the one that can go in the hero.
+
+  // A brand's departments, biggest first. Spare parts are excluded: Bosch has
+  // 465 of them and Neff 349, so they would crowd out the appliances a customer
+  // came to see.
+  const deptLinks = (brand: string) => {
+    const tally = new Map<string, number>();
+    for (const p of products) {
+      if (p.brand !== brand || p.category === "Accessories & Spare Parts") continue;
+      tally.set(p.category, (tally.get(p.category) || 0) + 1);
+    }
+    return [...tally.entries()]
+      .filter(([, n]) => n >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name]) => ({ label: name, href: `/products?brand=${encodeURIComponent(brand)}&cat=${encodeURIComponent(name)}` }));
+  };
+
   const slides = SLIDES.flatMap((sl) => {
     const found = sl.codes.map((c) => products.find((x) => x.productCode === c && x.image)).filter(Boolean);
     const lead = found[0];
     if (!lead) return [];
-    const href = sl.href ?? `/products?cat=${encodeURIComponent(lead.subcategory)}&brand=${encodeURIComponent(lead.brand)}`;
+    const href = sl.href ?? (sl.brand ? `/brands/${sl.brand.toLowerCase()}` : `/products?cat=${encodeURIComponent(lead.subcategory)}&brand=${encodeURIComponent(lead.brand)}`);
     // A brand slide shows the brand's own tile; the shop slide (eyebrow is not a
     // brand) keeps its wordmark as text.
     const logo = sl.logo ?? (sl.eyebrow === lead.brand ? (brands.find((b) => b.name === lead.brand)?.logo || "") : "");
     return [{ eyebrow: sl.eyebrow, line: sl.line, sub: sl.sub, cta: sl.cta, href, logo, chipText: sl.chipText, logoLight: sl.logoLight, wide: sl.wide,
+              links: sl.brand ? deptLinks(sl.brand) : undefined,
               images: found.map((p) => ({ src: p!.image, alt: p!.title })) }];
   });
 
@@ -158,6 +175,30 @@ export default async function Home() {
       <section className="relative overflow-hidden bg-[#1b3d7d]">
         <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
         <HeroSlides slides={slides} />
+
+        {/* Euronics' price-check promise, as it is on the card in the shop. It
+            does not belong to any one slide, so it is pinned over the studio and
+            stays put while the slideshow runs behind it. In normal flow on a
+            phone, where the studio has no room to spare. */}
+        <div className="container-x wide pb-8 lg:pointer-events-none lg:absolute lg:inset-0 lg:z-20 lg:p-0">
+          <div className="border border-white/25 bg-[#1b3d7d]/95 p-5 shadow-[0_18px_40px_rgba(0,0,0,.28)] lg:pointer-events-auto lg:absolute lg:right-[clamp(24px,3.5vw,64px)] lg:top-[clamp(14px,2.2vw,30px)] lg:w-[272px]">
+            {/* The coins sit beside the heading, not above it: stacked, the card
+                grew to 238px and covered the two appliances behind it. */}
+            <p className="flex items-center gap-2.5 font-display text-[19px] font-bold leading-[1.1] text-[#ffcc00]">
+              <svg viewBox="0 0 64 40" width="30" height="19" aria-hidden className="shrink-0" fill="none" stroke="currentColor" strokeWidth="3">
+                <ellipse cx="32" cy="9" rx="20" ry="6.5" /><path d="M12 9v7c0 3.6 9 6.5 20 6.5s20-2.9 20-6.5V9" />
+                <path d="M12 19v7c0 3.6 9 6.5 20 6.5s20-2.9 20-6.5v-7" />
+              </svg>
+              Price check promise
+            </p>
+            <p className="mt-2 text-[14px] leading-relaxed text-white">
+              We compare prices with <em className="not-italic font-semibold">all big</em> retailers,
+              so we&rsquo;re always on the money.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/euronics-logo.png" alt="Euronics" width={290} height={74} className="mt-3 h-[22px] w-auto" />
+          </div>
+        </div>
         {/* Delivery reach only. A second Call button here would repeat the one in
             the sticky header, which is on screen at every scroll position. */}
         <div className="container-x wide border-t border-white/15 py-6">
@@ -312,6 +353,9 @@ export default async function Home() {
             </div>
           </div>
           <ul className="grid gap-4">
+            {/* Euronics' own price-check promise, worded as it is on the card in
+                the shop. It is the group's claim, not one we invented, so it is
+                set with their mark. */}
             {[
               ["Our best price, quoted on the call", "The price you see is never the end of it. Tell us the model and we will do our sharpest number for you."],
               ["Stock confirmed while you are on the phone", "We check the shop and the supplier there and then, so you know what you are getting and when."],
