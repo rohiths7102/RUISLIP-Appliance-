@@ -21,10 +21,14 @@ export const revalidate = 300;
  *  storefront. Liebherr ends 31.10.26; swap the artwork and the link when
  *  Euronics issues the next one. */
 const PROMOS = [
+  // bg is each banner's own flat edge colour, so the padding that squares them
+  // up in one slot is invisible — see the note in PromoBanners.
+  { href: "/products", alt: "Black Friday sale — offers coming soon on washing, cooking and refrigeration",
+    wide: "/promo/black-friday-wide.jpg", mobile: "/promo/black-friday-mobile.jpg", bg: "#050505" },
   { href: "/brands/liebherr", alt: "Liebherr — 10-year guarantee on all household appliances",
-    wide: "/promo/liebherr-wide.png", mobile: "/promo/liebherr-mobile.png" },
+    wide: "/promo/liebherr-wide.png", mobile: "/promo/liebherr-mobile.png", bg: "#003058" },
   { href: "/brands/schonhaus", alt: "Schonhaus — beautifully at home, 5-year guarantee",
-    wide: "/promo/schonhaus-wide.png", mobile: "/promo/schonhaus-mobile.png" },
+    wide: "/promo/schonhaus-wide.png", mobile: "/promo/schonhaus-mobile.png", bg: "#101920" },
 ];
 
 const STEPS = [
@@ -164,25 +168,6 @@ export default async function Home() {
                  where the guarantee is the first thing after the range. The
                  artwork is Euronics', sized by them; refresh it from
                  kitchen-appliances.co.uk when a campaign ends. ------- */}
-      {/* ------- BLACK FRIDAY — the owner's own campaign artwork. It is a 2.4:1
-                 hero, not the 6.25:1 letterbox the Euronics agent banners use, so
-                 it gets its own block rather than being cropped into their
-                 rotation. Shown at its own proportions on a wide screen so
-                 nothing is cropped — the type runs from the very top of the
-                 frame to a footer line at the bottom — and on a phone the left
-                 third, which carries all the wording. ------- */}
-      <Link href="/products" aria-label="Black Friday sale — offers coming soon"
-        className="relative block aspect-[800/595] w-full overflow-hidden bg-black sm:aspect-[2400/1000]">
-        <picture>
-          <source media="(min-width: 640px)" srcSet="/promo/black-friday-wide.jpg" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/promo/black-friday-mobile.jpg"
-            alt="Black Friday sale — offers coming soon on washing, cooking and refrigeration"
-            width={2400} height={1000} loading="lazy"
-            className="h-full w-full object-cover object-left" />
-        </picture>
-      </Link>
-
       <PromoBanners promos={PROMOS} />
 
       {/* ------- FINDER — the "help me find it" the owner chose, full width under the hero ------- */}
