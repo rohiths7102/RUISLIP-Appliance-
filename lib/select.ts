@@ -19,6 +19,7 @@ export const toCardItem = (p: Product, poaNames?: Set<string>) => {
     category: p.category, subcategory: p.subcategory, image: p.image,
     priceNow: poa ? null : p.priceNow, priceWas: poa ? null : p.priceWas, saving: poa ? null : p.saving,
     availability: p.availability, availabilityNormalised: p.availabilityNormalised,
+    warranty: p.warranty,
     energyClass: energyClassOf(p.specifications),
     poa,
   };

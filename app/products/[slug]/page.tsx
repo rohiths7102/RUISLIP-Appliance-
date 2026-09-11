@@ -83,7 +83,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </div>
 
       <div className="container-x grid items-start gap-14 pt-7 lg:grid-cols-2">
-        <ProductGallery images={p.gallery} title={p.title} code={p.productCode} fallback={p.subcategory} />
+        <ProductGallery images={p.gallery} title={p.title} code={p.productCode} fallback={p.subcategory} warranty={p.warranty} />
 
         <div>
           <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.2em] text-blue-deep">
@@ -96,7 +96,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <span className="h-2 w-2 rounded-full" style={{ background: availabilityDot(p.availabilityNormalised) }} />
               {availabilityLabel(p.availabilityNormalised)}
             </span>
-            {p.warranty && <><span className="text-ink/70">·</span><span className="text-[12.5px] text-muted">{p.warranty}</span></>}
+            {p.warranty && <><span className="text-ink/70">·</span><span className="text-[12.5px] font-semibold text-blue-deep">{p.warranty}</span></>}
           </div>
 
           <div className="my-4 flex flex-wrap items-end gap-3.5">

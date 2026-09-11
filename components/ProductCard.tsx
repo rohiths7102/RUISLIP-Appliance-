@@ -6,6 +6,7 @@ import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
 import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
+import WarrantyBadge from "@/components/WarrantyBadge";
 import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
 import { brandLogo } from "@/lib/brand-logo";
 
@@ -49,6 +50,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               {energy}
             </span>
           ) : null}
+          <WarrantyBadge warranty={p.warranty} />
         </div>
         <div className="p-[18px] pb-3.5">
           <div className="mb-2 flex items-center justify-between gap-2.5">
@@ -69,7 +71,9 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
           <h3 className="mb-2.5 line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-ink transition-colors duration-300 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:text-blue">
             {p.title}
           </h3>
-          <p className="mb-3.5 font-mono text-[10px] tracking-[0.06em] text-ink/70">Code {p.productCode}</p>
+          <p className="mb-3.5 font-mono text-[11.5px] tracking-[0.04em] text-muted">
+            Code <span className="font-bold text-ink">{p.productCode}</span>
+          </p>
           {poa ? (
             <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue">
               <Phone size={13} strokeWidth={2.4} /> {PRICE_ON_APPLICATION}

@@ -13,7 +13,7 @@ import ProductCard from "./ProductCard";
  */
 export type ProductCardItem = Pick<Product,
   "id" | "newSlug" | "title" | "brand" | "productCode" | "category" | "subcategory" |
-  "image" | "priceNow" | "priceWas" | "saving" | "availability" | "availabilityNormalised"> &
+  "image" | "priceNow" | "priceWas" | "saving" | "availability" | "availabilityNormalised" | "warranty"> &
   { energyClass?: EnergyClass | null };
 
 const PER_PAGE = 24;

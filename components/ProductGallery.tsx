@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import WarrantyBadge from "@/components/WarrantyBadge";
 
 /** Product shots sit on a white tile; multiply blends the box background out. */
 export default function ProductGallery({
@@ -8,11 +9,13 @@ export default function ProductGallery({
   title,
   code,
   fallback,
+  warranty,
 }: {
   images: string[];
   title: string;
   code: string;
   fallback: string;
+  warranty: string;
 }) {
   const [active, setActive] = useState(0);
   // Visited shots stay mounted and crossfade on toggle — no white flash on
@@ -40,11 +43,12 @@ export default function ProductGallery({
             <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-sky">{fallback}</span>
           </div>
         )}
+        <WarrantyBadge warranty={warranty} />
       </div>
 
       {/* Code chip sits below the photo, not on it — keeps the shot clean. */}
       <div className="mt-3 inline-flex rounded-sm bg-navy px-3 py-1.5">
-        <span className="font-mono text-[10px] tracking-[0.1em] text-sky">{code}</span>
+        <span className="font-mono text-[12px] font-bold tracking-[0.08em] text-white">{code}</span>
       </div>
 
       {shots.length > 1 && (
