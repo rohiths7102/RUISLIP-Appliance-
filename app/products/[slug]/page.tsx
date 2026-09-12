@@ -8,6 +8,7 @@ import { gbp, formatPrice, PRICE_ON_APPLICATION, availabilityLabel, availability
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { breadcrumbJsonLd, jsonLdScript, SITE } from "@/lib/seo";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
@@ -76,10 +77,16 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         { name: p.title, url: `/products/${slug}` },
       ]))} />
 
+      {/* Sachin: "there is no easy way to go to homepage". The shop name in the
+          header has linked home all along but nothing said so. This names it,
+          and mirrors the trail already emitted as JSON-LD just above. */}
       <div className="container-x pt-7">
-        <Link href={`/categories/${catId}`} className="inline-flex items-center gap-2 text-[12.5px] text-muted hover:text-blue-deep">
-          ← Back to {p.subcategory}
-        </Link>
+        <Breadcrumbs items={[
+          { label: "Home", href: "/" },
+          { label: "Appliances", href: "/products" },
+          { label: p.category, href: `/categories/${catId}` },
+          { label: p.title },
+        ]} />
       </div>
 
       <div className="container-x grid items-start gap-14 pt-7 lg:grid-cols-2">

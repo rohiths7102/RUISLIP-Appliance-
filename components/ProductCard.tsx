@@ -71,7 +71,12 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
           <h3 className="mb-2.5 line-clamp-2 min-h-[42px] text-[15px] font-semibold leading-snug text-ink transition-colors duration-300 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:text-blue">
             {p.title}
           </h3>
-          <p className="mb-3.5 font-mono text-[11.5px] tracking-[0.04em] text-muted">
+          {/* Sachin reads these off a phone and has sent this back twice. Space
+              Mono at 11.5px was "too blurry" — thin, wide letterforms stay soft
+              however bold they are set — so this is the body sans, now at 14px
+              and bold, with the code at full ink against a muted label so the
+              number itself is what the eye lands on. */}
+          <p className="mb-3.5 text-[14px] text-muted">
             Code <span className="font-bold text-ink">{p.productCode}</span>
           </p>
           {poa ? (

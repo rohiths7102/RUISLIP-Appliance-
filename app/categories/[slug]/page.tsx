@@ -5,6 +5,7 @@ import { loadCatalog } from "@/lib/repo";
 import { getCategoryById, childCategories, productsInCategory, toCardItem, poaNamesFrom } from "@/lib/select";
 import PageHead from "@/components/PageHead";
 import ProductBrowser from "@/components/ProductBrowser";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/seo";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
@@ -46,6 +47,15 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         { name: "Appliances", url: "/products" },
         { name: c.name, url: `/categories/${c.id}` },
       ]))} />
+      {/* Same trail as the product page — the listing is where Sachin was
+          scrolling when he said he could not get back to the homepage. */}
+      <div className="container-x pt-6">
+        <Breadcrumbs items={[
+          { label: "Home", href: "/" },
+          { label: "Appliances", href: "/products" },
+          { label: c.name },
+        ]} />
+      </div>
       <PageHead eyebrow="Department" title={c.name} intro={c.description ? `${c.description} Call` : "Call"} />
 
       <div className="container-x py-9">
