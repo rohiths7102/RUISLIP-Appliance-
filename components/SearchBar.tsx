@@ -144,7 +144,7 @@ export default function SearchBar({ className = "", shelfSize = 0 }: { className
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] font-semibold leading-tight text-ink">{s.name}</span>
-                    <span className="mt-0.5 block font-mono text-[9.5px] uppercase tracking-[0.08em] text-muted">
+                    <span className="mt-0.5 block text-[11.5px] text-muted">
                       {s.kind === "category" ? "Department" : "Brand"} · {s.count.toLocaleString("en-GB")} models
                     </span>
                   </span>

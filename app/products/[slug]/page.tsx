@@ -125,7 +125,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <p className="text-[13.5px] leading-relaxed text-[#44586f]">
               <strong className="text-ink">Please call to confirm live availability</strong> before visiting or
               arranging delivery. Quote product code{" "}
-              <strong className="font-mono text-blue-deep">{p.productCode}</strong> and our team will check
+              <strong className="text-blue-deep">{p.productCode}</strong> and our team will check
               current stock for you.
             </p>
           </div>
@@ -222,7 +222,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="container-x flex items-center justify-between gap-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-paper">{p.title}</p>
-            <p className="font-mono text-[10.5px] tracking-[0.06em] text-sky">
+            <p className="text-[12px] text-sky">
               {p.productCode} · {poa || p.priceNow === null ? PRICE_ON_APPLICATION : gbp(p.priceNow)}
             </p>
           </div>

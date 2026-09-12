@@ -48,7 +48,7 @@ export default function ProductGallery({
 
       {/* Code chip sits below the photo, not on it — keeps the shot clean. */}
       <div className="mt-3 inline-flex rounded-sm bg-navy px-3 py-1.5">
-        <span className="font-mono text-[12px] font-bold tracking-[0.08em] text-white">{code}</span>
+        <span className="text-[14px] font-semibold text-white">{code}</span>
       </div>
 
       {shots.length > 1 && (

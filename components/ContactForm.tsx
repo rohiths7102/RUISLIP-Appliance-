@@ -45,7 +45,7 @@ export default function ContactForm() {
       <div className="rounded-[4px] border border-blue/50 bg-blue/[.08] p-10 text-center">
         <h2 className="mb-2.5 font-display text-[28px]">Thanks — we&apos;ll be in touch</h2>
         <p className="text-[14.5px] leading-relaxed text-[#44586f]">
-          Your enquiry{code ? <> about <strong className="font-mono text-blue-deep">{code}</strong></> : null} has
+          Your enquiry{code ? <> about <strong className="text-blue-deep">{code}</strong></> : null} has
           been logged. For the quickest answer on availability, give us a ring on{" "}
           <a href={telHref(STORE_PHONE)} className="font-bold text-blue-deep no-underline hover:underline">
             {STORE_PHONE}
@@ -65,7 +65,7 @@ export default function ContactForm() {
 
       {code && (
         <div className="mb-4 rounded-sm border border-blue/30 bg-blue/[.07] px-3.5 py-2.5 text-sm">
-          Enquiry for <strong>{product}</strong> — code <strong className="font-mono text-blue-deep">{code}</strong>
+          Enquiry for <strong>{product}</strong> — code <strong className="text-blue-deep">{code}</strong>
         </div>
       )}
       {error && (
