@@ -127,12 +127,18 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
       {/* ---- department nav — one solid royal-blue band, flat like the
               reference the owner chose; an eased sliding underline marks the
               current section ---- */}
-      {/* The fly-out is a sibling of the scrolling link row, not a child — the
-          row's overflow-x-auto would clip an absolutely-positioned panel. */}
+      {/* Sachin (desktop): "we need to use slider to get to brands, about us
+          etc. — compress this so it's all visible". Fourteen links at 16px with
+          32px gaps measured 1903px, 544px over a 1366px laptop and still 385px
+          over the 1520px container on a 1920px monitor. Tighter type and gaps,
+          departments on one row and the four utility links on a slimmer row
+          beneath — a single row of all fourteen does not fit a 1366px laptop
+          without dropping the chevrons or a department, which is the owner's
+          call. The fly-out stays a sibling of the row, not a child. */}
       <nav aria-label="Departments" className="relative hidden bg-blue lg:block"
         onMouseLeave={scheduleClose}
         onKeyDown={(e) => { if (e.key === "Escape") showDept(null); }}>
-        <div className="container-x flex items-center gap-6 overflow-x-auto whitespace-nowrap lg:gap-8">
+        <div className="container-x flex flex-wrap items-center gap-x-4">
           {DEPARTMENTS.map(([slug, label]) => {
             const current = pathname === `/categories/${slug}`;
             const dept = nav?.departments.find((d) => d.id === slug);
@@ -143,22 +149,23 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
                 aria-expanded={hasPanel ? openNow : undefined}
                 onMouseEnter={() => (hasPanel ? showDept(slug) : scheduleClose())}
                 onFocus={() => (hasPanel ? showDept(slug) : setOpenDept(null))}
-                className={`relative flex items-center gap-1 py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white lg:py-[18px] lg:text-[16px] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current || openNow ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
+                className={`relative flex items-center gap-1 whitespace-nowrap py-2.5 text-[12.5px] font-semibold tracking-[0.02em] text-white lg:py-[15px] lg:text-[14px] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current || openNow ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
                 {label}
-                {hasPanel && <ChevronDown size={13} strokeWidth={2.4} className={`transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${openNow ? "rotate-180" : ""}`} aria-hidden />}
+                {hasPanel && <ChevronDown size={12} strokeWidth={2.4} className={`transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${openNow ? "rotate-180" : ""}`} aria-hidden />}
               </Link>
             );
           })}
-          <span className="mx-1 h-4 w-px shrink-0 bg-white/25" aria-hidden />
+          <div className="flex basis-full items-center gap-x-5 border-t border-white/15">
           {UTILITY.map((u) => {
             const current = pathname === u.href;
             return (
               <Link key={u.href} href={u.href} aria-current={current ? "page" : undefined}
-                className={`relative py-2.5 text-[12px] font-medium text-white lg:py-[18px] lg:text-[14px] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
+                className={`relative whitespace-nowrap py-2.5 text-[12px] font-medium text-white lg:py-[9px] lg:text-[13px] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
                 {u.label}
               </Link>
             );
           })}
+          </div>
         </div>
         {openDept && nav && (() => {
           const dept = nav.departments.find((d) => d.id === openDept);
