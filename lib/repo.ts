@@ -91,7 +91,15 @@ async function readCatalog(): Promise<Catalog> {
       db.product.findMany({ where: { isVisible: true }, orderBy: { title: "asc" } }),
       db.category.findMany({ where: { isVisible: true } }),
       // Owner's main brands pin first (order asc), then alphabetical.
-      db.brand.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }] }),
+      // A Brand column the generated client knows but the database does not
+      // have yet (code deployed before the column was pushed) throws here, and
+      // the catch below then swaps the WHOLE catalogue for the 1,577-product
+      // seed — which is what the owner saw on 14 Sept 2026 when
+      // priceOnApplication shipped ahead of its column. Fall back to the
+      // long-standing columns instead; the flag reads as unset until it exists.
+      db.brand.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }] })
+        .catch(() => db.brand.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }],
+          select: { id: true, name: true, slug: true, sourceUrl: true, logo: true, productCount: true } })),
       db.businessInfo.findUnique({ where: { id: "business" } }), db.serviceAddOn.findMany(),
     ]);
     if (!prod.length) return fallback;
