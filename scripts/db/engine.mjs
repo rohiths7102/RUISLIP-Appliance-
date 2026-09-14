@@ -11,6 +11,9 @@
  *   node scripts/db/engine.mjs client:pg  -> generate a SEPARATE Postgres client for
  *                                            the maintenance scripts and print the
  *                                            PRISMA_CLIENT_DIR they expect
+ *   node scripts/db/engine.mjs push       -> CI builds only: apply additive schema
+ *                                            changes to Postgres BEFORE next build,
+ *                                            so code never ships ahead of a column
  *
  * Reads .env.local / .env itself (plain `node` doesn't), so secrets live there.
  */
@@ -169,7 +172,26 @@ if (mode === "generate") {
   console.log("\n✓ Postgres client generated; the local sqlite client is untouched. Use it with:");
   console.log(`\n  PRISMA_CLIENT_DIR="${PG_CLIENT_DIR}" node scripts/db/with-prod-db.mjs scripts/rag/rebuild-from-db.ts`);
   console.log(`\n  PowerShell: $env:PRISMA_CLIENT_DIR="${PG_CLIENT_DIR}"; node scripts/db/with-prod-db.mjs scripts/rag/rebuild-from-db.ts`);
+} else if (mode === "push") {
+  // The fix for 14 Sept 2026: code that selected a new Brand column deployed
+  // before the column existed, and every storefront page fell back to the
+  // seed. The schema now goes to Postgres in the build, ahead of `next build`.
+  //
+  // Two gates so a laptop can never do this by accident: CI=1 (Vercel sets it;
+  // .env.local never carries it) AND a Postgres URL. No --accept-data-loss:
+  // additive changes apply, and anything destructive makes prisma exit
+  // non-zero, which fails the build and leaves the live deployment and the
+  // data exactly as they were. The direct (non-pooling) URL is preferred, as
+  // DDL through a transaction pooler is not supported.
+  const found = findPgUrl();
+  if (process.env.CI !== "1" || !found) {
+    console.log(`engine: schema push skipped — ${process.env.CI !== "1" ? "not a CI build" : "no Postgres URL"}`);
+  } else {
+    const schema = writePgSchema();
+    console.log(`engine: postgresql (${found.key}) → ${maskUrl(found.url)} — pushing additive schema changes`);
+    run("npx", ["prisma", "db", "push", "--schema", schema, "--skip-generate"], { DATABASE_URL: found.url });
+  }
 } else {
-  console.error(`Unknown mode "${mode}" — use generate | deploy | client:pg`);
+  console.error(`Unknown mode "${mode}" — use generate | deploy | client:pg | push`);
   process.exit(1);
 }

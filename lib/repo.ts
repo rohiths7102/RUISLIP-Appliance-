@@ -9,6 +9,7 @@ import * as seed from "./data";
 import type { Product, Category, Brand, Business, Service } from "./types";
 
 import { getPrisma } from "./prisma";
+import { resolveDatabaseUrl } from "./db-url";
 
 /**
  * Resolve the database, or null to fall back to the bundled JSON catalogue.
@@ -46,6 +47,25 @@ async function getDb(): Promise<any> {
   })();
   return _probe;
 }
+
+/**
+ * Whether the bundled seed may stand in for the database.
+ *
+ * Locally, or on a build with no database configured, the seed is how the
+ * site runs at all. In production it is the opposite: a database IS
+ * configured, so a failed read is a fault — and papering over it with the
+ * 1,577-product snapshot serves stale prices and a third of the catalogue
+ * while every page still returns 200. That is exactly how 14 Sept 2026 went:
+ * a column deployed ahead of its migration, the owner noticed within the
+ * hour, nothing else did. Failing the render instead leaves ISR serving the
+ * last good copy of every page it already has, sends cold pages to
+ * app/error.tsx, and puts the fault where it can be seen.
+ */
+const seedAllowed = () => process.env.NODE_ENV !== "production" || !resolveDatabaseUrl();
+const refuseSeed = (e?: unknown): never => {
+  const why = e instanceof Error ? e.message.split("\n").find((l) => l.trim()) : e ? String(e) : "database unreachable";
+  throw new Error(`catalogue: the configured database could not be read and the seed is not served in production — ${why}`);
+};
 
 const arr = (v: any): any[] => (Array.isArray(v) ? v : typeof v === "string" ? safe(v) : []);
 const safe = (s: string) => { try { const x = JSON.parse(s); return Array.isArray(x) ? x : []; } catch { return []; } };
@@ -85,7 +105,7 @@ export interface Catalog { products: Product[]; categories: Category[]; brands: 
 async function readCatalog(): Promise<Catalog> {
   const fallback: Catalog = { products: seed.products, categories: seed.categories, brands: seed.brands, business: seed.business, services: seed.services, source: "seed" };
   const db = await getDb();
-  if (!db) return fallback;
+  if (!db) return seedAllowed() ? fallback : refuseSeed();
   try {
     const [prod, cats, brds, biz, svcs] = await Promise.all([
       db.product.findMany({ where: { isVisible: true }, orderBy: { title: "asc" } }),
@@ -102,7 +122,9 @@ async function readCatalog(): Promise<Catalog> {
           select: { id: true, name: true, slug: true, sourceUrl: true, logo: true, productCount: true } })),
       db.businessInfo.findUnique({ where: { id: "business" } }), db.serviceAddOn.findMany(),
     ]);
-    if (!prod.length) return fallback;
+    // An empty table is a data state, not a fault — but in production it is
+    // shown as empty, never dressed up as the seed.
+    if (!prod.length && seedAllowed()) return fallback;
     const business: Business = biz ? mapBusiness(biz) : seed.business;
     return {
       products: prod.map(mapProduct), categories: cats.map(mapCategory),
@@ -110,7 +132,8 @@ async function readCatalog(): Promise<Catalog> {
       business, services: svcs.map((s: any) => ({ id: s.id, name: s.name, description: s.description, price: s.price, optional: s.optional, category: s.appliesToCategory || "delivery" })),
       source: "database",
     };
-  } catch {
+  } catch (e) {
+    if (!seedAllowed()) refuseSeed(e);
     return fallback;
   }
 }

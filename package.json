@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev -p 3005",
-    "build": "node scripts/db/engine.mjs generate && next build",
+    "build": "node scripts/db/engine.mjs push && node scripts/db/engine.mjs generate && next build",
     "start": "next start -p 3005",
     "build:check": "node scripts/build-check.mjs",
     "typecheck": "tsc --noEmit",
