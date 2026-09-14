@@ -116,7 +116,7 @@ export async function POST(req: Request) {
           ? round2(includesVat ? obs.deliveryCost : obs.deliveryCost * (1 + CFG.vatRate))
           : null;
 
-      const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory });
+      const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
 
       let verdict: { allowed: boolean; blocking: string[] };
       try {

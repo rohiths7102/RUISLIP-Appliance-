@@ -54,9 +54,9 @@ export function buildDocuments(cat: { products: Product[]; categories: Category[
   // Same helper the storefront masks with, not a second reading of the flags:
   // "which categories are call-for-price" has exactly one definition, so the
   // bot can't be the one surface that quotes a number the owner withholds.
-  const poa = poaNamesFrom(cat.categories);
+  const poa = poaNamesFrom(cat.categories, cat.brands);
   return [
-    ...cat.products.map((p) => productDoc(p, { omitPrice: poa.has(p.category) || poa.has(p.subcategory) })),
+    ...cat.products.map((p) => productDoc(p, { omitPrice: poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand) })),
     ...cat.categories.map(categoryDoc), ...cat.brands.map(brandDoc),
     ...cat.services.map(serviceDoc), ...businessDocs(cat.business), ...faqDocs(cat.business),
   ];

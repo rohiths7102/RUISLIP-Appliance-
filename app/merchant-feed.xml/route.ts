@@ -30,14 +30,16 @@ export async function GET() {
     // publish a withheld price on when the flags are missing.
     const cats: { name: string; priceOnApplication: boolean }[] =
       await db.category.findMany({ select: { name: true, priceOnApplication: true } });
-    const poaNames = [...poaNamesFrom(cats)];
+    const brands: { name: string; priceOnApplication: boolean }[] =
+      await db.brand.findMany({ select: { name: true, priceOnApplication: true } }).catch(() => []);
+    const poaNames = [...poaNamesFrom(cats, brands)];
     const rows = await db.product.findMany({
       where: {
         isVisible: true,
         priceNow: { not: null },
         mainImage: { not: "" },
         availabilityNormalised: { in: ["in_stock", "limited"] },
-        ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }),
+        ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }, { brand: { in: poaNames } }] }),
       },
       select: {
         productCode: true, title: true, brand: true, slug: true, priceNow: true,

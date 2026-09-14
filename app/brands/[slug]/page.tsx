@@ -32,7 +32,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
   if (!b) notFound();
 
   // Card-only DTO (see toCardItem) — keeps specs out of the payload, chips wired.
-  const poaSet = poaNamesFrom(categories);
+  const poaSet = poaNamesFrom(categories, brands);
   const items = productsForBrand(products, b.name).map((p) => toCardItem(p, poaSet));
   const catNames = [...new Set(items.map((p) => p.category))].sort();
 

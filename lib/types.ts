@@ -26,6 +26,8 @@ export interface Brand {
   id: string; name: string; slug: string; sourceUrl: string; logo: string; productCount: number;
   /** Display rank on /brands — the owner's main brands pin first (low = first). */
   order?: number;
+  /** Owner-set: every product of this brand is call-for-price (Siemens). */
+  priceOnApplication?: boolean;
 }
 export interface Business {
   businessName: string; tradingName: string; phone: string; email: string;

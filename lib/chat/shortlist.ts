@@ -122,7 +122,7 @@ export async function shortlistHits(query: string, take = 6): Promise<Hit[]> {
       ...(cap === null ? {} : { priceNow: { gt: 0, lte: cap } }),
       ...(category ? { OR: [{ subcategory: category }, { category: category }] } : {}),
       ...(brand ? { brand: { equals: brand } } : {}),
-      ...(poa.length ? { NOT: [{ category: { in: poa } }, { subcategory: { in: poa } }] } : {}),
+      ...(poa.length ? { NOT: [{ category: { in: poa } }, { subcategory: { in: poa } }, { brand: { in: poa } }] } : {}),
     },
     select: {
       slug: true, title: true, brand: true, productCode: true, priceNow: true,

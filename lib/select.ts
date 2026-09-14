@@ -13,7 +13,7 @@ export const toCardItem = (p: Product, poaNames?: Set<string>) => {
   // The numbers are nulled, not just hidden: a price the owner doesn't publish
   // must not ride along in the RSC payload where View Source would reveal it
   // (it would also silently drive the price sort).
-  const poa = !!poaNames && (poaNames.has(p.category) || poaNames.has(p.subcategory));
+  const poa = !!poaNames && (poaNames.has(p.category) || poaNames.has(p.subcategory) || poaNames.has(p.brand));
   return {
     id: p.id, newSlug: p.newSlug, title: p.title, brand: p.brand, productCode: p.productCode,
     category: p.category, subcategory: p.subcategory, image: p.image,
@@ -26,7 +26,7 @@ export const toCardItem = (p: Product, poaNames?: Set<string>) => {
 };
 
 /**
- * Names of every category the owner flagged price-on-application.
+ * Names of every category — and brand — the owner flagged price-on-application.
  *
  * Two situations look alike in the data and need OPPOSITE answers:
  *
@@ -51,11 +51,29 @@ const POA_FALLBACK = [
   "Coffee Machine Accessories", "Kitchen Machine Accessories", "Kitchen Utensils",
   "Cleaning & Care Products", "Spare Parts",
 ];
-export const poaNamesFrom = (cs: Pick<Category, "name" | "priceOnApplication">[]) => {
+/**
+ * Brands the owner sells call-for-price: Siemens, asked for on 12 Sept 2026.
+ * Same rule as POA_FALLBACK — a brand ABSENT from `bs` is masked; one present
+ * without the flag is the owner's decision and stands.
+ */
+const POA_BRAND_FALLBACK = ["Siemens"];
+/**
+ * Category and brand names share ONE set: a product is call-for-price when its
+ * category, subcategory or brand is in it. `bs` is required, not optional, so
+ * the compiler finds every caller — a surface that forgot the brand half would
+ * quote a Siemens price on its own.
+ */
+export const poaNamesFrom = (
+  cs: Pick<Category, "name" | "priceOnApplication">[],
+  bs: Pick<Brand, "name" | "priceOnApplication">[],
+) => {
   const known = new Set(cs.map((c) => c.name));
+  const knownBrands = new Set(bs.map((b) => b.name));
   return new Set([
     ...cs.filter((c) => c.priceOnApplication).map((c) => c.name),
     ...POA_FALLBACK.filter((n) => !known.has(n)),
+    ...bs.filter((b) => b.priceOnApplication).map((b) => b.name),
+    ...POA_BRAND_FALLBACK.filter((n) => !knownBrands.has(n)),
   ]);
 };
 export const getProduct = (ps: Product[], slug: string) => ps.find((p) => slugOf(p) === slug);

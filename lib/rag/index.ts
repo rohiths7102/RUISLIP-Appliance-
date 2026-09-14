@@ -117,6 +117,26 @@ export async function syncBrandToRag(db: any, id: string): Promise<boolean> {
   await upsertDoc(db, brandDoc({ id: r.id, name: r.name, slug: r.slug, sourceUrl: r.sourceUrl, logo: r.logo, productCount: r.productCount } as any));
   return true;
 }
+/** Brand twin of syncCategoryProductsToRag: the docs of every product of a
+ *  brand whose call-for-price flag flipped, so the chatbot stops quoting the
+ *  number the moment the owner ticks the box. Same no-embedding trade-off. */
+export async function syncBrandProductsToRag(db: any, brandId: string): Promise<number> {
+  const b = await db.brand.findUnique({ where: { id: brandId } });
+  if (!b) return 0;
+  const rows = await db.product.findMany({ where: { isVisible: true, brand: b.name } });
+  if (!rows.length) return 0;
+  const poaNames = await poaNamesFromDb(db);
+  const writes = rows.map((r: any) => {
+    const p: any = { title: r.title, productCode: r.productCode, brand: r.brand, category: r.category, subcategory: r.subcategory, priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, warranty: r.warranty, shortDescription: r.shortDescription, specifications: r.specifications || [], features: r.features || [], image: r.mainImage, newSlug: `/products/${r.slug}` };
+    const d = productDoc(p, { omitPrice: isPoaProduct(poaNames, r) });
+    return db.rAGDocument.updateMany({
+      where: { id: docId(d.sourceType, d.sourceId) },
+      data: { title: d.title, content: d.content, metadata: d.metadata, needsReindex: embeddingsEnabled() },
+    });
+  });
+  for (let i = 0; i < writes.length; i += 250) await db.$transaction(writes.slice(i, i + 250));
+  return rows.length;
+}
 
 /** Retrieve grounded context. Uses the DB index if built; otherwise builds
  * documents from the LIVE catalogue (DB, or seed if no DB) so results always

@@ -53,7 +53,7 @@ for (const p of products) {
   const proposedPrice = round2(includesVat ? obs.price : obs.price * (1 + CFG.vatRate));
   const deliveryCost = typeof obs.deliveryCost === "number"
     ? round2(includesVat ? obs.deliveryCost : obs.deliveryCost * (1 + CFG.vatRate)) : null;
-  const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory });
+  const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
 
   let blocking: string[];
   try {

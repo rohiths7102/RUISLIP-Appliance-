@@ -14,9 +14,12 @@ import { poaNamesFrom } from "./select";
  */
 export async function poaNamesFromDb(db: any): Promise<Set<string>> {
   const cats = await db.category.findMany({ select: { name: true, priceOnApplication: true } });
-  return poaNamesFrom(cats);
+  // Brand rows without the flag column yet (not migrated) are a catalogue with
+  // no brand information: fall through to the brand fallback, which masks.
+  const brands = await db.brand.findMany({ select: { name: true, priceOnApplication: true } }).catch(() => []);
+  return poaNamesFrom(cats, brands);
 }
 
 /** True when a product's own category or sub-category is call-for-price. */
-export const isPoaProduct = (poa: Set<string>, p: { category?: string | null; subcategory?: string | null }) =>
-  poa.has(p.category || "") || poa.has(p.subcategory || "");
+export const isPoaProduct = (poa: Set<string>, p: { category?: string | null; subcategory?: string | null; brand?: string | null }) =>
+  poa.has(p.category || "") || poa.has(p.subcategory || "") || poa.has(p.brand || "");

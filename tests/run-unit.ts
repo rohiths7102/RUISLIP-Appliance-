@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { gbp, availabilityLabel, telHref } from "../lib/format.js";
-import { slugOf } from "../lib/select.js";
+import { slugOf, poaNamesFrom } from "../lib/select.js";
+import { isPoaProduct } from "../lib/poa.js";
 import { productDoc, buildDocuments, faqDocs } from "../lib/rag/documents.js";
 import { retrieve } from "../lib/rag/retriever.js";
 import { buildSystemPrompt, extractSources } from "../lib/chat/prompt.js";
@@ -18,6 +19,13 @@ ok(["in_stock", "limited", "awaiting_stock", "call_to_confirm", "unavailable", "
 ok(telHref("0208 864 5763") === "tel:02088645763", "telHref strips non-digits");
 // slug
 ok(slugOf({ newSlug: "/products/foo-bar" } as any) === "foo-bar", "slugOf strips prefix");
+// call-for-price: category names and brand names share one set
+const poaSet = poaNamesFrom([{ name: "Hobs", priceOnApplication: false }], [{ name: "Siemens", priceOnApplication: true }, { name: "Bosch", priceOnApplication: false }]);
+ok(poaSet.has("Siemens") && !poaSet.has("Bosch"), "a flagged brand joins the call-for-price set; an unflagged one does not");
+ok(isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Siemens" }), "a Siemens product is call-for-price by brand alone");
+ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }), "a Bosch hob keeps its price");
+ok(poaNamesFrom([], []).has("Siemens"), "with no brand information at all, Siemens stays masked");
+ok(!poaNamesFrom([], [{ name: "Siemens", priceOnApplication: false }]).has("Siemens"), "the owner unticking Siemens wins over the fallback");
 // rag documents
 const pd = productDoc(seed.products[0]);
 ok(pd.content.includes(seed.products[0].productCode), "productDoc includes product code");
@@ -28,6 +36,12 @@ ok(/£/.test(productDoc(priced).content), "productDoc includes price when one is
 // The other half of the owner's rule: a withheld price must never reach the bot.
 ok(!/£/.test(productDoc(priced, { omitPrice: true }).content), "productDoc omits price for call-for-price products");
 const docs = buildDocuments(seed as any);
+// A brand the owner sells call-for-price reaches the bot with no number attached
+// (data/brands.json flags Siemens; the seed still holds its prices, so this is not vacuous).
+const siemensCodes = new Set(seed.products.filter((p) => p.brand === "Siemens").map((p) => p.productCode));
+ok(seed.products.some((p) => p.brand === "Siemens" && p.priceNow != null), "seed still carries Siemens prices to mask");
+const siemensDocs = docs.filter((d) => d.sourceType === "product" && siemensCodes.has(d.sourceId));
+ok(siemensDocs.length > 0 && siemensDocs.every((d) => !/£\d/.test(d.content)), "Siemens product docs carry no price for the chatbot");
 ok(docs.length > seed.products.length, "buildDocuments adds category/brand/business/faq docs");
 ok(faqDocs(seed.business).some((f) => /call/i.test(f.content) && f.content.includes(seed.business.phone)), "how-to-buy FAQ is phone-first");
 // retriever

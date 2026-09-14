@@ -33,13 +33,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { products, business, categories } = await loadCatalog();
+  const { products, business, categories, brands } = await loadCatalog();
   const p = getProduct(products, slug);
   if (!p) notFound();
 
-  // Owner-flagged "call for price" category — no price anywhere on this page.
-  const poaSet = poaNamesFrom(categories);
-  const poa = poaSet.has(p.category) || poaSet.has(p.subcategory);
+  // Owner-flagged "call for price" category or brand — no price anywhere on this page.
+  const poaSet = poaNamesFrom(categories, brands);
+  const poa = poaSet.has(p.category) || poaSet.has(p.subcategory) || poaSet.has(p.brand);
   const related = relatedFor(products, p);
   const enquiryHref = `/contact?product=${encodeURIComponent(p.title)}&code=${encodeURIComponent(p.productCode)}`;
   // DB rows carry meta: {} — resolve the category page from the catalogue by
@@ -119,7 +119,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <span className="mb-1.5 rounded-sm bg-success-soft px-2.5 py-1.5 text-xs font-bold text-success tabular-nums">Save {formatPrice(p.saving)}</span>
             ) : null}
           </div>
-          <p className="mb-6 text-xs text-ink/70">Price shown excludes optional delivery &amp; installation</p>
+          {!poa && <p className="mb-6 text-xs text-ink/70">Price shown excludes optional delivery &amp; installation</p>}
 
           <div className="mb-6 rounded-[4px] border border-blue/40 bg-blue/[.07] px-[18px] py-4">
             <p className="text-[13.5px] leading-relaxed text-[#44586f]">

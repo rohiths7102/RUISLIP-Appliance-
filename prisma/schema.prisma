@@ -107,6 +107,9 @@ model Brand {
   isVisible    Boolean @default(true)
   // Display rank on /brands — the owner's main brands pin first (low = first).
   order        Int     @default(100)
+  // Owner-set: every product of this brand shows "Call for price" instead of
+  // the price. Siemens, at the owner's request (12 Sept 2026).
+  priceOnApplication Boolean @default(false)
   requiresLogoPermissionReview Boolean @default(true)
 }
 

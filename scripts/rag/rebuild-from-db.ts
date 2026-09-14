@@ -38,7 +38,7 @@ try {
     })),
     categories: cats.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, parentCategory: c.parentId || "",
       description: c.description, productCount: c.productCount, priceOnApplication: !!c.priceOnApplication })),
-    brands: brds.map((b: any) => ({ id: b.id, name: b.name, slug: b.slug })),
+    brands: brds.map((b: any) => ({ id: b.id, name: b.name, slug: b.slug, priceOnApplication: !!b.priceOnApplication })),
     business: biz ? { businessName: biz.businessName, tradingName: biz.tradingName, phone: biz.phone, email: biz.email,
       address: biz.address, openingHours: biz.openingHours,
       delivery: { radius: biz.deliveryRadius, notes: biz.deliveryNotes, timescale: "" }, socialLinks: biz.socialLinks,

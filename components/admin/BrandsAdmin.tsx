@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Card, Button, Notice, PageTitle } from "@/components/admin/ui";
-type Row = { id: string; name: string; slug: string; logo: string; description: string; productCount: number; isVisible: boolean; order?: number };
+type Row = { id: string; name: string; slug: string; logo: string; description: string; productCount: number; isVisible: boolean; order?: number; priceOnApplication?: boolean };
 export default function BrandsAdmin({ initial }: { initial: Row[] }) {
   const [rows, setRows] = useState(initial); const [sel, setSel] = useState<Row | null>(null); const [msg, setMsg] = useState(""); const [saving, setSaving] = useState(false);
   // Failure renders INSIDE the modal (a header flash hides behind the overlay).
@@ -18,7 +18,7 @@ export default function BrandsAdmin({ initial }: { initial: Row[] }) {
     const rank = order.trim() === "" ? 100 : Number(order);
     if (!Number.isInteger(rank) || rank < 0) { setModalErr("Front-page rank must be a whole number — leave it blank for 100 (alphabetical)."); return; }
     setSaving(true); setMsg(""); setModalErr("");
-    const r = await fetch(`/api/admin/brands/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logo: sel.logo, description: sel.description, isVisible: sel.isVisible, order: rank }) });
+    const r = await fetch(`/api/admin/brands/${sel.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logo: sel.logo, description: sel.description, isVisible: sel.isVisible, order: rank, priceOnApplication: !!sel.priceOnApplication }) });
     setSaving(false);
     if (r.ok) { const u = await r.json(); setRows((rs) => rs.map((x) => (x.id === u.id ? { ...x, ...u } : x))); setSel(null); setMsg("Saved ✓"); } else setModalErr("Save failed — is the database running?");
   }
@@ -29,7 +29,7 @@ export default function BrandsAdmin({ initial }: { initial: Row[] }) {
         {rows.map((r) => (
           <Card key={r.id} className="p-4 text-center">
             <div className="flex h-16 items-center justify-center">{r.logo ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={r.logo} alt={r.name} className="max-h-12 max-w-[80%] object-contain" /> : <span className="text-ink/70">{r.name}</span>}</div>
-            <div className="mt-2 text-sm font-medium">{r.name}</div><div className="text-xs text-muted">{r.productCount} products · {r.isVisible ? "visible" : "hidden"}</div>
+            <div className="mt-2 text-sm font-medium">{r.name}</div><div className="text-xs text-muted">{r.productCount} products · {r.isVisible ? "visible" : "hidden"}{r.priceOnApplication ? " · call for price" : ""}</div>
             <Button variant="secondary" small className="mt-2" onClick={() => edit(r)}>Edit</Button>
           </Card>
         ))}
@@ -42,6 +42,7 @@ export default function BrandsAdmin({ initial }: { initial: Row[] }) {
               <label>Logo URL<input value={sel.logo} onChange={(e) => upd("logo", e.target.value)} className="mt-1 w-full rounded border border-line px-2 py-1.5" /></label>
               <label>Description<textarea rows={3} value={sel.description} onChange={(e) => upd("description", e.target.value)} className="mt-1 w-full rounded border border-line px-2 py-1.5" /></label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={sel.isVisible} onChange={(e) => upd("isVisible", e.target.checked)} /> Visible</label>
+              <label className="flex items-start gap-2"><input type="checkbox" checked={!!sel.priceOnApplication} onChange={(e) => upd("priceOnApplication", e.target.checked)} className="mt-0.5" /> <span>Call for price <span className="text-xs text-muted">— hides the price on every product of this brand, everywhere (site, search, chatbot, Google feed)</span></span></label>
               <label className="flex items-center gap-2">Front-page rank <input value={order} onChange={(e) => setOrder(e.target.value)} inputMode="numeric" placeholder="100" className="w-20 rounded border border-line px-2 py-1" /> <span className="text-xs text-muted">(low = first on /brands; 100 = alphabetical)</span></label>
             </div>
             {modalErr && <Notice tone="danger" className="mt-4">{modalErr}</Notice>}

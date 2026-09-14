@@ -228,7 +228,7 @@ export async function priceWatchRows(db: any, opts?: { limit?: number }): Promis
     const bySource = latestByProduct.get(p.id);
     if (!bySource) continue;
 
-    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory });
+    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
     const floor = effectiveFloor({
       costPrice: p.costPrice,
       floorPrice: p.floorPrice,
@@ -467,7 +467,7 @@ export async function worklistProducts(db: any, opts: { limit: number; sourceId:
   const due: WorklistProduct[] = [];
   for (const p of products) {
     if (!p.productCode || !p.productCode.trim()) continue;
-    if (isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory })) continue;
+    if (isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand })) continue;
     if (!readableBySource(sourceId, p.sourceUrl || "")) continue;
     const last = lastSeen.get(p.id) || null;
     due.push({

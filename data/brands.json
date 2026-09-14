@@ -197,7 +197,8 @@
   "slug": "siemens",
   "sourceUrl": "",
   "logo": "/brands/siemens.gif",
-  "productCount": 12
+  "productCount": 12,
+  "priceOnApplication": true
  },
  {
   "id": "smeg",

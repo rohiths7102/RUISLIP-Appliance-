@@ -29,12 +29,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { products, categories } = await loadCatalog();
+  const { products, categories, brands } = await loadCatalog();
   const c = getCategoryById(categories, slug);
   if (!c) notFound();
 
   // Card-only DTO (see toCardItem) — keeps specs out of the payload, chips wired.
-  const poaSet = poaNamesFrom(categories);
+  const poaSet = poaNamesFrom(categories, brands);
   const items = productsInCategory(products, c.name).map((p) => toCardItem(p, poaSet));
   const brandNames = [...new Set(items.map((p) => p.brand).filter(Boolean))].sort();
   const kids = childCategories(categories, c.id);

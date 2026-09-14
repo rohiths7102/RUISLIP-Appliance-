@@ -150,6 +150,7 @@ export type GuardProduct = {
   floorPrice: number | null;
   category?: string | null;
   subcategory?: string | null;
+  brand?: string | null;
   /** Pre-computed POA flag; wins over `poaNames` when supplied. */
   isPoa?: boolean;
   /**
@@ -364,7 +365,7 @@ export function evaluateGuards(input: GuardInput): GuardResult {
   if (typeof product.isPoa === "boolean") {
     if (product.isPoa) blocking.push("poa_category");
   } else if (input.poaNames instanceof Set) {
-    if (isPoaProduct(input.poaNames, { category: product.category, subcategory: product.subcategory })) {
+    if (isPoaProduct(input.poaNames, { category: product.category, subcategory: product.subcategory, brand: product.brand })) {
       blocking.push("poa_category");
     }
   } else {

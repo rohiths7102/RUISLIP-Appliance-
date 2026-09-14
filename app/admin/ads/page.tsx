@@ -41,7 +41,7 @@ async function adsData() {
   const buckets: Record<string, Row[]> = { eligible: [], hidden: [], poa: [], noPrice: [], noImage: [], availability: [] };
   for (const p of products) {
     if (!p.isVisible) buckets.hidden.push(p);
-    else if (poa.has(p.category) || poa.has(p.subcategory)) buckets.poa.push(p);
+    else if (poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand)) buckets.poa.push(p);
     else if (p.priceNow === null) buckets.noPrice.push(p);
     else if (!p.mainImage) buckets.noImage.push(p);
     else if (!["in_stock", "limited"].includes(p.availabilityNormalised)) buckets.availability.push(p);

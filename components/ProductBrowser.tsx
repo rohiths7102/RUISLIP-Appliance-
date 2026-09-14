@@ -14,7 +14,7 @@ import ProductCard from "./ProductCard";
 export type ProductCardItem = Pick<Product,
   "id" | "newSlug" | "title" | "brand" | "productCode" | "category" | "subcategory" |
   "image" | "priceNow" | "priceWas" | "saving" | "availability" | "availabilityNormalised" | "warranty"> &
-  { energyClass?: EnergyClass | null };
+  { energyClass?: EnergyClass | null; poa?: boolean };
 
 const PER_PAGE = 24;
 
@@ -73,14 +73,16 @@ export default function ProductBrowser({
       if (cat !== "all" && p.category !== cat && p.subcategory !== cat) return false;
       if (avail !== "all" && p.availabilityNormalised !== avail) return false;
       if (energy !== "all" && (!p.energyClass || energyLetter(p.energyClass) !== energy)) return false;
-      if (max > 0 && (p.priceNow === null || p.priceNow > max)) return false;
+      // A call-for-price item has no number to compare, and the owner still
+      // wants it seen — it passes a budget cap rather than vanishing from it.
+      if (max > 0 && !p.poa && (p.priceNow === null || p.priceNow > max)) return false;
       return true;
     });
     if (sort === "price-asc") list = [...list].sort((a, b) => (a.priceNow ?? 1e9) - (b.priceNow ?? 1e9));
     else if (sort === "price-desc") list = [...list].sort((a, b) => (b.priceNow ?? -1) - (a.priceNow ?? -1));
     else if (sort === "brand") list = [...list].sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
     // Featured = best-merchandised first: photographed, priced, energy-labelled.
-    else list = [...list].sort((a, b) => Number(!!b.image) - Number(!!a.image) || Number(b.priceNow !== null) - Number(a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
+    else list = [...list].sort((a, b) => Number(!!b.image) - Number(!!a.image) || Number(b.poa || b.priceNow !== null) - Number(a.poa || a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
     return list;
   }, [items, q, brand, cat, avail, energy, max, sort]);
 

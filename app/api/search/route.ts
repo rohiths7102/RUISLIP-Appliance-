@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   if (q.length < 2) return NextResponse.json({ suggestions: [], items: [], total: 0 });
 
   const { products, categories, brands } = await loadCatalog();
-  const poa = poaNamesFrom(categories);
+  const poa = poaNamesFrom(categories, brands);
 
   // Department / brand rows above the products — name matches only, prefix
   // matches first, two of each so the product list stays the star.
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
   scored.sort((a, b) => b[0] - a[0] || a[1].title.localeCompare(b[1].title));
 
   const items = scored.slice(0, 6).map(([, p]) => {
-    const hidden = poa.has(p.category) || poa.has(p.subcategory);
+    const hidden = poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand);
     return {
       slug: slugOf(p), title: p.title, brand: p.brand, productCode: p.productCode,
       image: p.image, priceNow: hidden ? null : p.priceNow, poa: hidden,

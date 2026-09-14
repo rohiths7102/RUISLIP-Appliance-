@@ -49,7 +49,7 @@ export default async function Home() {
   // One flagship (dearest, photographed) per real appliance department, so the
   // shelf reads as a showroom rather than a bin of filters. Call-for-price
   // categories are excluded — the slideshow leads with the price.
-  const poaSet = poaNamesFrom(categories);
+  const poaSet = poaNamesFrom(categories, brands);
   // The featured row is the owner's own promotion, not ours: it mirrors the
   // "featured products" carousel on his Euronics storefront, in his order, with
   // the Euronics best-seller flags. scripts/catalog/sync-featured.mjs refreshes

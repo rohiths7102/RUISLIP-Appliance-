@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { syncBrandToRag } from "@/lib/rag/index";
+import { syncBrandToRag, syncBrandProductsToRag } from "@/lib/rag/index";
 import { revalidateStorefront } from "@/lib/revalidate";
 export const dynamic = "force-dynamic";
-const EDITABLE = ["logo", "description", "isVisible", "order"];
+const EDITABLE = ["logo", "description", "isVisible", "order", "priceOnApplication"];
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requireAdminApi(req);
@@ -22,7 +22,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await db.brand.update({ where: { id }, data });
     await writeAudit(db, { entityType: "brand", entityId: id, action: "update", changedFields: changed, previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email });
     try { await syncBrandToRag(db, id); } catch { /* reindex best-effort */ }
-    revalidateStorefront([`/brands/${updated.slug}`]);
+    // The flag nulls the price on every product of the brand — their chatbot
+    // docs and their product pages must follow the checkbox, not a rebuild.
+    if (changed.includes("priceOnApplication")) {
+      try { await syncBrandProductsToRag(db, id); } catch { /* reindex best-effort */ }
+    }
+    revalidateStorefront([`/brands/${updated.slug}`], { allPages: changed.includes("priceOnApplication") });
     return NextResponse.json(updated);
   } catch (e) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

@@ -84,7 +84,7 @@ export async function autoApplySource(
       : null;
     if (typeof p.priceNow === "number" && Math.abs(p.priceNow - proposedPrice) < 0.01) { out.unchanged++; continue; }
 
-    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory });
+    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
     let g;
     try {
       g = evaluateGuards({

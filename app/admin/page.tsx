@@ -55,7 +55,7 @@ async function dashboard() {
       where: {
         isVisible: true, priceNow: { not: null }, mainImage: { not: "" },
         availabilityNormalised: { in: ["in_stock", "limited"] },
-        ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }),
+        ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }, { brand: { in: poaNames } }] }),
       },
     }),
   ]);

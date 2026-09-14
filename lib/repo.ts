@@ -98,7 +98,7 @@ async function readCatalog(): Promise<Catalog> {
     const business: Business = biz ? mapBusiness(biz) : seed.business;
     return {
       products: prod.map(mapProduct), categories: cats.map(mapCategory),
-      brands: brds.map((b: any) => ({ id: b.id, name: b.name, slug: b.slug, sourceUrl: b.sourceUrl, logo: b.logo, productCount: b.productCount })),
+      brands: brds.map((b: any) => ({ id: b.id, name: b.name, slug: b.slug, sourceUrl: b.sourceUrl, logo: b.logo, productCount: b.productCount, priceOnApplication: !!b.priceOnApplication })),
       business, services: svcs.map((s: any) => ({ id: s.id, name: s.name, description: s.description, price: s.price, optional: s.optional, category: s.appliesToCategory || "delivery" })),
       source: "database",
     };

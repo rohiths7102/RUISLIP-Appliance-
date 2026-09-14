@@ -21,12 +21,12 @@ export default async function ProductsPage({
   // cat/max arrive from the homepage "Discover products" finder and must
   // genuinely pre-select the browser's own filters.
   const { q, cat, max, brand } = await searchParams;
-  const { products, categories } = await loadCatalog();
+  const { products, categories, brands } = await loadCatalog();
   const brandNames = [...new Set(products.map((p) => p.brand).filter(Boolean))].sort();
   const catNames = topCategories(categories).map((c) => c.name);
   // Card-only DTO: descriptionHtml/specs/features are ~90% of the ~4.4MB RSC
   // payload for 1,600 products, and the browser grid never reads them.
-  const poaSet = poaNamesFrom(categories);
+  const poaSet = poaNamesFrom(categories, brands);
   const items: ProductCardItem[] = products.map((p) => toCardItem(p, poaSet));
   return (
     <>
