@@ -6,12 +6,16 @@
  * lastRunAt/lastRunStatus. No parallel "activity" table, so the report and a
  * dispute are settled from the same rows.
  *
- * The health field is the part that earns its keep. On 17 Sept 2026 the
- * Euronics collector had not run for eight days and nothing on the site said
- * so — the panel showed the last run's cheerful summary and no more, so a
- * stopped agent looked exactly like a quiet one. A report that cannot say "you
- * have heard nothing because nothing ran" is worse than no report, because it
- * is read as reassurance.
+ * The health field is the part that earns its keep. On 17 Sept 2026 the panel
+ * showed each source's last cheerful summary and nothing else, so a stopped
+ * agent looked exactly like a quiet one — and it was stopped: nothing had been
+ * scheduled since 22 August. Worse, the reassuring "last checked" line was not
+ * even the agent's own handwriting; "N priced, N differ" is the format a laptop
+ * script (scripts/catalog/reconcile-euronics.mjs) writes, while the signed
+ * ingest route writes "N stored, N unresolved". Three writers share one string,
+ * so `lastRunStatus` alone cannot tell you the agent ran. A report that cannot
+ * say "you have heard nothing because nothing ran" is worse than no report,
+ * because it is read as reassurance.
  */
 
 /** A source that should be checked regularly is overdue after this long. */
@@ -65,7 +69,7 @@ export type AgentReport = {
   changes: AgentChange[];
   days: AgentDay[];
   totals: { applied: number; rises: number; drops: number };
-  /** True when any source that ought to be running is overdue or halted. */
+  /** True when any source that ought to be running is overdue, halted, or has never run. */
   needsAttention: boolean;
 };
 
@@ -183,6 +187,8 @@ export async function agentReport(
     changes,
     days: [...byDay.values()].sort((a, b) => (a.day < b.day ? 1 : -1)),
     totals,
-    needsAttention: sources.some((s) => s.health === "overdue" || s.health === "halted"),
+    // "never" counts: a source the owner switched ON that has never once run is
+    // the same silence as an overdue one. "off" does not — that is his choice.
+    needsAttention: sources.some((s) => s.health === "overdue" || s.health === "halted" || s.health === "never"),
   };
 }

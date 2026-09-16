@@ -414,7 +414,7 @@ export default function PriceWatchAdmin({
             <p className="text-[13px] font-bold text-ink">Needs a look</p>
             <ul className="mt-1.5 grid gap-1">
               {report.sources
-                .filter((s) => s.health === "overdue" || s.health === "halted")
+                .filter((s) => s.health === "overdue" || s.health === "halted" || s.health === "never")
                 .map((s) => (
                   <li key={s.id} className="text-[12.5px] text-ink/80">
                     <strong className="text-ink">{s.label}</strong> — {s.note}
@@ -448,6 +448,11 @@ export default function PriceWatchAdmin({
                       <strong className={c.direction === "drop" ? "text-danger" : "text-ink"}>{money(c.to)}</strong>
                     </span>
                     {c.sourceLabel && <span className="text-[11px] text-muted">from {c.sourceLabel}</span>}
+                    {/* The number that justified the change — without it the row
+                        asks to be trusted rather than checked. */}
+                    {c.observedPrice !== null && (
+                      <span className="text-[11px] text-muted tabular-nums">(they showed {money(c.observedPrice)})</span>
+                    )}
                   </li>
                 ))}
               </ul>
