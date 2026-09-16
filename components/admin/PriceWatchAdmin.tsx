@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, ArrowDownRight, ExternalLink, Info } from "lucide-react";
 import { Button, Card, Notice, PageTitle } from "@/components/admin/ui";
+import type { AgentReport } from "@/lib/price-watch/agent-report";
 
 /* ------------------------------------------------------------------ types
  * The shape app/admin/price-watch/page.tsx normalises into. Everything the
@@ -63,15 +64,6 @@ export type PriceWatchSource = {
   lastRunStatus: string;
 };
 
-/** One automatic change, read back from the audit trail. */
-export type AutoChange = {
-  when: string;
-  title: string;
-  productCode: string;
-  from: number | null;
-  to: number | null;
-  sourceLabel: string;
-};
 
 type ApplyResult = {
   productId: string;
@@ -168,12 +160,12 @@ function gapOf(ourPrice: number | null, theirPrice: number | null): Gap {
 export default function PriceWatchAdmin({
   rows,
   sources,
-  autoChanges,
+  report,
   dbUp,
 }: {
   rows: PriceWatchRow[];
   sources: PriceWatchSource[];
-  autoChanges: AutoChange[];
+  report: AgentReport | null;
   dbUp: boolean;
 }) {
   const router = useRouter();
@@ -411,28 +403,68 @@ export default function PriceWatchAdmin({
           })}
         </div>
 
-        {autoChanges.length > 0 && (
-          <div className="mt-4 border-t border-line pt-3">
-            <p className="mb-2 text-[12px] font-semibold text-ink">What the agent changed recently</p>
-            <ul className="grid gap-1.5">
-              {autoChanges.map((c, i) => (
-                <li key={i} className="flex flex-wrap items-baseline gap-x-2 text-[12.5px] text-ink/80">
-                  <span className="text-muted">{c.when}</span>
-                  <span className="font-medium text-ink">{c.title.slice(0, 48)}</span>
-                  {c.productCode && <span className="font-mono text-[11px] text-muted">{c.productCode}</span>}
-                  <span className="tabular-nums">
-                    {money(c.from)} → <strong className="text-ink">{money(c.to)}</strong>
-                  </span>
-                  {c.sourceLabel && <span className="text-[11px] text-muted">from {c.sourceLabel}</span>}
-                </li>
-              ))}
+        {/* ---- the agent's report ------------------------------------------
+          * Ordered the way the owner needs to read it: first whether the thing
+          * ran at all, then what it changed. A stopped agent and a quiet one
+          * look identical in a list of changes, which is how eight days of
+          * silence passed for a working night in September 2026.
+          */}
+        {report && report.needsAttention && (
+          <div className="mt-4 rounded-lg border border-warning/40 bg-warning-soft px-3.5 py-3">
+            <p className="text-[13px] font-bold text-ink">Needs a look</p>
+            <ul className="mt-1.5 grid gap-1">
+              {report.sources
+                .filter((s) => s.health === "overdue" || s.health === "halted")
+                .map((s) => (
+                  <li key={s.id} className="text-[12.5px] text-ink/80">
+                    <strong className="text-ink">{s.label}</strong> — {s.note}
+                  </li>
+                ))}
             </ul>
           </div>
         )}
-        {autoChanges.length === 0 && (
-          <p className="mt-3 border-t border-line pt-3 text-[12px] text-muted">
-            No automatic changes yet — turn a trusted source to Automatic and the nightly run takes it from there.
-          </p>
+
+        {report && (
+          <div className="mt-4 border-t border-line pt-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-[12px] font-semibold text-ink">
+                What the agent changed · last {report.windowDays} days
+              </p>
+              <p className="text-[11.5px] text-muted tabular-nums">
+                {report.totals.applied} price{report.totals.applied === 1 ? "" : "s"} updated
+                {report.totals.applied > 0 && ` · ${report.totals.rises} up, ${report.totals.drops} down`}
+              </p>
+            </div>
+
+            {report.changes.length > 0 ? (
+              <ul className="mt-2 grid gap-1.5">
+                {report.changes.slice(0, 20).map((c, i) => (
+                  <li key={i} className="flex flex-wrap items-baseline gap-x-2 text-[12.5px] text-ink/80">
+                    <span className="text-muted tabular-nums">{c.day}</span>
+                    <span className="font-medium text-ink">{c.title.slice(0, 44)}</span>
+                    {c.productCode && <span className="text-[11.5px] text-muted">{c.productCode}</span>}
+                    <span className="tabular-nums">
+                      {money(c.from)} →{" "}
+                      <strong className={c.direction === "drop" ? "text-danger" : "text-ink"}>{money(c.to)}</strong>
+                    </span>
+                    {c.sourceLabel && <span className="text-[11px] text-muted">from {c.sourceLabel}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[12px] text-muted">
+                {report.needsAttention
+                  ? "No changes — but a source above has not been checking, so this is not the same as “nothing needed changing”."
+                  : "No prices needed changing in this period."}
+              </p>
+            )}
+
+            {report.changes.length > 20 && (
+              <p className="mt-2 text-[11.5px] text-muted">
+                Showing the 20 most recent of {report.changes.length}.
+              </p>
+            )}
+          </div>
         )}
 
         {/* Add a shop to watch. The two choices are the owner's own distinction:
