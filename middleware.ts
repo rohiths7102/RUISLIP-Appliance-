@@ -19,6 +19,17 @@ import { ADMIN_PATH, usingSecretAdminPath, ipAllowed, clientIpFrom, ipAllowlistA
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // The old site linked brands with capitals (/brands/Hotpoint); ours are
+  // lowercase and the lookup is exact, so the capitalised form is a 404. A
+  // next.config redirect cannot fix it: sources there match case-insensitively,
+  // so it would catch its own destination and loop. 301, so Google keeps the
+  // lowercase one.
+  if (pathname.startsWith("/brands/") && pathname !== pathname.toLowerCase()) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.toLowerCase();
+    return NextResponse.redirect(url, 301);
+  }
+
   const onSecret = usingSecretAdminPath && (pathname === `/${ADMIN_PATH}` || pathname.startsWith(`/${ADMIN_PATH}/`));
   const onInternalAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
   const onAdminApi = pathname.startsWith("/api/admin") || pathname === "/api/auth/login" || pathname === "/api/auth/logout";

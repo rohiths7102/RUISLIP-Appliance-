@@ -1,0 +1,818 @@
+[
+ {
+  "source": "/service-and-support/privacy-and-cookies",
+  "destination": "/privacy"
+ },
+ {
+  "source": "/about-us",
+  "destination": "/about"
+ },
+ {
+  "source": "/service-and-support/delivery-returns",
+  "destination": "/delivery-services"
+ },
+ {
+  "source": "/service-and-support",
+  "destination": "/delivery-services"
+ },
+ {
+  "source": "/service-and-support/terms-and-conditions",
+  "destination": "/terms"
+ },
+ {
+  "source": "/news-and-events",
+  "destination": "/"
+ },
+ {
+  "source": "/love2shop",
+  "destination": "/"
+ },
+ {
+  "source": "/contact-us",
+  "destination": "/contact"
+ },
+ {
+  "source": "/promotions/151631",
+  "destination": "/products"
+ },
+ {
+  "source": "/promotions/151659",
+  "destination": "/products"
+ },
+ {
+  "source": "/laundry",
+  "destination": "/categories/laundry"
+ },
+ {
+  "source": "/laundry/washing-machines",
+  "destination": "/categories/washing-machines"
+ },
+ {
+  "source": "/laundry/tumble-dryers",
+  "destination": "/categories/tumble-dryers"
+ },
+ {
+  "source": "/laundry/washer-dryers",
+  "destination": "/categories/washer-dryers"
+ },
+ {
+  "source": "/refrigeration",
+  "destination": "/categories/refrigeration"
+ },
+ {
+  "source": "/refrigeration/american-style-fridge-freezers",
+  "destination": "/categories/american-fridge-freezers"
+ },
+ {
+  "source": "/refrigeration/fridge-freezers",
+  "destination": "/categories/fridge-freezers"
+ },
+ {
+  "source": "/refrigeration/freezers",
+  "destination": "/categories/freezers"
+ },
+ {
+  "source": "/refrigeration/refrigerators",
+  "destination": "/categories/fridges"
+ },
+ {
+  "source": "/dishwashing",
+  "destination": "/categories/dishwashers"
+ },
+ {
+  "source": "/dishwashing/full-size-dishwashers",
+  "destination": "/categories/dishwashers"
+ },
+ {
+  "source": "/dishwashing/slimline-dishwashers",
+  "destination": "/categories/dishwashers"
+ },
+ {
+  "source": "/cooking",
+  "destination": "/categories/cooking"
+ },
+ {
+  "source": "/cooking/cookers",
+  "destination": "/categories/cookers"
+ },
+ {
+  "source": "/cooking/ovens",
+  "destination": "/categories/ovens"
+ },
+ {
+  "source": "/cooking/microwaves",
+  "destination": "/categories/microwaves"
+ },
+ {
+  "source": "/cooking/hobs",
+  "destination": "/categories/hobs"
+ },
+ {
+  "source": "/floorcare",
+  "destination": "/categories/floorcare"
+ },
+ {
+  "source": "/floorcare/upright-vacuum-cleaners",
+  "destination": "/categories/vacuum-cleaners"
+ },
+ {
+  "source": "/floorcare/cordless-vacuum-cleaners",
+  "destination": "/categories/cordless-vacuums"
+ },
+ {
+  "source": "/small-appliances",
+  "destination": "/categories/small-appliances"
+ },
+ {
+  "source": "/small-appliances/kettles",
+  "destination": "/categories/kettles"
+ },
+ {
+  "source": "/small-appliances/toasters",
+  "destination": "/categories/toasters"
+ },
+ {
+  "source": "/small-appliances/coffee-machines",
+  "destination": "/categories/coffee-machines"
+ },
+ {
+  "source": "/tv-blu-ray--audio/televisions",
+  "destination": "/categories/televisions"
+ },
+ {
+  "source": "/:slug/p-4561",
+  "destination": "/products/zenith-dwi600"
+ },
+ {
+  "source": "/:slug/p-5468",
+  "destination": "/products/bosch-pug61raa5b"
+ },
+ {
+  "source": "/:slug/p-7208",
+  "destination": "/products/bosch-bchf220gb"
+ },
+ {
+  "source": "/:slug/p-7236",
+  "destination": "/products/bosch-kgn34nleag"
+ },
+ {
+  "source": "/:slug/p-7320",
+  "destination": "/products/bosch-wan28258gb"
+ },
+ {
+  "source": "/:slug/p-7730",
+  "destination": "/products/bosch-hqa574bs3b"
+ },
+ {
+  "source": "/:slug/p-7967",
+  "destination": "/products/bosch-sms4emw06g"
+ },
+ {
+  "source": "/:slug/p-8111",
+  "destination": "/products/bosch-wgg254z1gb"
+ },
+ {
+  "source": "/:slug/p-8741",
+  "destination": "/products/bosch-wan28259gb"
+ },
+ {
+  "source": "/:slug/p-7303",
+  "destination": "/products/bosch-wge03408gb"
+ },
+ {
+  "source": "/:slug/p-7647",
+  "destination": "/products/bosch-smv2htx02g"
+ },
+ {
+  "source": "/:slug/p-8051",
+  "destination": "/products/bosch-sms26aw08g"
+ },
+ {
+  "source": "/:slug/p-7913",
+  "destination": "/products?brand=Neff&cat=Ovens"
+ },
+ {
+  "source": "/:slug/p-7245",
+  "destination": "/products/beko-bmn3t3823w"
+ },
+ {
+  "source": "/:slug/p-7661",
+  "destination": "/products/beko-cep5302b"
+ },
+ {
+  "source": "/:slug/p-7252",
+  "destination": "/products/blomberg-lwa18461w"
+ },
+ {
+  "source": "/:slug/p-7509",
+  "destination": "/products/blomberg-lwa29461w"
+ },
+ {
+  "source": "/:slug/p-7718",
+  "destination": "/products/blomberg-ggrn655n"
+ },
+ {
+  "source": "/:slug/p-6611",
+  "destination": "/products/bosch-bcs71hyggb"
+ },
+ {
+  "source": "/:slug/p-7881",
+  "destination": "/products/miele-web365-wcs"
+ },
+ {
+  "source": "/:slug/p-7706",
+  "destination": "/products/blomberg-ggrn655w"
+ },
+ {
+  "source": "/:slug/p-7240",
+  "destination": "/products/hoover-hvt3cleckihw"
+ },
+ {
+  "source": "/:slug/p-3445",
+  "destination": "/products/bosch-hhf113br0b"
+ },
+ {
+  "source": "/search",
+  "destination": "/products"
+ },
+ {
+  "source": "/about-euronics",
+  "destination": "/about"
+ },
+ {
+  "source": "/:slug/p-7616",
+  "destination": "/products/beko-bmn3wt3821w"
+ },
+ {
+  "source": "/:slug/p-7520",
+  "destination": "/products/beko-bmn3wt3841w"
+ },
+ {
+  "source": "/:slug/p-7528",
+  "destination": "/products/beko-bmn3wt3841s"
+ },
+ {
+  "source": "/:slug/p-7512",
+  "destination": "/products/hotpoint-nswe7469wsuk"
+ },
+ {
+  "source": "/:slug/p-7253",
+  "destination": "/products/blomberg-lwa27461w"
+ },
+ {
+  "source": "/:slug/p-4574",
+  "destination": "/products?brand=Zenith&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-5005",
+  "destination": "/products/indesit-biwmil71252ukn"
+ },
+ {
+  "source": "/:slug/p-6416",
+  "destination": "/products/blomberg-lwf184610w"
+ },
+ {
+  "source": "/:slug/p-6540",
+  "destination": "/products/blomberg-lwf184620g"
+ },
+ {
+  "source": "/:slug/p-4741",
+  "destination": "/products?brand=Blomberg&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-7125",
+  "destination": "/products/samsung-ww90cgc04dabeu"
+ },
+ {
+  "source": "/:slug/p-7211",
+  "destination": "/products/samsung-ww90cgc04daeeu"
+ },
+ {
+  "source": "/:slug/p-7437",
+  "destination": "/products/blomberg-lwa210461w"
+ },
+ {
+  "source": "/:slug/p-4581",
+  "destination": "/products?brand=Blomberg&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-3977",
+  "destination": "/products?brand=LG&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-4690",
+  "destination": "/products?brand=Samsung&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-6165",
+  "destination": "/products?brand=Samsung&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-6158",
+  "destination": "/products?brand=Bosch&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-7304",
+  "destination": "/products/bosch-wgg24400gb"
+ },
+ {
+  "source": "/:slug/p-5717",
+  "destination": "/products?brand=Siemens&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-5769",
+  "destination": "/products?brand=Bosch&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-5885",
+  "destination": "/products/bosch-wiw28302gb"
+ },
+ {
+  "source": "/:slug/p-6230",
+  "destination": "/products?brand=Bosch&cat=Washing%20Machines"
+ },
+ {
+  "source": "/:slug/p-7958",
+  "destination": "/products/miele-weg885-wcs"
+ },
+ {
+  "source": "/:slug/p-4705",
+  "destination": "/products?brand=Indesit&cat=Tumble%20Dryers"
+ },
+ {
+  "source": "/:slug/p-4555",
+  "destination": "/products?brand=Zenith&cat=Tumble%20Dryers"
+ },
+ {
+  "source": "/:slug/p-5770",
+  "destination": "/products/zenith-zdvs700w"
+ },
+ {
+  "source": "/:slug/p-4482",
+  "destination": "/products?brand=Beko&cat=Tumble%20Dryers"
+ },
+ {
+  "source": "/:slug/p-5215",
+  "destination": "/products/blomberg-lta09020w"
+ },
+ {
+  "source": "/:slug/p-5394",
+  "destination": "/products/hoover-hlec9te"
+ },
+ {
+  "source": "/:slug/p-7670",
+  "destination": "/products/beko-dtkce90021w"
+ },
+ {
+  "source": "/:slug/p-5846",
+  "destination": "/products/blomberg-ltk38020w"
+ },
+ {
+  "source": "/:slug/p-5847",
+  "destination": "/products/blomberg-ltp18320w"
+ },
+ {
+  "source": "/:slug/p-5915",
+  "destination": "/products/blomberg-ltk310030w"
+ },
+ {
+  "source": "/:slug/p-7685",
+  "destination": "/products/blomberg-ltah39420w"
+ },
+ {
+  "source": "/:slug/p-5237",
+  "destination": "/products/blomberg-lth38420w"
+ },
+ {
+  "source": "/:slug/p-5544",
+  "destination": "/products?brand=Siemens&cat=Tumble%20Dryers"
+ },
+ {
+  "source": "/:slug/p-7069",
+  "destination": "/products?brand=Samsung&cat=Tumble%20Dryers"
+ },
+ {
+  "source": "/:slug/p-7210",
+  "destination": "/products/samsung-dv90cgc0a0aeeu"
+ },
+ {
+  "source": "/:slug/p-6451",
+  "destination": "/products/samsung-dv90bb5245abs1"
+ },
+ {
+  "source": "/:slug/p-7062",
+  "destination": "/products?brand=Samsung&cat=Tumble%20Dryers"
+ },
+ {
+  "source": "/:slug/p-3661",
+  "destination": "/products?brand=Indesit&cat=Washer%20Dryers"
+ },
+ {
+  "source": "/:slug/p-7265",
+  "destination": "/products/blomberg-lrf854311w"
+ },
+ {
+  "source": "/:slug/p-5635",
+  "destination": "/products/hisense-rs694n4tcf"
+ },
+ {
+  "source": "/:slug/p-6373",
+  "destination": "/products/samsung-rs68a884csleu"
+ },
+ {
+  "source": "/:slug/p-7627",
+  "destination": "/products/haden-hk124we"
+ },
+ {
+  "source": "/:slug/p-6575",
+  "destination": "/products/beko-ccfm4582w"
+ },
+ {
+  "source": "/:slug/p-6697",
+  "destination": "/products/beko-ccfm4582s"
+ },
+ {
+  "source": "/:slug/p-6735",
+  "destination": "/products/beko-ccfm4582b"
+ },
+ {
+  "source": "/:slug/p-6958",
+  "destination": "/products/blomberg-kgm4524"
+ },
+ {
+  "source": "/:slug/p-5852",
+  "destination": "/products/hisense-rb327n4bwe"
+ },
+ {
+  "source": "/:slug/p-6829",
+  "destination": "/products/zenith-cs4582w"
+ },
+ {
+  "source": "/:slug/p-5649",
+  "destination": "/products/hisense-rib312f4awf"
+ },
+ {
+  "source": "/:slug/p-6624",
+  "destination": "/products/zenith-icsd455"
+ },
+ {
+  "source": "/:slug/p-6625",
+  "destination": "/products/zenith-zicsd473"
+ },
+ {
+  "source": "/:slug/p-6397",
+  "destination": "/products/bosch-kgn27nbeag"
+ },
+ {
+  "source": "/:slug/p-6603",
+  "destination": "/products/hisense-rb390n4ww1"
+ },
+ {
+  "source": "/:slug/p-6417",
+  "destination": "/products/hoover-hoce3t618fwkr"
+ },
+ {
+  "source": "/:slug/p-4283",
+  "destination": "/products?brand=Bosch&cat=Fridge%20Freezers"
+ },
+ {
+  "source": "/:slug/p-7522",
+  "destination": "/products/blomberg-knd24692v"
+ },
+ {
+  "source": "/:slug/p-5697",
+  "destination": "/products/blomberg-kne4554evi"
+ },
+ {
+  "source": "/:slug/p-5709",
+  "destination": "/products/blomberg-kne4564evi"
+ },
+ {
+  "source": "/:slug/p-5628",
+  "destination": "/products/haier-hetr3619fwmg"
+ },
+ {
+  "source": "/:slug/p-5484",
+  "destination": "/products/hisense-rf632n4wif"
+ },
+ {
+  "source": "/:slug/p-6780",
+  "destination": "/products/bosch-kiv87nse0g"
+ },
+ {
+  "source": "/:slug/p-7260",
+  "destination": "/products?brand=Bosch&cat=Fridge%20Freezers"
+ },
+ {
+  "source": "/:slug/p-6658",
+  "destination": "/products/blomberg-fne154p"
+ },
+ {
+  "source": "/:slug/p-5763",
+  "destination": "/products/blomberg-fnt44550"
+ },
+ {
+  "source": "/:slug/p-7239",
+  "destination": "/products/blomberg-fnm4671p"
+ },
+ {
+  "source": "/:slug/p-6554",
+  "destination": "/products/blomberg-fnt4454i"
+ },
+ {
+  "source": "/:slug/p-6820",
+  "destination": "/products/bosch-gin81vee0g"
+ },
+ {
+  "source": "/:slug/p-6855",
+  "destination": "/products/blomberg-ssm1554p"
+ },
+ {
+  "source": "/:slug/p-6608",
+  "destination": "/products/blomberg-tsm1654iu"
+ },
+ {
+  "source": "/:slug/p-6576",
+  "destination": "/products/beko-lsg4545w"
+ },
+ {
+  "source": "/:slug/p-6622",
+  "destination": "/products/blomberg-ssm4554"
+ },
+ {
+  "source": "/:slug/p-4729",
+  "destination": "/products?brand=Blomberg&cat=Fridges"
+ },
+ {
+  "source": "/:slug/p-7254",
+  "destination": "/products/blomberg-ssm4671p"
+ },
+ {
+  "source": "/:slug/p-6556",
+  "destination": "/products/blomberg-sst4455vi"
+ },
+ {
+  "source": "/:slug/p-7952",
+  "destination": "/products/bosch-kir81vfe0g"
+ },
+ {
+  "source": "/:slug/p-7232",
+  "destination": "/products?brand=Zenith&cat=Dishwashers"
+ },
+ {
+  "source": "/:slug/p-4629",
+  "destination": "/products?brand=Beko&cat=Dishwashers"
+ },
+ {
+  "source": "/:slug/p-6539",
+  "destination": "/products/blomberg-ldf42320g"
+ },
+ {
+  "source": "/:slug/p-5214",
+  "destination": "/products/blomberg-ldv63440"
+ },
+ {
+  "source": "/:slug/p-5044",
+  "destination": "/products?brand=Neff&cat=Dishwashers"
+ },
+ {
+  "source": "/:slug/p-7419",
+  "destination": "/products/bosch-smv6zcx10g"
+ },
+ {
+  "source": "/:slug/p-4630",
+  "destination": "/products?brand=Beko&cat=Dishwashers"
+ },
+ {
+  "source": "/:slug/p-7796",
+  "destination": "/products/sensis-dwf0110slew"
+ },
+ {
+  "source": "/:slug/p-7434",
+  "destination": "/products/bosch-sps2ikw01g"
+ },
+ {
+  "source": "/:slug/p-4532",
+  "destination": "/products?brand=Zenith&cat=Cookers"
+ },
+ {
+  "source": "/:slug/p-2176",
+  "destination": "/products?brand=Beko&cat=Cookers"
+ },
+ {
+  "source": "/:slug/p-4531",
+  "destination": "/products?brand=Zenith&cat=Cookers"
+ },
+ {
+  "source": "/:slug/p-2157",
+  "destination": "/products?brand=Beko&cat=Cookers"
+ },
+ {
+  "source": "/:slug/p-5143",
+  "destination": "/products/blomberg-ggs9151w"
+ },
+ {
+  "source": "/:slug/p-4566",
+  "destination": "/products?brand=Blomberg&cat=Cookers"
+ },
+ {
+  "source": "/:slug/p-7704",
+  "destination": "/products/beko-edg6231w"
+ },
+ {
+  "source": "/:slug/p-3462",
+  "destination": "/categories/cookers"
+ },
+ {
+  "source": "/:slug/p-5392",
+  "destination": "/categories/cookers"
+ },
+ {
+  "source": "/:slug/p-4475",
+  "destination": "/products?brand=Beko&cat=Ovens"
+ },
+ {
+  "source": "/:slug/p-4481",
+  "destination": "/products?brand=Beko&cat=Ovens"
+ },
+ {
+  "source": "/:slug/p-7255",
+  "destination": "/products/aeg-bcx23101em"
+ },
+ {
+  "source": "/:slug/p-4508",
+  "destination": "/products?brand=Beko&cat=Ovens"
+ },
+ {
+  "source": "/:slug/p-6612",
+  "destination": "/products/blomberg-roen8201b"
+ },
+ {
+  "source": "/:slug/p-6621",
+  "destination": "/products/blomberg-roen9222dx"
+ },
+ {
+  "source": "/:slug/p-4926",
+  "destination": "/products/bosch-hhf113ba0b"
+ },
+ {
+  "source": "/:slug/p-6607",
+  "destination": "/products/blomberg-roen9202dx"
+ },
+ {
+  "source": "/:slug/p-7758",
+  "destination": "/products/bosch-hqa534bs3b"
+ },
+ {
+  "source": "/:slug/p-7536",
+  "destination": "/products/blomberg-roen8232bp"
+ },
+ {
+  "source": "/:slug/p-5090",
+  "destination": "/products/beko-cdfy22309x"
+ },
+ {
+  "source": "/:slug/p-5914",
+  "destination": "/products/beko-ctfy22309x"
+ },
+ {
+  "source": "/:slug/p-4996",
+  "destination": "/categories/ovens"
+ },
+ {
+  "source": "/:slug/p-3686",
+  "destination": "/products?brand=Neff&cat=Ovens"
+ },
+ {
+  "source": "/:slug/p-6822",
+  "destination": "/products/blomberg-rotn9202dx"
+ },
+ {
+  "source": "/:slug/p-6854",
+  "destination": "/products/blomberg-rodn9202dx"
+ },
+ {
+  "source": "/:slug/p-5471",
+  "destination": "/products/bosch-ffl023mw0b"
+ },
+ {
+  "source": "/:slug/p-5469",
+  "destination": "/products/bosch-ffl023ms2b"
+ },
+ {
+  "source": "/:slug/p-4597",
+  "destination": "/products?brand=Beko&cat=Hobs"
+ },
+ {
+  "source": "/:slug/p-7464",
+  "destination": "/products/aeg-hrx64360cb"
+ },
+ {
+  "source": "/:slug/p-5896",
+  "destination": "/products/beko-cihyg32sxe"
+ },
+ {
+  "source": "/:slug/p-2247",
+  "destination": "/products?brand=Blomberg&cat=Hobs"
+ },
+ {
+  "source": "/:slug/p-5696",
+  "destination": "/products/bosch-pke611ca3e"
+ },
+ {
+  "source": "/:slug/p-6779",
+  "destination": "/products/hisense-hi6401bsc"
+ },
+ {
+  "source": "/:slug/p-4437",
+  "destination": "/categories/hobs"
+ },
+ {
+  "source": "/:slug/p-4516",
+  "destination": "/products?brand=Blomberg&cat=Hobs"
+ },
+ {
+  "source": "/:slug/p-5911",
+  "destination": "/products/blomberg-mkn54212"
+ },
+ {
+  "source": "/:slug/p-3945",
+  "destination": "/products?brand=Blomberg&cat=Hobs"
+ },
+ {
+  "source": "/:slug/p-1830",
+  "destination": "/products?brand=Neff&cat=Hobs"
+ },
+ {
+  "source": "/:slug/p-5929",
+  "destination": "/products/blomberg-min54483n"
+ },
+ {
+  "source": "/:slug/p-6029",
+  "destination": "/products/blomberg-mix55487n"
+ },
+ {
+  "source": "/:slug/p-1719",
+  "destination": "/products?brand=Neff&cat=Hobs"
+ },
+ {
+  "source": "/:slug/p-4778",
+  "destination": "/products?brand=Shark&cat=Vacuum%20Cleaners"
+ },
+ {
+  "source": "/:slug/p-2794",
+  "destination": "/products?brand=Sebo&cat=Vacuum%20Cleaners"
+ },
+ {
+  "source": "/:slug/p-4865",
+  "destination": "/products?brand=Bosch&cat=Cordless%20Vacuums"
+ },
+ {
+  "source": "/:slug/p-4647",
+  "destination": "/products?brand=Samsung&cat=Cordless%20Vacuums"
+ },
+ {
+  "source": "/:slug/p-6058",
+  "destination": "/products/bosch-bcs712gb"
+ },
+ {
+  "source": "/:slug/p-4648",
+  "destination": "/products?brand=Samsung&cat=Cordless%20Vacuums"
+ },
+ {
+  "source": "/:slug/p-4866",
+  "destination": "/products?brand=Bosch&cat=Cordless%20Vacuums"
+ },
+ {
+  "source": "/:slug/p-7067",
+  "destination": "/products/bosch-twk4m223gb"
+ },
+ {
+  "source": "/:slug/p-4587",
+  "destination": "/products?brand=Bosch&cat=Kettles"
+ },
+ {
+  "source": "/:slug/p-7242",
+  "destination": "/products/bosch-tat3p421gb"
+ },
+ {
+  "source": "/:slug/p-5136",
+  "destination": "/products/bosch-tat4p447gb"
+ },
+ {
+  "source": "/:slug/p-4569",
+  "destination": "/products?brand=Bosch&cat=Toasters"
+ },
+ {
+  "source": "/:slug/p-6090",
+  "destination": "/categories/coffee-machines"
+ },
+ {
+  "source": "/:slug/p-7207",
+  "destination": "/categories/coffee-machines"
+ },
+ {
+  "source": "/cooking/cooker-hoods",
+  "destination": "/categories/cooker-hoods"
+ }
+]

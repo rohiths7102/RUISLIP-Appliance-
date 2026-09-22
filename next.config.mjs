@@ -35,6 +35,9 @@ const nextConfig = {
       if (!source || !destination || !source.startsWith("/") || source === destination || seen.has(source)) return;
       seen.add(source); out.push({ source, destination, permanent: true });
     };
+    // The old site's live URLs, from the crawl (scripts/migration). First, so
+    // it wins: the seed below predates the old site's current paths.
+    for (const r of readJson("old-site-redirects.json")) add(r.source, r.destination);
     for (const p of products) add(p.oldUrl, p.newSlug);                 // /…/p-4561 -> /products/slug
     for (const c of categories) add(c.slug, `/categories/${c.id}`);     // /laundry/washing-machines -> /categories/washing-machines
     return out;
