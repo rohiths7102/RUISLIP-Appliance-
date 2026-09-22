@@ -41,7 +41,7 @@ function ContactButtons({ phone, className = "" }: { phone: string; className?: 
         <Phone size={15} strokeWidth={2.2} />
         <span className="hidden lg:inline">{phone}</span>
       </a>
-      <a href={waHref(phone)} target="_blank" rel="noopener noreferrer"
+      <a href={waHref()} target="_blank" rel="noopener noreferrer"
         aria-label="Message us on WhatsApp"
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-[#25D366] text-white transition-colors hover:bg-[#1da851]">
         <WhatsAppIcon />

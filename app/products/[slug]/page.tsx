@@ -137,7 +137,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </a>
             {/* Opens WhatsApp with the product code already typed, so the shop
                 knows which model the message is about. */}
-            <a href={`${waHref(business.phone)}?text=${encodeURIComponent(`Hi, I'm asking about ${p.productCode} — ${p.title}`)}`}
+            <a href={`${waHref()}?text=${encodeURIComponent(`Hi, I'm asking about ${p.productCode} — ${p.title}`)}`}
               target="_blank" rel="noopener noreferrer"
               className="inline-flex flex-1 basis-[230px] items-center justify-center gap-2.5 rounded-sm bg-[#25D366] px-6 py-4 text-[15px] font-bold text-white transition-colors hover:bg-[#1da851]">
               <WhatsAppIcon size={18} /> WhatsApp us

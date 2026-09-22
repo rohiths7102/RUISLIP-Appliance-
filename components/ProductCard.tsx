@@ -104,7 +104,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
         </a>
         {/* The message names the appliance, so the shop can see which one the
             customer is asking about instead of a bare "hello". */}
-        <a href={`${waHref(STORE_PHONE)}?text=${encodeURIComponent(`Hi, I'm asking about ${p.productCode} — ${p.title}`)}`}
+        <a href={`${waHref()}?text=${encodeURIComponent(`Hi, I'm asking about ${p.productCode} — ${p.title}`)}`}
           target="_blank" rel="noopener noreferrer"
           aria-label={`Ask about ${p.productCode} on WhatsApp`}
           className="inline-flex min-h-11 w-11 shrink-0 items-center justify-center bg-[#25D366] text-white transition-colors hover:bg-[#1da851]">

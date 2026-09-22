@@ -346,7 +346,7 @@ export default async function Home() {
                 className="inline-flex items-center gap-2.5 rounded-sm bg-cta px-7 py-4 text-[15px] font-bold text-white transition-colors hover:bg-cta-deep">
                 <Phone size={17} strokeWidth={2.2} /> {business.phone}
               </a>
-              <a href={waHref(business.phone)} target="_blank" rel="noopener noreferrer"
+              <a href={waHref()} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2.5 rounded-sm bg-[#25D366] px-7 py-4 text-[15px] font-bold text-white transition-colors hover:bg-[#1da851]">
                 <WhatsAppIcon size={18} /> Ask on WhatsApp
               </a>
