@@ -123,7 +123,10 @@ export async function autoApplySource(
       refuse("guard_error"); continue; // fail closed
     }
     if (isPoa && !g.blocking.includes("poa_category")) g.blocking.push("poa_category");
-    if (!g.allowed || g.blocking.length) { g.blocking.forEach(refuse); continue; }
+    // One PRODUCT, counted once, under its first reason. forEach(refuse) tallied
+    // guard CODES, so a product with three blockers was reported as three held
+    // items and the run summary did not reconcile with `considered`.
+    if (!g.allowed || g.blocking.length) { refuse(g.blocking[0] || "blocked"); continue; }
     candidates.push({ p, obs, proposedPrice });
   }
 

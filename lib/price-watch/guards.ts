@@ -25,7 +25,7 @@ export const DEFAULT_MIN_MARGIN_PCT = 0.12;
 /** An observation older than this cannot justify a price change. */
 export const DEFAULT_STALE_AFTER_DAYS = 7;
 /** Scraper sanity threshold — see the `implausible_move` guard. */
-export const DEFAULT_IMPLAUSIBLE_MOVE_PCT = 0.35;
+export const DEFAULT_IMPLAUSIBLE_MOVE_PCT = 0.1;
 /**
  * PriceObservation.matchConfidence below this came from fuzzy matching, i.e.
  * we are not certain it is even the same appliance.
@@ -89,13 +89,13 @@ export const GUARD_REASONS: Record<GuardCode, string> = {
   advisory_source: "Advisory sources are for information only and can never auto-apply.",
   poa_category: "Product is in a price-on-application category and must never carry an applied price.",
   stale_observation: "Observation is older than the freshness window.",
-  implausible_move: "Price move is too large to be trusted from a scrape.",
+  implausible_move: "Price move is larger than the unattended limit and needs a human to look.",
   invalid_proposal: "Proposed price is missing, zero, negative or not a finite number.",
   unusable_observation: "Observation did not complete successfully or carries no price.",
   unconfirmed_match: "Match confidence is below certainty — this may be a different appliance.",
   source_auto_apply_disabled: "This source is not permitted to auto-apply prices.",
   poa_unknown: "Price-on-application status is unknown for this product.",
-  no_current_price: "Product has no current price to compare against.",
+  no_current_price: "Product has no current price, so an automatic change has nothing to sanity-check against.",
   out_of_stock: "Source reports the item as out of stock.",
   thin_margin: "Proposed price only just clears the floor.",
   price_increase: "Proposal raises the price rather than lowering it.",
@@ -375,7 +375,9 @@ export function evaluateGuards(input: GuardInput): GuardResult {
   // --- 7. stale_observation ------------------------------------------------
   const observedAt = obs.observedAt instanceof Date ? obs.observedAt : new Date(obs.observedAt as unknown as string);
   const ageDays = Number.isFinite(observedAt.getTime()) ? (now.getTime() - observedAt.getTime()) / DAY_MS : Number.POSITIVE_INFINITY;
-  if (!(ageDays <= cfg.staleAfterDays)) blocking.push("stale_observation");
+  // Negative age = the reading claims to be from the future, which means clock
+  // skew or a bad payload, not freshness. `ageDays <= n` alone let those pass.
+  if (!(ageDays >= 0 && ageDays <= cfg.staleAfterDays)) blocking.push("stale_observation");
 
   // --- 8. implausible_move -------------------------------------------------
   // A SCRAPER SANITY CHECK, EXPLICITLY NOT A MARGIN CONTROL. It catches a
@@ -383,6 +385,14 @@ export function evaluateGuards(input: GuardInput): GuardResult {
   // ex-VAT figure — i.e. a broken scrape. It says nothing whatsoever about
   // whether a price is profitable; `below_floor` is the only guard that does,
   // and this one must never be used as a substitute for it.
+  //
+  // Set to 10% (was 35%) when the owner asked for Euronics changes to apply the
+  // same night, 17 Sept 2026. It is the whole leash on that: 931 agency
+  // products carry no costPrice and no floorPrice, so `below_floor` and
+  // `no_floor_data` are exempt for them by design and this is the only check
+  // left between a mis-scrape and the shelf price. 35% was not a leash — it let
+  // through a real £2,279 -> £1,499 drop (-34.2%) on 22 Aug 2026. Auto-only, so
+  // an owner looking at the row can still apply a genuine big move by hand.
   if (proposed !== null && isPositive(proposal.currentPrice)) {
     const move = Math.abs(proposed - proposal.currentPrice) / proposal.currentPrice;
     if (move > cfg.implausibleMovePct) blocking.push("implausible_move");
@@ -398,8 +408,14 @@ export function evaluateGuards(input: GuardInput): GuardResult {
   const confidence = typeof obs.matchConfidence === "number" && Number.isFinite(obs.matchConfidence) ? obs.matchConfidence : 0;
   if (confidence < cfg.minMatchConfidence) blocking.push("unconfirmed_match");
 
+  // --- 9. no_current_price -------------------------------------------------
+  // With no price of our own there is nothing for guard 8 to measure against,
+  // so a scrape could set ANY number unopposed — £1,099 -> £1 passed before
+  // this block existed. Auto-only: a human looking at the row may still set the
+  // first price, which is exactly how a new product gets one.
+  if (!isPositive(proposal.currentPrice)) blocking.push("no_current_price");
+
   // --- warnings ------------------------------------------------------------
-  if (!isPositive(proposal.currentPrice)) warnings.push("no_current_price");
   if (obs.inStock === false) warnings.push("out_of_stock");
   if (!obs.sourceUrl) warnings.push("low_confidence_source_url");
   if (proposed !== null && floor !== null && proposed >= floor && proposed < floor * (1 + cfg.thinMarginPct)) {
@@ -463,6 +479,7 @@ export const AUTO_ONLY_BLOCKS: ReadonlySet<string> = new Set<GuardCode>([
   "unconfirmed_match",       // owner can eyeball whether it is the same product
   "source_auto_apply_disabled", // the flag is literally "do not AUTO-apply"
   "auto_apply_flag_unknown",
+  "no_current_price",        // owner may set a first price by hand; a scrape may not
 ]);
 
 /** Blockers that stop a human too — the auto-only ones removed. */

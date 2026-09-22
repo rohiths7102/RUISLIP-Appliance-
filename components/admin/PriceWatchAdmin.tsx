@@ -93,6 +93,7 @@ type ApplyResult = {
 const AUTO_ONLY = new Set<string>([
   "no_floor_data", "unknown_delivery", "advisory_source", "stale_observation",
   "implausible_move", "unconfirmed_match", "source_auto_apply_disabled", "auto_apply_flag_unknown",
+  "no_current_price",
 ]);
 
 const REASON: Record<string, string> = {
@@ -104,14 +105,14 @@ const REASON: Record<string, string> = {
   advisory_source: "Price is from someone else's shop",
   poa_category: "This range is “call for price”",
   stale_observation: "This price is more than a week old",
-  implausible_move: "Price jump is too big — looks like a bad reading",
+  implausible_move: "Price change is more than 10% — worth your eye before it goes live",
   invalid_proposal: "The price we read back doesn't make sense",
   unusable_observation: "The last check on this product failed",
   unconfirmed_match: "We're not certain this is the same appliance",
   source_auto_apply_disabled: "This source isn't allowed to set your prices",
   poa_unknown: "We can't tell whether this range is “call for price”",
+  no_current_price: "You don't show a price for this yet — set the first one yourself",
   // warnings
-  no_current_price: "You don't show a price for this yet",
   out_of_stock: "They say it's out of stock",
   thin_margin: "This only just clears your floor price",
   price_increase: "This would put your price up",
@@ -365,7 +366,7 @@ export default function PriceWatchAdmin({
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-[15px] font-bold text-ink">Automatic pricing</h2>
           <span className="text-[11.5px] text-muted">
-            Runs nightly · at most 25 changes per run, more than that stops and waits for you
+            Runs nightly · changes under 10% apply themselves · bigger ones, and more than 25 in a night, wait for you
           </span>
         </div>
         <div className="mt-3 grid gap-2.5">
