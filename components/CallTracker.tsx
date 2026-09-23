@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { captureAdSource, adSource } from "@/lib/ad-source";
+import { reportAdsConversion } from "@/lib/google-ads";
 
 /**
  * Counts every press of a "Call" button, site-wide, with the page it happened
@@ -24,6 +25,7 @@ export default function CallTracker() {
           fetch("/api/track", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: payload });
         }
       } catch { /* analytics never blocks a call */ }
+      reportAdsConversion("call");
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);

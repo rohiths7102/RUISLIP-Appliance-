@@ -12,6 +12,10 @@ const nextConfig = {
   // verified without clobbering a running dev server's chunks.
   distDir: process.env.NEXT_DIST || ".next",
   images: {
+    // Resizing happens on the image hosts' own CDNs (lib/image-loader.ts), not
+    // Vercel's Image Optimization, whose Hobby quota ran out and 402'd photos.
+    loader: "custom",
+    loaderFile: "./lib/image-loader.ts",
     remotePatterns: [
       { protocol: "https", hostname: "*.ssl.cf3.rackcdn.com" },
       { protocol: "https", hostname: "www.kitchen-appliances.co.uk" },

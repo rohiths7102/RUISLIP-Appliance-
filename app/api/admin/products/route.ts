@@ -6,6 +6,7 @@ import { syncProductToRag } from "@/lib/rag/index";
 import { EDITABLE, coerce, slugify, reconcileSaving, ValidationError } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
+import { setFeatured } from "@/lib/homepage";
 export const dynamic = "force-dynamic";
 
 /** List products for the admin table (search + paginate server-side over ~1,600). */
@@ -122,6 +123,7 @@ export async function POST(req: Request) {
       changedBy: admin.email,
     });
     try { await syncProductToRag(db, created.id); } catch { /* best effort */ }
+    if (created.featured) await setFeatured(db, [created.productCode], true, admin.email);
     // A brand-new brand gets its page; the counts the storefront shows follow.
     try {
       await ensureBrand(db, created.brand);

@@ -13,7 +13,8 @@ import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
-import featuredSync from "@/data/featured-products.json";
+import { getHomepage, toHomepage, FEATURED_SHOWN } from "@/lib/homepage";
+import { getPrisma } from "@/lib/prisma";
 import categoryHeroes from "@/data/category-heroes.json";
 export const revalidate = 300;
 
@@ -44,22 +45,23 @@ const AREAS = ["Ruislip", "South Ruislip", "Eastcote", "Northolt", "Pinner", "Ic
 
 export default async function Home() {
   const { products, categories, brands, business } = await loadCatalog();
+  // The owner's choices from Admin → Homepage; defaults (the homepage as it
+  // was) when nothing is saved or there is no database.
+  const home = await getPrisma().then(getHomepage).catch(() => toHomepage(null));
   const cats = topCategories(categories);
 
   // One flagship (dearest, photographed) per real appliance department, so the
   // shelf reads as a showroom rather than a bin of filters. Call-for-price
   // categories are excluded — the slideshow leads with the price.
   const poaSet = poaNamesFrom(categories, brands);
-  // The featured row is the owner's own promotion, not ours: it mirrors the
-  // "featured products" carousel on his Euronics storefront, in his order, with
-  // the Euronics best-seller flags. scripts/catalog/sync-featured.mjs refreshes
-  // data/featured-products.json (and the prices) from that page.
-  const bestSellers = new Set(featuredSync.items.filter((i) => i.bestSeller).map((i) => i.code));
+  // The featured row is the owner's own promotion, in his order, chosen in
+  // Admin → Homepage (it started as the carousel on his Euronics storefront).
+  const bestSellers = new Set(home.featured.filter((i) => i.bestSeller).map((i) => i.code));
   const byCode = new Map(products.map((p) => [p.productCode, p]));
-  const featured = featuredSync.items
+  const featured = home.featured
     .map((i) => byCode.get(i.code))
     .filter((p): p is NonNullable<typeof p> => Boolean(p && p.image))
-    .slice(0, 12);
+    .slice(0, FEATURED_SHOWN);
 
   // Best offers — real was/now savings, dearest saving first. The owner asked
   // for value over "premium": lead with what people actually save.
@@ -88,35 +90,14 @@ export default async function Home() {
   // One slide per brand, carrying that brand's own departments. The owner
   // counted ten pages to flick through to see what one maker offers, so the
   // slide became the brand's front door instead of a single shelf.
+  // The slides are the owner's, from Admin → Homepage: one per brand, or the
+  // shop's own Euronics slide (brand ""), in his order, switched off as he likes.
   const SLIDES: { codes: string[]; eyebrow: string; line: string; sub: string; cta: string;
                   href?: string; wide?: boolean; logo?: string; chipText?: string; logoLight?: boolean;
-                  brand?: string }[] = [
-    { codes: ["RF605QNUVX1", "SMS6ZCI10G", "WRB247C9GB"], eyebrow: "Euronics Ruislip",
-      logo: "/brand/euronics-logo.png", logoLight: true, chipText: "South Ruislip", line: "Top brand, hand-picked appliances",
-      sub: "Professionally fitted (optional), and delivered within a day or two if it is in stock locally.",
-      cta: "Browse appliances", href: "/products" },
-    { codes: ["KFD96APEA", "WGH254A0GB", "SMS6TCI02G"], brand: "Bosch", eyebrow: "Bosch", line: "The Bosch range",
-      sub: "Series 4, 6 and 8 across the kitchen — delivered in our own van and fitted by our own team.",
-      cta: "Shop all Bosch" },
-    { codes: ["C24MT73G0B", "U2ACH7AG7B", "V8540X0GB"], brand: "Neff", eyebrow: "Neff", line: "The Neff range",
-      sub: "Slide&Hide ovens and CircoTherm, built for the kitchen you\u2019ve planned. Installed and tested by us.",
-      cta: "Shop all Neff" },
-    { codes: ["KFD4953XD", "FND479P", "LWA18461W"], brand: "Blomberg", eyebrow: "Blomberg", line: "The Blomberg range",
-      sub: "Three-year guarantee as standard, across cooling, cooking and laundry.",
-      cta: "Shop all Blomberg" },
-    { codes: ["WEE385WCS", "WEG885 WCS", "G5611SC"], brand: "Miele", eyebrow: "Miele", line: "The Miele range",
-      sub: "Made to last twenty years. Delivered, fitted, and the old one taken away.",
-      cta: "Shop all Miele" },
-    { codes: ["WF90F09C4SU1", "RS90F66BETEU", "WW11DB8B95GBU1"], brand: "Samsung", eyebrow: "Samsung", line: "The Samsung range",
-      sub: "Televisions, fridge freezers and laundry, delivered locally by our own team.",
-      cta: "Shop all Samsung" },
-    { codes: ["HIXI84700UP", "EDG6231W", "CNG4692VW"], brand: "Beko", eyebrow: "Beko", line: "The Beko range",
-      sub: "The everyday range, priced keenly and fitted by our own team.",
-      cta: "Shop all Beko" },
-    { codes: ["RF749N4SWSE", "RF815N4SESE", "RQ5P470SYFD"], brand: "Hisense", eyebrow: "Hisense", line: "The Hisense range",
-      sub: "Big-screen televisions and American fridge freezers, delivered locally.",
-      cta: "Shop all Hisense" },
-  ];
+                  brand?: string }[] = home.slides.filter((s) => s.enabled).map((s) => s.brand
+    ? { codes: s.codes, brand: s.brand, eyebrow: s.brand, line: s.line, sub: s.sub, cta: `Shop all ${s.brand}` }
+    : { codes: s.codes, eyebrow: "Euronics Ruislip", logo: "/brand/euronics-logo.png", logoLight: true, chipText: "South Ruislip",
+        line: s.line, sub: s.sub, cta: "Browse appliances", href: "/products" });
 
   // A brand's departments, biggest first. Spare parts are excluded: Bosch has
   // 465 of them and Neff 349, so they would crowd out the appliances a customer
@@ -138,7 +119,8 @@ export default async function Home() {
     const found = sl.codes.map((c) => products.find((x) => x.productCode === c && x.image)).filter(Boolean);
     const lead = found[0];
     if (!lead) return [];
-    const href = sl.href ?? (sl.brand ? `/brands/${sl.brand.toLowerCase()}` : `/products?cat=${encodeURIComponent(lead.subcategory)}&brand=${encodeURIComponent(lead.brand)}`);
+    const brandSlug = sl.brand ? brands.find((b) => b.name.toLowerCase() === sl.brand!.toLowerCase())?.slug : undefined;
+    const href = sl.href ?? (sl.brand ? `/brands/${brandSlug || sl.brand.toLowerCase()}` : `/products?cat=${encodeURIComponent(lead.subcategory)}&brand=${encodeURIComponent(lead.brand)}`);
     // A brand slide shows the brand's own tile; the shop slide (eyebrow is not a
     // brand) keeps its wordmark as text.
     const logo = sl.logo ?? (sl.eyebrow === lead.brand ? (brands.find((b) => b.name === lead.brand)?.logo || "") : "");

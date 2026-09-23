@@ -18,9 +18,10 @@ export const metadata: Metadata = {
  * app/api/enquiries/route.ts, stored on the Enquiry table).
  *
  * The cookie section describes the site as actually built: ConsentAnalytics
- * renders nothing at all unless NEXT_PUBLIC_GA_ID is set, and the gtag scripts
- * are gated behind an explicit "granted" choice — so with analytics off this
- * site sets no cookies beyond the admin session. Keep this page honest if that
+ * shows its banner for Google Analytics (NEXT_PUBLIC_GA_ID) and Google Ads
+ * measurement (lib/google-ads.ts), and the gtag scripts are gated behind an
+ * explicit "granted" choice — so a visitor who declines gets no cookies
+ * beyond the admin session. Keep this page honest if that
  * component changes.
  */
 
@@ -93,8 +94,9 @@ export default async function PrivacyPage() {
 
       <H>Cookies</H>
       <P>
-        This site sets no advertising or tracking cookies. If website analytics are switched on you will see a
-        banner first, and nothing is loaded unless you choose &quot;Accept&quot; — choosing to decline leaves
+        This site asks before setting any Google cookies. They let us see which pages help customers and
+        whether a visit came from one of our Google ads (so we know if a call or enquiry followed); they are
+        never used to show you adverts elsewhere. Nothing is loaded unless you choose &quot;Accept&quot; — choosing to decline leaves
         the site entirely cookie-free apart from the sign-in cookie used by shop staff in the admin area, which
         is strictly necessary and needs no consent.
       </P>

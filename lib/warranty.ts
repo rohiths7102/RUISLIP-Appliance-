@@ -15,3 +15,21 @@ export function warrantyYears(raw: string): number | null {
   const m = PLAIN_YEARS.exec(raw.replace(/\s+/g, " ").trim());
   return m ? Number(m[1]) : null;
 }
+
+/**
+ * The admin's warranty template: one wording everywhere, "N Year Warranty",
+ * which is exactly what warrantyYears() reads for the badge on the photo.
+ */
+export const WARRANTY_YEARS = [1, 2, 3, 4, 5, 6, 7, 10];
+export const warrantyLabel = (years: number) => `${years} Year Warranty`;
+
+/**
+ * A bare number or "N years" ("2", "3 yrs") becomes the template; any other
+ * wording ("1 Year Parts and Labour with additional 9 Year Parts Guarantee")
+ * is kept exactly as written, because a number would misstate it.
+ */
+export function normaliseWarranty(raw: string): string {
+  const t = String(raw ?? "").replace(/\s+/g, " ").trim();
+  const n = t.match(/^(\d{1,2})\s*(?:yrs?|years?)?(?:\s+(?:warranty|guarantee))?$/i);
+  return n && Number(n[1]) > 0 ? warrantyLabel(Number(n[1])) : t;
+}

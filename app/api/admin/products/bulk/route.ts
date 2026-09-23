@@ -6,6 +6,8 @@ import { syncProductToRag } from "@/lib/rag/index";
 import { AVAILABILITY } from "@/lib/admin-product";
 import { recomputeCounts } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
+import { setFeatured } from "@/lib/homepage";
+import { normaliseWarranty } from "@/lib/warranty";
 export const dynamic = "force-dynamic";
 
 /**
@@ -17,7 +19,8 @@ export const dynamic = "force-dynamic";
  *   set_stock     { value: AvailabilityNormalised }
  *   adjust_price  { value: percent, e.g. 5 or -10 }  (skips products with no price)
  *   set_visible   { value: boolean }
- *   set_featured  { value: boolean }
+ *   set_featured  { value: boolean }  (adds to / takes off the homepage row)
+ *   set_warranty  { value: "5 Year Warranty" | "" }  (the warranty template; "" removes it)
  */
 const MAX_IDS = 200;
 
@@ -62,6 +65,12 @@ export async function POST(req: Request) {
         data.isVisible = Boolean(body.value);
       } else if (action === "set_featured") {
         data.featured = Boolean(body.value);
+      } else if (action === "set_warranty") {
+        const w = normaliseWarranty(String(body.value ?? ""));
+        if (w.length > 200) return NextResponse.json({ error: "Warranty text is too long" }, { status: 400 });
+        if (r.warranty === w) { skipped++; continue; }
+        data.warranty = w;
+        overrides.add("warranty");
       } else {
         return NextResponse.json({ error: `Unknown action "${action}"` }, { status: 400 });
       }
@@ -73,6 +82,8 @@ export async function POST(req: Request) {
       updated++;
     }
 
+    // The homepage row is the list in Admin → Homepage; the tick-box follows it.
+    if (action === "set_featured") await setFeatured(db, rows.map((r: any) => r.productCode), Boolean(body.value), admin.email);
     await writeAudit(db, {
       entityType: "product", entityId: `bulk:${ids.length}`, action: `bulk:${action}`,
       changedFields: [action], previousValue: { ids }, newValue: { value: body.value, updated, skipped },

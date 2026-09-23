@@ -139,6 +139,10 @@ model BusinessInfo {
   placeOfRegistration    String   @default("")
   registeredOffice       String   @default("")
   vatNumber              String   @default("")
+  /// The owner's homepage choices: hero slides and the featured-products row
+  /// (lib/homepage.ts). null = that file's defaults, which are the homepage as
+  /// it stood when this became editable.
+  homepage               Json?
   updatedAt              DateTime @updatedAt
 }
 
@@ -285,4 +289,40 @@ model Enquiry {
   createdAt    DateTime @default(now())
 
   @@index([status])
+}
+
+/// One Google Ads campaign's numbers for one day, pushed nightly by the Ads
+/// Script in lib/ads-sync-script.ts to /api/ads-sync. Re-sent days
+/// overwrite (Google revises recent conversions for a few days).
+model AdsCampaignDay {
+  date         String   // YYYY-MM-DD, account time zone (Europe/London)
+  campaignId   String
+  campaignName String
+  status       String   @default("")
+  clicks       Int      @default(0)
+  impressions  Int      @default(0)
+  cost         Float    @default(0) // GBP
+  conversions  Float    @default(0)
+  syncedAt     DateTime @updatedAt
+
+  @@id([date, campaignId])
+}
+
+/// One Google Ads report (lib/ads-reports.ts: searchTerms, keywords, devices…)
+/// for the last 30 days, already shaped for the admin. Replaced on every sync.
+model AdsSnapshot {
+  report   String   @id
+  rows     Json
+  syncedAt DateTime @updatedAt
+}
+
+/// The owner's Google sign-in for the direct connection (Google Ads API +
+/// Search Console). refreshToken is AES-GCM encrypted (lib/google-oauth.ts).
+model GoogleConnection {
+  id           String   @id @default("google")
+  email        String   @default("")
+  scopes       String   @default("")
+  refreshToken String
+  connectedBy  String   @default("")
+  updatedAt    DateTime @updatedAt
 }

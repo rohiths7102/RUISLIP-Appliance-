@@ -6,6 +6,7 @@ import { syncProductToRag, dropProductDoc } from "@/lib/rag/index";
 import { EDITABLE, SCRAPE_OWNED, coerce, reconcileSaving, ValidationError } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
+import { setFeatured } from "@/lib/homepage";
 export const dynamic = "force-dynamic";
 
 const pick = (o: any, ks: string[]) => Object.fromEntries(ks.map((k) => [k, o?.[k]]));
@@ -47,6 +48,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     // Keep the chatbot's answers in step with the catalogue.
     try { await syncProductToRag(db, id); } catch { /* best effort */ }
+    // "Featured" puts it on (or takes it off) the homepage row — Admin → Homepage.
+    if (changed.includes("featured")) await setFeatured(db, [updated.productCode], updated.featured, admin.email);
     // Brand/category/visibility moves change the counts those pages display.
     if (changed.some((k) => ["brand", "category", "subcategory", "isVisible"].includes(k))) {
       try {

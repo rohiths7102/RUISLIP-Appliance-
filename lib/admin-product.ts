@@ -1,4 +1,5 @@
 /** Shared shaping/validation for admin product writes (create + update). */
+import { normaliseWarranty } from "@/lib/warranty";
 
 /** Fields the owner may edit. Anything not listed here is not writable from the admin. */
 export const EDITABLE = [
@@ -33,6 +34,7 @@ export function coerce(key: string, v: any): any {
     return n;
   }
   if (BOOL.has(key)) return Boolean(v);
+  if (key === "warranty") return normaliseWarranty(String(v ?? ""));
   if (key === "availabilityNormalised") {
     const s = String(v);
     if (!AVAILABILITY.includes(s)) throw new ValidationError(`availability must be one of: ${AVAILABILITY.join(", ")}`);

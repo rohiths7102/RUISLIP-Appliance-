@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { reportAdsConversion } from "@/lib/google-ads";
 import { useSearchParams } from "next/navigation";
 import { Phone } from "lucide-react";
 import { telHref, STORE_PHONE } from "@/lib/format";
@@ -31,7 +32,7 @@ export default function ContactForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, productCode: code, productTitle: product }),
       });
-      if (r.ok) setSent(true);
+      if (r.ok) { setSent(true); reportAdsConversion("enquiry"); }
       else setError("We couldn't send that online — please call the shop and we'll sort it straight away.");
     } catch {
       setError("We couldn't send that online — please call the shop and we'll sort it straight away.");

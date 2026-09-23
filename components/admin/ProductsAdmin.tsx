@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Search, Trash2, Upload, X, ExternalLink, Download, FileUp, Sparkles } from "lucide-react";
 import { Badge, Button, Card, Notice, PageTitle } from "@/components/admin/ui";
 import PriceCheckPanel from "@/components/admin/PriceCheckPanel";
+import WarrantyPicker from "@/components/admin/WarrantyPicker";
+import { WARRANTY_YEARS, warrantyLabel } from "@/lib/warranty";
 
 type ImportPreview = {
   rows: number; updates: number; creates: number; unchanged: number;
@@ -50,6 +52,7 @@ export default function ProductsAdmin({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStock, setBulkStock] = useState("in_stock");
   const [bulkPct, setBulkPct] = useState("");
+  const [bulkWarranty, setBulkWarranty] = useState(warrantyLabel(5));
   const [bulkBusy, setBulkBusy] = useState(false);
   const [importCsv, setImportCsv] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
@@ -250,7 +253,17 @@ export default function ProductsAdmin({
           <button onClick={() => bulk("set_visible", true)} disabled={bulkBusy}
             className="rounded-lg border border-white/25 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Show</button>
           <button onClick={() => bulk("set_featured", true)} disabled={bulkBusy}
-            className="rounded-lg border border-white/25 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Feature</button>
+            className="rounded-lg border border-white/25 px-3 py-1.5 text-xs font-semibold disabled:opacity-50" title="Add to the homepage featured row">Feature</button>
+          <button onClick={() => bulk("set_featured", false)} disabled={bulkBusy}
+            className="rounded-lg border border-white/25 px-3 py-1.5 text-xs font-semibold disabled:opacity-50" title="Take off the homepage featured row">Unfeature</button>
+          <span className="mx-1 h-5 w-px bg-white/20" />
+          <select value={bulkWarranty} onChange={(e) => setBulkWarranty(e.target.value)} aria-label="Bulk warranty"
+            className="rounded-lg border border-white/20 bg-navy-2 px-2 py-1.5 text-xs text-paper outline-none">
+            {WARRANTY_YEARS.map((y) => <option key={y} value={warrantyLabel(y)}>{warrantyLabel(y)}</option>)}
+            <option value="">No warranty</option>
+          </select>
+          <button onClick={() => bulk("set_warranty", bulkWarranty)} disabled={bulkBusy}
+            className="rounded-lg bg-blue px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">Set warranty</button>
           <button onClick={() => setSelected(new Set())} className="ml-auto text-xs text-white/60 hover:text-white">Clear</button>
         </div>
       )}
@@ -492,7 +505,7 @@ function Editor({
           </div>
 
           <label className="text-xs font-semibold text-ink/60">Warranty
-            <input value={row.warranty} onChange={(e) => set("warranty", e.target.value)} className={`mt-1 ${input}`} placeholder="5 year guarantee" />
+            <WarrantyPicker key={row.id || "new"} value={row.warranty} onChange={(v) => set("warranty", v)} className="mt-1" />
           </label>
 
           <label className="text-xs font-semibold text-ink/60">Description

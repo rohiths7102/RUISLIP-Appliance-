@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import { GOOGLE_ADS_ID } from "@/lib/google-ads";
 
 const KEY = "ga-consent";
 // Inlined at build time. Empty/unset = no banner, no scripts, no cookies —
@@ -10,9 +11,11 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 type Choice = "granted" | "denied";
 
 /**
- * UK-compliant (PECR/UK GDPR) opt-in analytics. Nothing loads until the
- * visitor explicitly accepts; "No thanks" loads nothing, ever. The choice is
- * remembered in localStorage so the banner appears once per browser.
+ * UK-compliant (PECR/UK GDPR) opt-in analytics and Google Ads measurement.
+ * Nothing loads until the visitor explicitly accepts; "No thanks" loads
+ * nothing, ever. The choice is remembered in localStorage so the banner
+ * appears once per browser. Ads is measurement only: ad_personalization
+ * stays denied, so no remarketing.
  */
 export default function ConsentAnalytics() {
   const [choice, setChoice] = useState<Choice | null>(null);
@@ -26,7 +29,7 @@ export default function ConsentAnalytics() {
     setReady(true);
   }, []);
 
-  if (!GA_ID) return null;
+  if (!GA_ID && !GOOGLE_ADS_ID) return null;
 
   const decide = (v: Choice) => {
     try { localStorage.setItem(KEY, v); } catch {}
@@ -43,9 +46,9 @@ export default function ConsentAnalytics() {
           className="fixed bottom-4 left-4 z-[60] max-w-sm rounded-xl border border-line bg-white p-5 shadow-2xl cta-up"
         >
           <p id="ga-consent-copy" className="text-sm leading-relaxed text-ink">
-            <strong>Help us improve the site?</strong> We&apos;d like to use anonymous Google
-            Analytics to see which pages help customers most. No marketing or advertising
-            cookies — ever.
+            <strong>Help us improve the site?</strong> We&apos;d like to use Google cookies to see
+            which pages help customers most and whether our Google ads brought you here. We never
+            use them to follow you around the web with adverts.
           </p>
           <div className="mt-4 flex items-center gap-3">
             <button
@@ -67,7 +70,8 @@ export default function ConsentAnalytics() {
       {choice === "granted" && (
         <>
           {/* Consent mode v2: defaults queue on dataLayer before gtag.js loads.
-              Only analytics_storage is granted — ad_* stays denied (no ads run). */}
+              Analytics and ad measurement are granted; ad_personalization stays
+              denied — no remarketing lists are built from this site. */}
           <Script id="ga-init" strategy="afterInteractive">{`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -77,11 +81,12 @@ export default function ConsentAnalytics() {
               ad_personalization: 'denied',
               analytics_storage: 'denied'
             });
-            gtag('consent', 'update', { analytics_storage: 'granted' });
+            gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'granted', ad_user_data: 'granted' });
             gtag('js', new Date());
-            gtag('config', '${GA_ID}');
+            ${GA_ID ? `gtag('config', '${GA_ID}');` : ""}
+            gtag('config', '${GOOGLE_ADS_ID}');
           `}</Script>
-          <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID || GOOGLE_ADS_ID}`} strategy="afterInteractive" />
         </>
       )}
     </>

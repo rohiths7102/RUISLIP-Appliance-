@@ -7,6 +7,8 @@ import { parseCsv } from "@/lib/csv";
 import { AVAILABILITY, SCRAPE_OWNED, reconcileSaving } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
+import { setFeatured } from "@/lib/homepage";
+import { normaliseWarranty } from "@/lib/warranty";
 export const dynamic = "force-dynamic";
 
 /**
@@ -97,6 +99,8 @@ export async function POST(req: Request) {
           const b = parseBool(raw);
           if (b === null) { errors.push(`row ${rowNo}: ${k} "${raw}" must be true/false`); bad = true; break; }
           v = b;
+        } else if (k === "warranty") {
+          v = normaliseWarranty(raw);
         } else if (k === "availabilityNormalised") {
           if (raw === "") continue;
           if (!AVAILABILITY.includes(raw)) { errors.push(`row ${rowNo}: availability "${raw}" — use one of ${AVAILABILITY.join("/")}`); bad = true; break; }
@@ -169,6 +173,12 @@ export async function POST(req: Request) {
         categories: [...before.flatMap((p: any) => [p.category, p.subcategory]), ...after.flatMap((d) => [d.category, d.subcategory])],
       });
     } catch { /* counts are best effort */ }
+    // A featured column adds to / takes off the homepage row (Admin → Homepage).
+    const featuredCodes = (on: boolean) => [
+      ...changes.filter((c) => c.data.featured === on).map((c) => c.code),
+      ...creates.filter((c) => c.data.featured === on).map((c) => c.code),
+    ];
+    for (const on of [true, false]) if (featuredCodes(on).length) await setFeatured(db, featuredCodes(on), on, admin.email);
     await writeAudit(db, {
       entityType: "product", entityId: `csv-import:${changes.length + creates.length}`, action: "csv-import",
       changedFields: ["csv"], previousValue: {}, newValue: { updates: changes.length, creates: creates.length, unchanged },
