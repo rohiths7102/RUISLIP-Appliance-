@@ -105,7 +105,10 @@ function extract(html) {
   for (const b of blocks) { const j = lenient(b); if (j) walk(j); }
   if (!product) return null;
   const offer = Array.isArray(product.offers) ? product.offers[0] : product.offers;
-  if (!offer) return null;
+  // The page names the product and sells nothing: Euronics keeps pages up for
+  // lines it has stopped selling. That is an answer ("not on sale"), not a failed
+  // read, and the server takes the price down after two of them in a row.
+  if (!offer) return { noOffer: true };
   const price = Number(offer.price ?? offer.lowPrice);
   if (!Number.isFinite(price) || price <= 0) return null;
   return { price, inStock: /InStock/i.test(String(offer.availability || "")) };
@@ -154,11 +157,22 @@ console.log(`source=${SOURCE} worklist=${work.length} fetchable=${targets.length
 
 const observations = [];
 const changes = [];
-let priced = 0, failed = 0;
+let priced = 0, failed = 0, noOffer = 0;
 
 for (const p of targets) {
   const html = await fetchPage(p.sourceUrl);
   const found = html ? extract(html) : null;
+
+  if (found && found.noOffer) {
+    observations.push({
+      productId: p.productId || p.id, price: null, deliveryCost: null, inStock: false,
+      sourceUrl: p.sourceUrl, matchConfidence: 1, status: "no_offer",
+      note: "page lists the product with no offer — not on sale",
+    });
+    noOffer++;
+    await sleep(DELAY_MS);
+    continue;
+  }
 
   if (!found) {
     failed++;
@@ -218,7 +232,7 @@ if (!DRY && AUTO_APPLY && posted) {
 changes.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 const summary = {
   source: SOURCE, startedAt: started, finishedAt: new Date().toISOString(),
-  checked: targets.length, priced, failed, posted, dryRun: DRY,
+  checked: targets.length, priced, noOffer, failed, posted, dryRun: DRY,
   changeCount: changes.length,
   weAreOver: changes.filter((c) => c.diff < 0).length,
   weAreUnder: changes.filter((c) => c.diff > 0).length,
@@ -227,7 +241,7 @@ const summary = {
   reviewUrl: `${SITE}/admin/price-watch`,
 };
 
-console.log(`priced=${priced} failed=${failed} posted=${posted} changes=${changes.length}`);
+console.log(`priced=${priced} noOffer=${noOffer} failed=${failed} posted=${posted} changes=${changes.length}`);
 if (autoApply) {
   console.log(autoApply.error
     ? `auto-apply FAILED: ${autoApply.error}`

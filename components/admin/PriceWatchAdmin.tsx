@@ -105,7 +105,8 @@ const REASON: Record<string, string> = {
   advisory_source: "Price is from someone else's shop",
   poa_category: "This range is “call for price”",
   stale_observation: "This price is more than a week old",
-  implausible_move: "Price change is more than 10% — worth your eye before it goes live",
+  implausible_move: "Price change is more than 50% — worth your eye before it goes live",
+  no_offer_unconfirmed: "Euronics showed no price once — waiting for a second check before removing yours",
   invalid_proposal: "The price we read back doesn't make sense",
   unusable_observation: "The last check on this product failed",
   unconfirmed_match: "We're not certain this is the same appliance",
@@ -366,7 +367,7 @@ export default function PriceWatchAdmin({
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-[15px] font-bold text-ink">Automatic pricing</h2>
           <span className="text-[11.5px] text-muted">
-            Runs nightly · changes under 10% apply themselves · bigger ones, and more than 25 in a night, wait for you
+            Runs nightly · Euronics prices apply themselves, up and down · a move over 50%, or more than 100 in a night, waits for you
           </span>
         </div>
         <div className="mt-3 grid gap-2.5">

@@ -24,7 +24,11 @@ export const dynamic = "force-dynamic";
 
 const MAX_OBSERVATIONS = 500;
 const MAX_PRICE = 100000; // £100k — nothing in a domestic appliance catalogue is above this
-const VALID_STATUS = new Set(["ok", "blocked", "not_found", "parse_failed"]);
+// "no_offer": the page was read and names the product, but the source is not
+// selling it (Euronics' JSON-LD Product with no offer). Distinct from
+// parse_failed, which means we could not read the page at all — only no_offer
+// may ever take a price down.
+const VALID_STATUS = new Set(["ok", "blocked", "not_found", "parse_failed", "no_offer"]);
 
 type Incoming = {
   productId?: unknown;
@@ -160,6 +164,8 @@ export async function POST(req: Request) {
         price = null;
         status = "parse_failed";
       }
+
+      if (status === "no_offer") price = null; // "not selling it" cannot also carry a price
 
       let deliveryCost = optionalNumber(o.deliveryCost);
       // Unknown delivery stays null (the guards refuse to auto-apply on it);

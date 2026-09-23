@@ -13,6 +13,15 @@ import { writeAudit } from "@/lib/audit";
  * and delivery guards are exempt by design — compliance, not a decision),
  * and the observation must be fresh, exact-match and complete.
  *
+ * The source is the price, both ways (owner, Sept 2026: "any price changes
+ * should update right away"). So the NEWEST read per product decides:
+ *   - a price           -> applied, including onto a product that has none
+ *                          (Euronics re-listing it), sanity-checked against the
+ *                          last price this source gave for it;
+ *   - "no_offer" twice  -> the price comes down to "call for price". Twice, on
+ *                          consecutive reads, because one bad page must never
+ *                          take a live price off the shelf.
+ *
  * Circuit breaker: if MORE candidates pass than `maxChanges`, we apply NONE.
  * A corrupted feed or a broken parser looks exactly like "everything changed
  * at once", and the safe reading of that is "stop and ask a human" — not
@@ -23,7 +32,7 @@ import { writeAudit } from "@/lib/audit";
 export type AutoApplyOutcome = {
   sourceId: string;
   considered: number;
-  applied: { productId: string; productCode: string; title: string; from: number | null; to: number }[];
+  applied: { productId: string; productCode: string; title: string; from: number | null; to: number | null }[];
   unchanged: number;
   refused: Record<string, number>; // guard code -> count
   halted: boolean;
@@ -38,7 +47,9 @@ export async function autoApplySource(
   opts: { sourceId: string; maxChanges?: number; appliedBy?: string },
 ): Promise<AutoApplyOutcome> {
   const sourceId = opts.sourceId;
-  const maxChanges = Math.min(Math.max(1, opts.maxChanges ?? 25), 100);
+  // Default 100, the ceiling: the nightly collector sends no budget, and at 25
+  // one real Euronics promotion held the whole night's changes.
+  const maxChanges = Math.min(Math.max(1, opts.maxChanges ?? 100), 100);
   const appliedBy = opts.appliedBy || "price-agent (automated)";
   const out: AutoApplyOutcome = {
     sourceId, considered: 0, applied: [], unchanged: 0, refused: {}, halted: false, haltReason: "",
@@ -55,14 +66,25 @@ export async function autoApplySource(
     return out;
   }
 
-  // Latest usable observation per product for this source, one query.
-  const since = new Date(Date.now() - CFG.staleAfterDays * 86400_000);
+  // Every priced or no-offer read for this source, newest first. The window is
+  // wider than the freshness guard on purpose: the nightly run rotates, so a
+  // product's previous read can be a week old, and "no offer twice in a row"
+  // and "the last price it gave" both need to see it. Freshness of the read
+  // being ACTED on is still enforced by the stale_observation guard.
+  const since = new Date(Date.now() - 3 * CFG.staleAfterDays * 86400_000);
   const observations = await db.priceObservation.findMany({
-    where: { sourceId, status: "ok", price: { not: null }, observedAt: { gte: since } },
+    where: { sourceId, status: { in: ["ok", "no_offer"] }, observedAt: { gte: since } },
     orderBy: { observedAt: "desc" },
   });
+  const history = new Map<string, any[]>();
+  for (const o of observations) {
+    if (o.status === "ok" && !(typeof o.price === "number" && o.price > 0)) continue;
+    const h = history.get(o.productId) || [];
+    h.push(o);
+    history.set(o.productId, h);
+  }
   const latest = new Map<string, any>();
-  for (const o of observations) if (!latest.has(o.productId)) latest.set(o.productId, o);
+  for (const [id, h] of history) latest.set(id, h[0]);
   if (!latest.size) return out;
 
   const [products, poaNames] = await Promise.all([
@@ -70,12 +92,25 @@ export async function autoApplySource(
     poaNamesFromDb(db),
   ]);
 
-  type Candidate = { p: any; obs: any; proposedPrice: number };
+  type Candidate = { p: any; obs: any; proposedPrice: number | null };
   const candidates: Candidate[] = [];
 
   for (const p of products) {
     out.considered++;
     const obs = latest.get(p.id);
+    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
+
+    if (obs.status === "no_offer") {
+      if (p.priceNow === null) { out.unchanged++; continue; }
+      if (isPoa) { refuse("poa_category"); continue; }
+      const prev = history.get(p.id)![1];
+      if (!prev || prev.status !== "no_offer") { refuse("no_offer_unconfirmed"); continue; }
+      const fresh = Date.now() - new Date(obs.observedAt).getTime() <= CFG.staleAfterDays * 86400_000;
+      if (!fresh) { refuse("stale_observation"); continue; }
+      candidates.push({ p, obs, proposedPrice: null });
+      continue;
+    }
+
     const includesVat = typeof obs.includesVat === "boolean" ? obs.includesVat : source.priceIncludesVat !== false;
     const vatConverted = includesVat === false;
     const proposedPrice = round2(includesVat ? obs.price : obs.price * (1 + CFG.vatRate));
@@ -84,13 +119,21 @@ export async function autoApplySource(
       : null;
     if (typeof p.priceNow === "number" && Math.abs(p.priceNow - proposedPrice) < 0.01) { out.unchanged++; continue; }
 
-    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
+    // No price on our shelf: measure the move against the last price this
+    // source gave, so a re-listed product comes back but a mis-read (£1,099 ->
+    // £1) is still caught by implausible_move. Never priced by this source ->
+    // no reference, and no_current_price keeps it for a human.
+    let currentPrice: number | null = typeof p.priceNow === "number" ? p.priceNow : null;
+    if (currentPrice === null) {
+      const lastPriced = history.get(p.id)!.find((o, i) => i > 0 && o.status === "ok");
+      if (lastPriced) currentPrice = round2(lastPriced.includesVat === false ? lastPriced.price * (1 + CFG.vatRate) : lastPriced.price);
+    }
     let g;
     try {
       g = evaluateGuards({
         proposal: {
           productId: p.id,
-          currentPrice: typeof p.priceNow === "number" ? p.priceNow : null,
+          currentPrice,
           proposedPrice,
           sourceId,
           sourceKind: String(source.kind),
@@ -144,8 +187,9 @@ export async function autoApplySource(
   for (const { p, obs, proposedPrice } of candidates) {
     const data: Record<string, any> = { priceNow: proposedPrice };
     // A "was" that is no longer above the new price is not a saving, it is a
-    // lie on the product card — drop it rather than leave it stranded.
-    if (!(typeof p.priceWas === "number" && p.priceWas > proposedPrice)) data.priceWas = null;
+    // lie on the product card — drop it rather than leave it stranded. With no
+    // price at all there is nothing for a "was" to be above.
+    if (proposedPrice === null || !(typeof p.priceWas === "number" && p.priceWas > proposedPrice)) data.priceWas = null;
     reconcileSaving(data, p);
     // Lock the fields, exactly as a manual edit does, so the next catalogue
     // re-import cannot quietly undo the applied price.
@@ -172,6 +216,8 @@ export async function autoApplySource(
         observationId: obs.id,
         observedAt: obs.observedAt,
         observedPrice: obs.price,
+        ...(proposedPrice === null ? { reason: `${source.label} shows no offer on two consecutive reads` } : {}),
+        ...(p.priceNow === null && proposedPrice !== null ? { reason: `${source.label} is selling it again` } : {}),
       },
       changedBy: appliedBy,
     });
