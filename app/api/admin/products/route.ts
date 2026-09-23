@@ -16,24 +16,47 @@ export async function GET(req: Request) {
   const take = Math.min(Number(searchParams.get("take")) || 25, 100);
   const skip = Math.max(Number(searchParams.get("skip")) || 0, 0);
 
+  const select = {
+    id: true, title: true, brand: true, productCode: true, category: true, subcategory: true,
+    priceNow: true, priceWas: true, availabilityNormalised: true, warranty: true,
+    shortDescription: true, deliveryNotes: true, mainImage: true, slug: true, isVisible: true, featured: true,
+    adminOverrideFields: true,
+  };
+  const orderBy = [{ lastUpdatedByAdmin: "desc" }, { title: "asc" }];
+
   try {
     const db = await getPrisma();
-    const where = q
-      ? { OR: [{ title: { contains: q } }, { brand: { contains: q } }, { productCode: { contains: q } }] }
-      : {};
-    const [rows, total] = await Promise.all([
-      db.product.findMany({
-        where, orderBy: [{ lastUpdatedByAdmin: "desc" }, { title: "asc" }], take, skip,
-        select: {
-          id: true, title: true, brand: true, productCode: true, category: true, subcategory: true,
-          priceNow: true, priceWas: true, availabilityNormalised: true, warranty: true,
-          shortDescription: true, deliveryNotes: true, mainImage: true, slug: true, isVisible: true, featured: true,
-          adminOverrideFields: true,
-        },
-      }),
-      db.product.count({ where }),
-    ]);
-    return NextResponse.json({ rows, total, take, skip });
+    if (!q) {
+      const [rows, total] = await Promise.all([
+        db.product.findMany({ orderBy, take, skip, select }),
+        db.product.count(),
+      ]);
+      return NextResponse.json({ rows, total, take, skip });
+    }
+
+    // Search is case-blind and word-by-word: "NEFF", "bosch oven" and
+    // "hhf 113" must all find what the owner means. A plain `contains` is
+    // case-sensitive on Postgres, so "NEFF" found nothing against "Neff", and
+    // Prisma's insensitive mode is Postgres-only while this schema also runs on
+    // SQLite — so, as in lib/counts.ts, a thin projection is matched here.
+    // Every word must appear in code, title, brand or category; punctuation is
+    // ignored too, so a model code matches with or without its spaces/dashes.
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const all: { id: string; productCode: string; title: string; brand: string; category: string; subcategory: string }[] =
+      await db.product.findMany({ orderBy, select: { id: true, productCode: true, title: true, brand: true, category: true, subcategory: true } });
+    const hits = all.filter((r) => {
+      const text = `${r.productCode} ${r.title} ${r.brand} ${r.category} ${r.subcategory}`.toLowerCase();
+      const flat = squash(text);
+      return words.every((w) => text.includes(w) || (squash(w) && flat.includes(squash(w))));
+    });
+    // The exact model code first: typing a code means "that one".
+    const code = squash(q);
+    hits.sort((a, b) => Number(squash(b.productCode) === code) - Number(squash(a.productCode) === code));
+    const page = hits.slice(skip, skip + take).map((r) => r.id);
+    const found = page.length ? await db.product.findMany({ where: { id: { in: page } }, select }) : [];
+    const byId = new Map(found.map((r: any) => [r.id, r]));
+    return NextResponse.json({ rows: page.map((id) => byId.get(id)).filter(Boolean), total: hits.length, take, skip });
   } catch (e) {
     console.error("admin products GET", e);
     return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
