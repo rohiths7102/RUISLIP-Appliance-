@@ -1,28 +1,33 @@
-import { accessToken } from "@/lib/google-oauth";
+import { accessToken, oauthConfigured } from "@/lib/google-oauth";
 import { ADS_REPORTS, CAMPAIGN_DAYS_QUERY, geoIdsOf, geoNamesQuery } from "@/lib/ads-reports";
 import { saveAdsPayload } from "@/lib/ads-store";
 
 /**
- * The direct Google Ads API connection. Live once all three exist:
- *   GOOGLE_ADS_DEVELOPER_TOKEN   from Google Ads → Tools → API Centre (Basic access)
+ * The direct Google Ads API connection. Live once both exist:
+ *   GOOGLE_OAUTH_CLIENT_ID/SECRET (lib/google-oauth.ts), from a Google Cloud
+ *     project whose Google Ads API access level is Basic or above — since
+ *     9 Sept 2026 that is granted in Google Cloud console
+ *     (console.cloud.google.com/google/ads-apis/overview), not by a developer token
  *   the owner's Google sign-in   Admin → Google Ads → Connect Google
- *   GOOGLE_OAUTH_CLIENT_ID/SECRET (lib/google-oauth.ts)
- * Optional: GOOGLE_ADS_LOGIN_CUSTOMER_ID when the token's manager account is
- * the one signed in; GOOGLE_ADS_API_VERSION when Google retires this version.
+ * GOOGLE_ADS_DEVELOPER_TOKEN is only sent if set (Google now ignores it).
+ * Optional: GOOGLE_ADS_LOGIN_CUSTOMER_ID only when access is through a manager
+ * account (the shop account is accessed directly, so unset); GOOGLE_ADS_API_VERSION
+ * when Google retires this version.
  * Until then the nightly Ads Script feeds the same reports.
  */
 const CUSTOMER = (process.env.GOOGLE_ADS_CUSTOMER_ID || "6099368375").replace(/-/g, "");
 const VERSION = process.env.GOOGLE_ADS_API_VERSION || "v24";
 const BASE = `https://googleads.googleapis.com/${VERSION}/customers/${CUSTOMER}`;
 
-export const adsApiConfigured = () => !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+export const adsApiConfigured = () => oauthConfigured();
 
 async function call(db: any, path: string, body: unknown): Promise<any> {
   const token = await accessToken(db);
   if (!token || !adsApiConfigured()) throw new Error("Google Ads API is not connected");
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`, "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "", "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`, "Content-Type": "application/json",
   };
+  if (process.env.GOOGLE_ADS_DEVELOPER_TOKEN) headers["developer-token"] = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID) headers["login-customer-id"] = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID.replace(/-/g, "");
   const r = await fetch(`${BASE}/${path}`, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
   const j: any = await r.json().catch(() => ({}));

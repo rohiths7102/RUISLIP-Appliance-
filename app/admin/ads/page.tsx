@@ -336,11 +336,10 @@ const GOOGLE_STATUS: Record<string, [tone: "success" | "warning" | "danger", tex
   failed: ["danger", "Google sign-in failed. Try again in a minute."],
 };
 
-/** The three pieces of the direct connection, each ticked off as it's done. */
+/** The pieces of the direct connection, each ticked off as it's done. */
 function ConnectionCard({ google, status }: { google: { email: string; updatedAt: Date } | null; status?: string }) {
   const steps: [done: boolean, text: string][] = [
-    [adsApiConfigured(), "Google Ads developer token (GOOGLE_ADS_DEVELOPER_TOKEN)"],
-    [oauthConfigured(), "Google Cloud sign-in client (GOOGLE_OAUTH_CLIENT_ID / SECRET)"],
+    [oauthConfigured(), "Google Cloud project with Google Ads API access, and its sign-in client (GOOGLE_OAUTH_CLIENT_ID / SECRET)"],
     [!!google, google ? `Signed in as ${google.email || "the owner"}` : "Owner signs in with Google"],
   ];
   const live = steps.every(([ok]) => ok);
@@ -349,7 +348,7 @@ function ConnectionCard({ google, status }: { google: { email: string; updatedAt
     <Card className="mt-6 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Direct connection to Google</h2>
-        {live ? <Badge tone="success">live</Badge> : <Badge tone="neutral">{steps.filter(([ok]) => ok).length} of 3 done</Badge>}
+        {live ? <Badge tone="success">live</Badge> : <Badge tone="neutral">{steps.filter(([ok]) => ok).length} of {steps.length} done</Badge>}
       </div>
       {note && <p className={`mt-2 text-sm ${note[0] === "success" ? "text-success" : note[0] === "warning" ? "text-warning" : "text-danger"}`}>{note[1]}</p>}
       <ul className="mt-3 space-y-1.5 text-[13px]">

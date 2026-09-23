@@ -42,7 +42,7 @@ import { createHmac } from "node:crypto";
 const args = process.argv.slice(2);
 const arg = (n, d = "") => { const i = args.indexOf(n); return i >= 0 ? (args[i + 1] ?? d) : d; };
 const SOURCE = arg("--source", "manufacturer-rrp");
-const LIMIT = Number(arg("--limit", "500")) || 500;
+const LIMIT = Number(arg("--limit", "3000")) || 3000; // every line, every night (~2,700 Euronics lines ≈ 1 hour at 1/sec)
 const DELAY_MS = Number(arg("--delay", "1000")) || 1000;
 const DRY = args.includes("--dry-run");
 const AUTO_APPLY = args.includes("--auto-apply");

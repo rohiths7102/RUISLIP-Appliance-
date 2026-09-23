@@ -41,28 +41,31 @@ export default function ConsentAnalytics() {
       {ready && choice === null && (
         <div
           role="dialog"
-          aria-label="Analytics cookies"
+          aria-label="Cookies"
           aria-describedby="ga-consent-copy"
-          className="fixed bottom-4 left-4 z-[60] max-w-sm rounded-xl border border-line bg-white p-5 shadow-2xl cta-up"
+          className="cta-up fixed inset-x-0 bottom-0 z-[60] border-t border-line bg-white/95 backdrop-blur"
         >
-          <p id="ga-consent-copy" className="text-sm leading-relaxed text-ink">
-            <strong>Help us improve the site?</strong> We&apos;d like to use Google cookies to see
-            which pages help customers most and whether our Google ads brought you here. We never
-            use them to follow you around the web with adverts.
-          </p>
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              onClick={() => decide("granted")}
-              className="rounded-lg bg-navy px-5 py-2.5 text-sm font-bold text-white hover:bg-navy-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-            >
-              Accept
-            </button>
-            <button
-              onClick={() => decide("denied")}
-              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-            >
-              No thanks
-            </button>
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5">
+            <p id="ga-consent-copy" className="min-w-[240px] flex-1 text-[12.5px] leading-snug text-ink/80">
+              Google cookies help us see which pages customers use and whether an ad brought you here.
+              <span className="hidden sm:inline"> We never use them to advertise to you elsewhere.</span>{" "}
+              <a href="/privacy" className="font-semibold text-blue-deep underline underline-offset-2">More</a>
+            </p>
+            {/* The right margin keeps the buttons clear of the "Ask us" chat pill (bottom-5 right-5, 150px wide). */}
+            <div className="ml-auto mr-[178px] flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => decide("granted")}
+                className="rounded-lg bg-navy px-4 py-1.5 text-[13px] font-bold text-white hover:bg-navy-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => decide("denied")}
+                className="rounded-lg px-2.5 py-1.5 text-[13px] font-semibold text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+              >
+                No thanks
+              </button>
+            </div>
           </div>
         </div>
       )}

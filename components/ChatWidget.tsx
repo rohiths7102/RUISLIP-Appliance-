@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Phone } from "lucide-react";
+import { MessageCircle, X, Send, Phone, Sparkles } from "lucide-react";
 import { telHref } from "@/lib/format";
 
 type Msg = { role: "user" | "assistant"; content: string; sources?: { title: string; url: string; productCode: string }[] };
@@ -30,12 +30,17 @@ export default function ChatWidget({ phone }: { phone: string }) {
   return (
     <>
       {!open && (
-        <button onClick={() => setOpen(true)} aria-label="Open chat" className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue text-white shadow-lg transition hover:scale-105">
-          <MessageCircle />
+        // "Ask us" pill in Euronics yellow (the owner's request, modelled on an "Ask AI" launcher).
+        // z-[70] sits it above the cookie bar (z-[60]), which keeps this corner free for it.
+        <button onClick={() => setOpen(true)} aria-label="Open chat — ask us a question"
+          className="fixed bottom-5 right-5 z-[70] flex h-14 items-center gap-2.5 rounded-full bg-[#ffd200] py-1.5 pl-4 pr-1.5 text-navy shadow-[0_8px_24px_rgba(8,21,56,.28)] ring-1 ring-navy/10 transition hover:scale-[1.03] hover:bg-[#ffdb33]">
+          <Sparkles size={18} className="text-navy" aria-hidden />
+          <span className="font-display text-[16px] font-extrabold tracking-tight">Ask us</span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-[#ffd200]"><MessageCircle size={20} aria-hidden /></span>
         </button>
       )}
       {open && (
-        <div className="fixed bottom-5 right-5 z-50 flex h-[560px] w-[min(92vw,380px)] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
+        <div className="fixed bottom-5 right-5 z-[70] flex h-[560px] w-[min(92vw,380px)] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
           <div className="flex items-center justify-between bg-blue px-4 py-3 text-paper">
             <div><div className="font-display text-sm font-semibold">Store Assistant</div><div className="text-[11px] text-paper/60">Grounded in our real product data</div></div>
             <button onClick={() => setOpen(false)} aria-label="Close chat" className="text-paper/70 hover:text-paper"><X size={18} /></button>
