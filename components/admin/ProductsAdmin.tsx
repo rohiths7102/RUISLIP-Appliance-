@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus, Search, Trash2, Upload, X, ExternalLink, Download, FileUp } from "lucide-react";
+import { Plus, Search, Trash2, Upload, X, ExternalLink, Download, FileUp, Sparkles } from "lucide-react";
 import { Badge, Button, Card, Notice, PageTitle } from "@/components/admin/ui";
+import PriceCheckPanel from "@/components/admin/PriceCheckPanel";
 
 type ImportPreview = {
   rows: number; updates: number; creates: number; unchanged: number;
@@ -41,6 +42,7 @@ export default function ProductsAdmin({
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
+  const [priceCheck, setPriceCheck] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -306,6 +308,8 @@ export default function ProductsAdmin({
                     <a href={`/products/${r.slug}`} target="_blank" rel="noopener noreferrer" title="View on site"
                       className="mr-1 inline-flex rounded p-2 text-ink/70 hover:text-blue"><ExternalLink size={14} /></a>
                   )}
+                  <button onClick={() => setPriceCheck(r.id)} aria-label={`Prices for ${r.productCode}: check Euronics and your sites`}
+                    className="mr-1 inline-flex items-center gap-1 rounded-full border border-navy/20 px-3 py-1.5 text-xs hover:border-blue"><Sparkles size={12} className="text-blue" />Prices</button>
                   <button onClick={() => { setEditing(r); setIsNew(false); setErr(""); }}
                     className="rounded-full border border-navy/20 px-3 py-1.5 text-xs hover:border-blue">Edit</button>
                   <button onClick={() => remove(r)} aria-label={`Delete ${r.productCode}`}
@@ -325,6 +329,11 @@ export default function ProductsAdmin({
           <span className="px-2 text-xs text-muted">Page {page} of {pages}</span>
           <Button variant="secondary" small onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}>Next</Button>
         </div>
+      )}
+
+      {priceCheck && (
+        <PriceCheckPanel productId={priceCheck} onClose={() => setPriceCheck(null)}
+          onPriceChanged={(price) => setRows((rs) => rs.map((x) => (x.id === priceCheck ? { ...x, priceNow: price } : x)))} />
       )}
 
       {editing && (

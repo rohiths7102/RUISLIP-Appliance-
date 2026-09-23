@@ -43,7 +43,7 @@ async function callGroqOnly(messages: ChatMsg[], opts: { model?: string; timeout
  *  and 404 — check `GET /v1beta/models` after any key change. */
 const GEMINI_MODEL = "gemini-3.6-flash";
 
-async function callGemini(messages: ChatMsg[], timeoutMs: number): Promise<string> {
+export async function callGemini(messages: ChatMsg[], timeoutMs: number): Promise<string> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY not set");
   const model = process.env.GEMINI_MODEL || GEMINI_MODEL;
