@@ -178,6 +178,8 @@ function LeadDetail({ lead, patch, setDraft }: {
   const draft = async () => {
     setDrafting(true); setMsg(null);
     try {
+      // Notes and quote save on blur, which can still be in flight when this is clicked.
+      if (!(await patch(lead.id, { notes, quotedPrice: quoted }))) return;
       const r = await fetch(`/api/admin/leads/${lead.id}/draft`, { method: "POST" });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { setMsg({ tone: "danger", text: j.error || "Drafting failed." }); return; }
