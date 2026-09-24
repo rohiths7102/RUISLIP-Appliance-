@@ -2,7 +2,8 @@ import { requireAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import AdminShell from "@/components/admin/AdminShell";
 import { Badge, Card, EmptyState, PageTitle } from "@/components/admin/ui";
-import { searchAnalytics, type GscRow } from "@/lib/search-console";
+import { NoSearchConsoleAccess, searchAnalytics, type GscRow } from "@/lib/search-console";
+import { SITE } from "@/lib/seo";
 import { adminHref } from "@/lib/admin-config";
 import SeoEditor, { type SeoRow } from "@/components/admin/SeoEditor";
 export const metadata = { title: "SEO" };
@@ -20,6 +21,7 @@ const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 export default async function AdminSeo() {
   const admin = await requireAdmin();
   let queries: GscRow[] | null = null, pages: GscRow[] | null = null, error = "", paid: any[] = [];
+  let access: NoSearchConsoleAccess | null = null;
   const lift: SeoRow[] = [];
   try {
     const db = await getPrisma();
@@ -40,8 +42,10 @@ export default async function AdminSeo() {
       }
     }
   } catch (e: any) {
-    error = e?.message || "Search Console didn't answer.";
+    if (e instanceof NoSearchConsoleAccess) access = e;
+    else error = e?.message || "Search Console didn't answer.";
   }
+  const property = `${SITE().replace(/\/+$/, "")}/`;
 
   const organic = new Map((queries || []).map((q) => [norm(q.key), q]));
   const both = paid.filter((p) => p.clicks > 0).slice(0, 60).map((p) => ({ ...p, free: organic.get(norm(p.label)) }));
@@ -54,11 +58,26 @@ export default async function AdminSeo() {
         and how that sits alongside what you pay for in Google Ads.
       </p>
 
-      {queries === null && !error && (
+      {queries === null && !error && !access && (
         <div className="mt-6"><EmptyState title="Search Console isn't connected yet."
           hint={<>Connect Google on the <a href={adminHref("ads")} className="font-semibold text-blue-deep hover:underline">Google Ads page</a>; the same sign-in covers Search Console.</>} /></div>
       )}
       {error && <Card className="mt-6 p-5 text-sm text-danger">{error} Check the site is verified in Search Console under the same Google account.</Card>}
+      {access && (
+        <Card className="mt-6 p-5 text-sm">
+          <p className="font-semibold text-danger">{access.who} is connected, but can&apos;t see {property} in Search Console yet.</p>
+          <p className="mt-1 text-muted">
+            {access.sees.length ? `It can see: ${access.sees.join(", ")}.` : "It has no Search Console properties at all."} The site was
+            verified under a different Google account; give this one access:
+          </p>
+          <ol className="mt-2 list-decimal space-y-1 pl-5">
+            <li>Open <a href={`https://search.google.com/search-console/users?resource_id=${encodeURIComponent(property)}`} target="_blank" rel="noreferrer"
+              className="font-semibold text-blue-deep hover:underline">Search Console → Users and permissions</a>, signed in as the account that verified the site.</li>
+            <li>Add user: <strong>{access.who}</strong>, permission <strong>Full</strong>.</li>
+            <li>Reload this page — it picks the property up by itself.</li>
+          </ol>
+        </Card>
+      )}
 
       {queries && (
         <>

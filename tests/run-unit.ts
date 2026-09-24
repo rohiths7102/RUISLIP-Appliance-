@@ -9,6 +9,7 @@ import * as seed from "../lib/data.js";
 import { evaluateGuards } from "../lib/price-watch/guards.js";
 import { changeBudget } from "../lib/price-watch/auto-apply.js";
 import { parsePriceList } from "../lib/price-list.js";
+import { NoSearchConsoleAccess, searchConsoleSite } from "../lib/search-console.js";
 import { zipSync } from "fflate";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
@@ -137,5 +138,23 @@ ok(threw, "price list: a file without model and price columns is refused, not gu
 // ---- WhatsApp reply (Sales & Leads)
 ok(waChatHref("07906 592250", "Hi there") === "https://wa.me/447906592250?text=Hi%20there", "WhatsApp: a UK mobile becomes 447…, message typed in");
 ok(waChatHref("+44 7906 592250", "x").startsWith("https://wa.me/447906592250?") && waChatHref("0044 7906 592250", "x").startsWith("https://wa.me/447906592250?"), "WhatsApp: +44 and 0044 forms too");
+
+// ---- Search Console property: whichever of the shop's the connected account can see
+process.env.NEXT_PUBLIC_SITE_URL = "https://www.kitchen-appliances.co.uk";
+const realFetch = globalThis.fetch;
+const sitesAre = (entries: [string, string][]) => {
+  globalThis.fetch = (async () => new Response(JSON.stringify({ siteEntry: entries.map(([siteUrl, permissionLevel]) => ({ siteUrl, permissionLevel })) }))) as any;
+};
+const gscDb = { googleConnection: { findUnique: async () => ({ email: "shop@example.com" }) } };
+sitesAre([["https://www.kitchen-appliances.co.uk/", "siteOwner"], ["sc-domain:other-shop.co.uk", "siteOwner"]]);
+ok((await searchConsoleSite(gscDb, "t1")) === "https://www.kitchen-appliances.co.uk/", "Search Console: the https://www property when that's all the account sees");
+sitesAre([["https://www.kitchen-appliances.co.uk/", "siteFullUser"], ["sc-domain:kitchen-appliances.co.uk", "siteRestrictedUser"]]);
+ok((await searchConsoleSite(gscDb, "t2")) === "sc-domain:kitchen-appliances.co.uk", "Search Console: the Domain property first when it can see both");
+sitesAre([["sc-domain:kitchen-appliances.co.uk", "siteUnverifiedUser"], ["sc-domain:other-shop.co.uk", "siteOwner"]]);
+const denied = await searchConsoleSite(gscDb, "t3").then(() => null, (e) => e);
+ok(denied instanceof NoSearchConsoleAccess && denied.who === "shop@example.com" && /can't see kitchen-appliances\.co\.uk/.test(denied.message) && /other-shop/.test(denied.message),
+  "Search Console: an unverified or unrelated property is refused, naming the account and what it can see");
+ok((await searchConsoleSite(gscDb, null)) === null, "Search Console: not connected is null, not an error");
+globalThis.fetch = realFetch;
 
 console.log(`\n${n} unit assertions passed`);

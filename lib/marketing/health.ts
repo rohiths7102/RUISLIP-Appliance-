@@ -6,6 +6,7 @@
 import { poaNamesFromDb } from "@/lib/poa";
 import { adminHref } from "@/lib/admin-config";
 import { groqConfigured } from "@/lib/chat/groq";
+import { NoSearchConsoleAccess, searchConsoleSite } from "@/lib/search-console";
 
 const DAY = 86_400_000;
 export type Health = { name: string; status: "ok" | "warn" | "off"; detail: string; href: string };
@@ -40,6 +41,12 @@ export async function health(db: any): Promise<Health[]> {
   const asked = chats.reduce((t: number, c: any) => t + c._count._all, 0);
   const gaps = chats.filter((c: any) => ["no_match", "unsure"].includes(c.outcome)).reduce((t: number, c: any) => t + c._count._all, 0);
   const fresh = (d: Date | null, hours: number) => !!d && Date.now() - d.getTime() < hours * 3_600_000;
+  // The scope alone said "connected" while the SEO page failed: ask which property the account can see.
+  let gscProblem = "";
+  const gscSite = google?.scopes?.includes("webmasters") ? await searchConsoleSite(db).catch((e) => {
+    gscProblem = e instanceof NoSearchConsoleAccess ? `${e.who} can't see the site in Search Console — add it as a user there` : "Google didn't answer just now";
+    return null;
+  }) : null;
   const priceAt = lastPrice?.observedAt ?? null, adsAt = lastAds?.syncedAt ?? null, cronAt = cron?.createdAt ?? null;
   return [
     { name: "Euronics prices", status: fresh(priceAt, 30) ? "ok" : "warn", href: adminHref("price-watch"),
@@ -47,8 +54,9 @@ export async function health(db: any): Promise<Health[]> {
     // Data can arrive from the direct connection or the nightly Ads Script — either keeps it fresh.
     { name: "Google Ads data", status: fresh(adsAt, 30) ? "ok" : adsAt || google ? "warn" : "off", href: adminHref("ads"),
       detail: adsAt || google ? `synced ${ago(adsAt)}${google ? ` · signed in as ${google.email || "the owner"}` : ""}` : "not connected — Connect Google on the Google Ads page" },
-    { name: "Search Console", status: google?.scopes?.includes("webmasters") ? "ok" : "off", href: adminHref("seo"),
-      detail: google?.scopes?.includes("webmasters") ? "connected — free-search data on the SEO page" : "not connected" },
+    { name: "Search Console", status: gscSite ? "ok" : google?.scopes?.includes("webmasters") ? "warn" : "off", href: adminHref("seo"),
+      detail: gscSite ? `connected (${gscSite.replace(/^sc-domain:/, "")}) — free-search data on the SEO page`
+        : gscProblem || "not connected" },
     { name: "Daily engine run", status: !process.env.CRON_SECRET ? "off" : fresh(cronAt, 30) ? "ok" : "warn", href: adminHref("today"),
       detail: !process.env.CRON_SECRET ? "not switched on yet — needs the CRON_SECRET setting in Vercel" : `last run ${ago(cronAt)}` },
     { name: "Sales reported to Google", status: reported < sales ? "warn" : "ok", href: adminHref("enquiries"),

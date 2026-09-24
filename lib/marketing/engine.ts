@@ -233,7 +233,7 @@ export async function actions(db: any, opts: { gsc?: boolean } = {}): Promise<{ 
         });
       }
     } catch (e: any) {
-      notes.push(`Search Console: ${e?.message || "no answer"} — SEO actions skipped.`);
+      notes.push(`Search Console: ${(e?.message || "no answer").replace(/^Search Console: /, "")} — SEO actions skipped.`);
     }
   }
 

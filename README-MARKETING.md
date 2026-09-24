@@ -41,7 +41,7 @@ audit log either way.
 | `ADS_SYNC_SECRET` | the optional Google Ads Script feed |
 | `CRON_SECRET` | the daily job (Vercel sends it automatically) |
 | `RESEND_API_KEY` or the `MS_*` Microsoft 365 set | emailing the weekly report |
-| `GSC_SITE` (optional) | Search Console property, default `sc-domain:kitchen-appliances.co.uk` |
+| `GSC_SITE` (optional) | Search Console property. Leave unset: the site uses whichever of the Domain property or the `https://www.` URL-prefix property the connected account can see |
 
 ## Controls
 
