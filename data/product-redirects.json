@@ -1,0 +1,610 @@
+[
+ {
+  "source": "/products/fridgemaster-cf198e",
+  "destination": "/products/fridgemaster-mcf198e"
+ },
+ {
+  "source": "/products/fridgemaster-ul4892e",
+  "destination": "/products/fridgemaster-mul4892e"
+ },
+ {
+  "source": "/products/haier-haihbw7518ctk",
+  "destination": "/products/haier-hbw7518ctk"
+ },
+ {
+  "source": "/products/fridgemaster-ur4894e",
+  "destination": "/products/fridgemaster-mur4894e"
+ },
+ {
+  "source": "/products/midea-drc284fze01",
+  "destination": "/products/midea-mdrc284fze01"
+ },
+ {
+  "source": "/products/russell-hobbs-dh2002",
+  "destination": "/products/russell-rhdh2002"
+ },
+ {
+  "source": "/products/fridgemaster-tl55242e",
+  "destination": "/products/fridgemaster-mtl55242e"
+ },
+ {
+  "source": "/products/haier-haihd80d357u1uk",
+  "destination": "/products/haier-hd80-d357u1-uk"
+ },
+ {
+  "source": "/products/haier-haihtr3518enmtk",
+  "destination": "/products/haier-htr3518enmtk"
+ },
+ {
+  "source": "/products/haier-haixf5c7m0w80",
+  "destination": "/products/haier-xf-5c7m0w-80"
+ },
+ {
+  "source": "/products/hoover-bh4s696m6dr9",
+  "destination": "/products/hoover-bh4s696m6dr9-80"
+ },
+ {
+  "source": "/products/fridgemaster-cf297e",
+  "destination": "/products/fridgemaster-mcf297e"
+ },
+ {
+  "source": "/products/haier-haiclc108gnu1uk",
+  "destination": "/products/haier-clc108-gnu1-uk"
+ },
+ {
+  "source": "/products/haier-haihd90d357u1guk",
+  "destination": "/products/haier-hd90-d357u1g-uk"
+ },
+ {
+  "source": "/products/haier-haihw110bd14397uu",
+  "destination": "/products/haier-hw110-bd14397uu"
+ },
+ {
+  "source": "/products/zenith-ls4584w",
+  "destination": "/products/zenith-zls4584w"
+ },
+ {
+  "source": "/products/zenith-icsd473",
+  "destination": "/products/zenith-zicsd473"
+ },
+ {
+  "source": "/products/zenith-ls4481w",
+  "destination": "/products/zenith-zls4481w"
+ },
+ {
+  "source": "/products/midea-f10ew70ba",
+  "destination": "/products/midea-mf10ew70ba"
+ },
+ {
+  "source": "/products/midea-mop01mzbk",
+  "destination": "/products/midea-mmop01mz-bk"
+ },
+ {
+  "source": "/products/midea-drc154fze01",
+  "destination": "/products/midea-mdrc154fze01"
+ },
+ {
+  "source": "/products/midea-drc211fze01",
+  "destination": "/products/midea-mdrc211fze01"
+ },
+ {
+  "source": "/products/russell-hobbs-m2348b",
+  "destination": "/products/russell-hobbs-rhm2348b"
+ },
+ {
+  "source": "/products/nutribullet-2924",
+  "destination": "/products/nutribullet-02924"
+ },
+ {
+  "source": "/products/nutribullet-2548",
+  "destination": "/products/nutribullet-02548"
+ },
+ {
+  "source": "/products/nutribullet-2925",
+  "destination": "/products/nutribullet-02925"
+ },
+ {
+  "source": "/products/russell-hobbs-m2047b",
+  "destination": "/products/russell-hobbs-rhm2047b"
+ },
+ {
+  "source": "/products/russell-hobbs-mt2512b",
+  "destination": "/products/russell-hobbs-rhmt2512b"
+ },
+ {
+  "source": "/products/russell-hobbs-mt3001b",
+  "destination": "/products/russell-hobbs-rhmt3001b"
+ },
+ {
+  "source": "/products/haier-haihd100c367u1uk",
+  "destination": "/products/haier-hd100-c367u1-uk"
+ },
+ {
+  "source": "/products/midea-drb202fge01",
+  "destination": "/products/midea-mdrb202fge01"
+ },
+ {
+  "source": "/products/nutribullet-2227",
+  "destination": "/products/nutribullet-02227"
+ },
+ {
+  "source": "/products/haier-haihd90a3q397u1",
+  "destination": "/products/haier-hd90-a3q397u1"
+ },
+ {
+  "source": "/products/haier-haihcr58s18dnmm",
+  "destination": "/products/haier-hcr58s18dnmm"
+ },
+ {
+  "source": "/products/haier-haihfr3718enmd",
+  "destination": "/products/haier-hfr3718enmd"
+ },
+ {
+  "source": "/products/haier-haihsr5918dnmp",
+  "destination": "/products/haier-hsr5918dnmp"
+ },
+ {
+  "source": "/products/haier-haihbqw5518ekuk",
+  "destination": "/products/haier-hbqw5518ek-uk"
+ },
+ {
+  "source": "/products/midea-drd146fge01",
+  "destination": "/products/midea-mdrd146fge01"
+ },
+ {
+  "source": "/products/fridgemaster-uz4860e",
+  "destination": "/products/fridgemaster-muz4860e"
+ },
+ {
+  "source": "/products/russell-hobbs-m2346b",
+  "destination": "/products/russell-hobbs-rhm2346b"
+ },
+ {
+  "source": "/products/russell-hobbs-mt2045b",
+  "destination": "/products/russell-hobbs-rhmt2045b"
+ },
+ {
+  "source": "/products/russell-hobbs-m2348s",
+  "destination": "/products/russell-hobbs-rhm2348s"
+ },
+ {
+  "source": "/products/haden-k127w",
+  "destination": "/products/haden-hk127w"
+ },
+ {
+  "source": "/products/haier-haihtw5618ewmp",
+  "destination": "/products/haier-htw5618ewmp"
+ },
+ {
+  "source": "/products/haier-haihw100b14387guu",
+  "destination": "/products/haier-hw100-b14387guu"
+ },
+ {
+  "source": "/products/russell-hobbs-mt2045s",
+  "destination": "/products/russell-hobbs-rhmt2045s"
+ },
+ {
+  "source": "/products/haier-haihwd90bp14357gtu",
+  "destination": "/products/haier-hwd90bp14357gtu"
+ },
+ {
+  "source": "/products/haier-haihwd90bp14357tuu",
+  "destination": "/products/haier-hwd90bp14357tuu"
+ },
+ {
+  "source": "/products/haier-haihwb100b14858guu",
+  "destination": "/products/haier-hwb100b14858guu"
+ },
+ {
+  "source": "/products/fridgemaster-tm48120es",
+  "destination": "/products/fridgemaster-mtm48120e"
+ },
+ {
+  "source": "/products/midea-dru99fze01",
+  "destination": "/products/midea-mdru99fze01"
+ },
+ {
+  "source": "/products/midea-mop01mzwh",
+  "destination": "/products/midea-mmop01mz-wh"
+ },
+ {
+  "source": "/products/haier-haihtw5618ewmg",
+  "destination": "/products/haier-htw5618ewmg"
+ },
+ {
+  "source": "/products/haier-haihtr3518enmwk",
+  "destination": "/products/haier-htr3518enmwk"
+ },
+ {
+  "source": "/products/haier-haihw90bp14357tuu",
+  "destination": "/products/haier-hw90-bp14357tuu"
+ },
+ {
+  "source": "/products/haier-haihwd120bd16397eu",
+  "destination": "/products/haier-hwd120bd16397eu"
+ },
+ {
+  "source": "/products/hoover-hvrhai643ccaruk",
+  "destination": "/products/hoover-hai643ccaruk"
+ },
+ {
+  "source": "/products/haier-haihcr3818enmm",
+  "destination": "/products/haier-hcr3818enmm"
+ },
+ {
+  "source": "/products/russell-hobbs-fm2365b",
+  "destination": "/products/russell-hobbs-rhfm2365b"
+ },
+ {
+  "source": "/products/haier-haixs4a4m4bb80",
+  "destination": "/products/haier-xs4a4m4bb-80"
+ },
+ {
+  "source": "/products/midea-dre379fge01d",
+  "destination": "/products/midea-mdre379fge01d"
+ },
+ {
+  "source": "/products/haier-haixf6b2m3bx80",
+  "destination": "/products/haier-xf6b2m3bx-80"
+ },
+ {
+  "source": "/products/haier-haihw100bp14357guu",
+  "destination": "/products/haier-hw100bp14357guu"
+ },
+ {
+  "source": "/products/midea-drd194fge01",
+  "destination": "/products/midea-mdrd194fge01"
+ },
+ {
+  "source": "/products/zenith-fs4481w",
+  "destination": "/products/zenith-zfs4481w"
+ },
+ {
+  "source": "/products/statesman-af08017bk",
+  "destination": "/products/statesman-skaf08017bk"
+ },
+ {
+  "source": "/products/haier-haihd90a2939suk",
+  "destination": "/products/haier-hd90-a2939s-uk"
+ },
+ {
+  "source": "/products/statesman-ms0720mpw",
+  "destination": "/products/statesman-skms0720mpw"
+ },
+ {
+  "source": "/products/statesman-ms0720mpb",
+  "destination": "/products/statesman-skms0720mpb"
+ },
+ {
+  "source": "/products/midea-drd194fgf01",
+  "destination": "/products/midea-mdrd194fgf01"
+ },
+ {
+  "source": "/products/midea-drd125fgf01",
+  "destination": "/products/midea-mdrd125fgf01"
+ },
+ {
+  "source": "/products/midea-drs619fgf46",
+  "destination": "/products/midea-mdrs619fgf46"
+ },
+ {
+  "source": "/products/russell-hobbs-dh1001b",
+  "destination": "/products/russell-hobbs-rhdh1001b"
+ },
+ {
+  "source": "/products/fridgemaster-cf198eb",
+  "destination": "/products/fridgemaster-mcf198eb"
+ },
+ {
+  "source": "/products/haden-z184ix",
+  "destination": "/products/haden-hz184ix"
+ },
+ {
+  "source": "/products/haden-l128ix",
+  "destination": "/products/haden-hl128ix"
+ },
+ {
+  "source": "/products/haier-haihw90bp14357tu1",
+  "destination": "/products/haier-hw90-bp14357tu1"
+ },
+ {
+  "source": "/products/fridgemaster-c55240de",
+  "destination": "/products/fridgemaster-mc55240de"
+ },
+ {
+  "source": "/products/haier-haihce519ek",
+  "destination": "/products/haier-hce519ek"
+ },
+ {
+  "source": "/products/haier-haihd90c367u1uk",
+  "destination": "/products/haier-hd90-c367u1-uk"
+ },
+ {
+  "source": "/products/haier-haihw100b14959s8u1",
+  "destination": "/products/haier-hw100b14959s8u1"
+ },
+ {
+  "source": "/products/haier-haihfr3718enpt",
+  "destination": "/products/haier-hfr3718enpt"
+ },
+ {
+  "source": "/products/zenith-dw600w",
+  "destination": "/products/zenith-zdw600w"
+ },
+ {
+  "source": "/products/zenith-rs4584w",
+  "destination": "/products/zenith-zrs4584w"
+ },
+ {
+  "source": "/products/zenith-ls3584w",
+  "destination": "/products/zenith-zls3584w"
+ },
+ {
+  "source": "/products/zenith-ls3481w",
+  "destination": "/products/zenith-zls3481w"
+ },
+ {
+  "source": "/products/fridgemaster-ur4894mf",
+  "destination": "/products/fridgemaster-mur4894mf"
+ },
+ {
+  "source": "/products/fridgemaster-ul4892mf",
+  "destination": "/products/fridgemaster-mul4892mf"
+ },
+ {
+  "source": "/products/statesman-mg0923dsb",
+  "destination": "/products/statesman-skmg0923dsb"
+ },
+ {
+  "source": "/products/statesman-mg0923dss",
+  "destination": "/products/statesman-skmg0923dss"
+ },
+ {
+  "source": "/products/haden-w1409",
+  "destination": "/products/haden-hw1409"
+ },
+ {
+  "source": "/products/russell-hobbs-dh1001",
+  "destination": "/products/russell-hobbs-rhdh1001"
+ },
+ {
+  "source": "/products/haier-haihw80b16939",
+  "destination": "/products/haier-hw80-b16939"
+ },
+ {
+  "source": "/products/zenith-dct700w",
+  "destination": "/products/zenith-zdct700w"
+ },
+ {
+  "source": "/products/zenith-fs3584w",
+  "destination": "/products/zenith-zfs3584w"
+ },
+ {
+  "source": "/products/fridgemaster-uz4860mf",
+  "destination": "/products/fridgemaster-muz4860mf"
+ },
+ {
+  "source": "/products/midea-dru129fze01",
+  "destination": "/products/midea-mdru129fze01"
+ },
+ {
+  "source": "/products/zenith-fs4584w",
+  "destination": "/products/zenith-zfs4584w"
+ },
+ {
+  "source": "/products/zenith-icsd455",
+  "destination": "/products/zenith-zicsd455"
+ },
+ {
+  "source": "/products/zenith-dwi601",
+  "destination": "/products/zenith-zdwi601"
+ },
+ {
+  "source": "/products/haier-haihwd90b14939",
+  "destination": "/products/haier-hwd90-b14939"
+ },
+ {
+  "source": "/products/haier-haihw80b16939s8",
+  "destination": "/products/haier-hw80-b16939s8"
+ },
+ {
+  "source": "/products/zenith-e605w",
+  "destination": "/products/zenith-ze605w"
+ },
+ {
+  "source": "/products/zenith-ef600x",
+  "destination": "/products/zenith-zef600x"
+ },
+ {
+  "source": "/products/haier-haihd80a2939r",
+  "destination": "/products/haier-hd80-a2939r"
+ },
+ {
+  "source": "/products/midea-drd168fge01",
+  "destination": "/products/midea-mdrd168fge01"
+ },
+ {
+  "source": "/products/midea-fo20dme4h109wh",
+  "destination": "/products/midea-mfo20dme4h109-wh"
+ },
+ {
+  "source": "/products/zenith-cs3552w",
+  "destination": "/products/zenith-zcs3552w"
+ },
+ {
+  "source": "/products/haier-haihcr5919ehmb",
+  "destination": "/products/haier-hcr5919ehmb"
+ },
+ {
+  "source": "/products/fridgemaster-cf96e",
+  "destination": "/products/fridgemaster-mcf96e"
+ },
+ {
+  "source": "/products/midea-drd125fge01",
+  "destination": "/products/midea-mdrd125fge01"
+ },
+ {
+  "source": "/products/midea-drs619fie46",
+  "destination": "/products/midea-mdrs619fie46"
+ },
+ {
+  "source": "/products/haden-ff150w",
+  "destination": "/products/haden-hff150w"
+ },
+ {
+  "source": "/products/midea-f100w70",
+  "destination": "/products/midea-mf100w70"
+ },
+ {
+  "source": "/products/fridgemaster-uz5582m",
+  "destination": "/products/fridgemaster-muz5582m"
+ },
+ {
+  "source": "/products/fridgemaster-s91558des",
+  "destination": "/products/fridgemaster-ms91558des"
+ },
+ {
+  "source": "/products/zenith-dw601w",
+  "destination": "/products/zenith-zdw601w"
+ },
+ {
+  "source": "/products/fridgemaster-cf96eb",
+  "destination": "/products/fridgemaster-mcf96eb"
+ },
+ {
+  "source": "/products/haden-k240ix",
+  "destination": "/products/haden-hk240ix"
+ },
+ {
+  "source": "/products/russell-hobbs-dh2002b",
+  "destination": "/products/russell-hobbs-rhdh2002b"
+ },
+ {
+  "source": "/products/fridgemaster-s83430es",
+  "destination": "/products/fridgemaster-ms83430es"
+ },
+ {
+  "source": "/products/russell-hobbs-mi2503b",
+  "destination": "/products/russell-hobbs-rhmi2503b"
+ },
+ {
+  "source": "/products/cata-ctafbuf60e",
+  "destination": "/products/cata-fbuf60e"
+ },
+ {
+  "source": "/products/zenith-et605w",
+  "destination": "/products/zenith-zet605w"
+ },
+ {
+  "source": "/products/fridgemaster-cf142e",
+  "destination": "/products/fridgemaster-mcf142e"
+ },
+ {
+  "source": "/products/haier-haihwd80bp14367tu",
+  "destination": "/products/haier-hwd80bp14367tu"
+ },
+ {
+  "source": "/products/haier-haihwo9m2m5b",
+  "destination": "/products/haier-hwo9m2m5b"
+ },
+ {
+  "source": "/products/haier-haihfr79f19efgk",
+  "destination": "/products/haier-hfr79f19efgk"
+ },
+ {
+  "source": "/products/haier-haihwb100b14858u1u",
+  "destination": "/products/haier-hwb100b14858u1u"
+ },
+ {
+  "source": "/products/haier-haibha6s69m6d9j80",
+  "destination": "/products/haier-bha6s69m6d9j-80"
+ },
+ {
+  "source": "/products/hotpoint-hotbiwdhg75148ukn",
+  "destination": "/products/hotpoint-biwdhg75148ukn"
+ },
+ {
+  "source": "/products/haden-z52w",
+  "destination": "/products/haden-hz52w"
+ },
+ {
+  "source": "/products/zenith-wmi7120",
+  "destination": "/products/zenith-zwmi7120"
+ },
+ {
+  "source": "/products/zenith-dwi600",
+  "destination": "/products/zenith-zdwi600"
+ },
+ {
+  "source": "/products/zenith-cs3582w",
+  "destination": "/products/zenith-zcs3582w"
+ },
+ {
+  "source": "/products/zenith-wm7120w",
+  "destination": "/products/zenith-zwm7120w"
+ },
+ {
+  "source": "/products/fridgemaster-cf198",
+  "destination": "/products/fridgemaster-mcf198"
+ },
+ {
+  "source": "/products/zenith-icsd373",
+  "destination": "/products/zenith-zicsd373"
+ },
+ {
+  "source": "/products/zenith-icsd355",
+  "destination": "/products/zenith-zicsd355"
+ },
+ {
+  "source": "/products/fridgemaster-cf96",
+  "destination": "/products/fridgemaster-mcf96"
+ },
+ {
+  "source": "/products/haden-k144w",
+  "destination": "/products/haden-hk144w"
+ },
+ {
+  "source": "/products/fridgemaster-cf297",
+  "destination": "/products/fridgemaster-mcf297"
+ },
+ {
+  "source": "/products/haden-k124w",
+  "destination": "/products/haden-hk124w"
+ },
+ {
+  "source": "/products/haden-wdi1480",
+  "destination": "/products/haden-hwdi1480"
+ },
+ {
+  "source": "/products/haden-w1216",
+  "destination": "/products/haden-hw1216"
+ },
+ {
+  "source": "/products/fridgemaster-tz55153",
+  "destination": "/products/fridgemaster-mtz55153"
+ },
+ {
+  "source": "/products/fridgemaster-c55265af",
+  "destination": "/products/fridgemaster-mc55265af"
+ },
+ {
+  "source": "/products/midea-drd146fgf01",
+  "destination": "/products/midea-mdrd146fgf01"
+ },
+ {
+  "source": "/products/zenith-cs4582w",
+  "destination": "/products/zenith-zcs4582w"
+ },
+ {
+  "source": "/products/fridgemaster-tz55153e",
+  "destination": "/products/fridgemaster-mtz55153e"
+ },
+ {
+  "source": "/products/russell-hobbs-maf2508b",
+  "destination": "/products/russell-hobbs-rhmaf2508b"
+ },
+ {
+  "source": "/products/midea-f100w60",
+  "destination": "/products/midea-mf100w60"
+ }
+]

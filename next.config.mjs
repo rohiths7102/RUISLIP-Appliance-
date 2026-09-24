@@ -42,6 +42,9 @@ const nextConfig = {
     // The old site's live URLs, from the crawl (scripts/migration). First, so
     // it wins: the seed below predates the old site's current paths.
     for (const r of readJson("old-site-redirects.json")) add(r.source, r.destination);
+    // Duplicate listings merged and clipped model codes corrected (24 Sept 2026):
+    // the hidden copy's / old address -> the listing that stays.
+    for (const r of readJson("product-redirects.json")) add(r.source, r.destination);
     for (const p of products) add(p.oldUrl, p.newSlug);                 // /…/p-4561 -> /products/slug
     for (const c of categories) add(c.slug, `/categories/${c.id}`);     // /laundry/washing-machines -> /categories/washing-machines
     return out;
