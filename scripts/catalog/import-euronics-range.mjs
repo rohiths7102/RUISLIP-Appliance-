@@ -129,15 +129,13 @@ for (const u of urls) {
   if (m) euro.push({ url: u, brandSlug: m[2].split("-")[0].toLowerCase(), sku: norm(m[3]) });
 }
 if (BRANDS.length) {
-  // Filtered after the list is built, for the same reason as --category below.
+  // Restrict the run to the brands named on the command line.
   const before = euro.length;
   euro = euro.filter((e) => BRANDS.some((b) => e.brandSlug.startsWith(b)));
   console.log(`--brand ${BRANDS.join(",")}: ${euro.length} of ${before} Euronics pages`);
 }
 if (CATEGORIES.length) {
-  // Filter AFTER the full list is built: the brand prefixes below are learned
-  // from every SKU a brand has, and narrowing the sample first would learn a
-  // wrong prefix and stop products matching what we already hold.
+  // Restrict the run to the departments named on the command line.
   const before = euro.length;
   euro = euro.filter((e) => CATEGORIES.includes((e.url.split("/catalogue/")[1] || "").split("/")[0]));
   console.log(`--category ${CATEGORIES.join(",")}: ${euro.length} of ${before} Euronics pages`);
@@ -246,7 +244,10 @@ for (const e of work) {
       sourceUrl: e.url, oldUrl: "", lastScrapedAt: new Date(),
       specifications: [], features: [], relatedProductCodes: [], serviceAddOns: [],
       energyLabelUrl: "", deliveryNotes: "", adminOverrideFields: [],
-      seoTitle: `${d.brand} ${d.title}`.trim().slice(0, 68),
+      // Euronics titles already start with the brand ("Zenith Zenith ZFS4481W…" was
+      // the Google title of 2,369 products until 24 Sept 2026); cut at a word.
+      seoTitle: ((t) => (t.length <= 60 ? t : t.slice(0, 61).replace(/\s+\S*$/, "")))(
+        (d.title.toLowerCase().startsWith(d.brand.toLowerCase()) ? d.title : `${d.brand} ${d.title}`).trim()),
       seoDescription: `${d.title}. Call 0208 864 5763 to confirm price, availability and delivery.`.slice(0, 300),
     } });
   }

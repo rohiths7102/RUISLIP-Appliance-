@@ -55,4 +55,7 @@ export const STORE_PHONE = "0208 864 5763";
 export const WHATSAPP_NUMBER = "07941 378759";
 
 /** wa.me link. WhatsApp wants the full international form, no punctuation. */
+/** WhatsApp click-to-chat for a customer's number (07… or +44 7… -> 447…), with the message typed in. */
+export const waChatHref = (phone: string, text: string) =>
+  `https://wa.me/${phone.replace(/[^0-9]/g, "").replace(/^00/, "").replace(/^0/, "44")}?text=${encodeURIComponent(text)}`;
 export const waHref = () => `https://wa.me/44${WHATSAPP_NUMBER.replace(/[^0-9]/g, "").replace(/^0/, "")}`;

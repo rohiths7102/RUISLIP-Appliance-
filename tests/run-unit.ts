@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { gbp, availabilityLabel, telHref } from "../lib/format.js";
+import { gbp, availabilityLabel, telHref, waChatHref } from "../lib/format.js";
 import { slugOf, poaNamesFrom } from "../lib/select.js";
 import { isPoaProduct } from "../lib/poa.js";
 import { productDoc, buildDocuments, faqDocs } from "../lib/rag/documents.js";
@@ -8,6 +8,8 @@ import { buildSystemPrompt, factsBlock, sourcesFor, plainReply } from "../lib/ch
 import * as seed from "../lib/data.js";
 import { evaluateGuards } from "../lib/price-watch/guards.js";
 import { changeBudget } from "../lib/price-watch/auto-apply.js";
+import { parsePriceList } from "../lib/price-list.js";
+import { zipSync } from "fflate";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
 
@@ -101,5 +103,39 @@ ok(guard("euronics", 449, 529).blocking.length === 0, "a Euronics price applies 
 ok(guard("cih", 449, 529).blocking.includes("no_floor_data"), "any other source still needs a cost floor");
 ok(guard("euronics", 449, 1049).blocking.includes("implausible_move"), "a move over 50% still waits for a person");
 ok(changeBudget(3000) === 750 && changeBudget(200) === 100 && changeBudget(3000, 40) === 40, "the change budget is a quarter of the run, never under 100, lowered only on request");
+
+// ---- the Euronics price list upload (lib/price-list.ts) ------------------------
+// Columns found by header, not position: here they are shuffled, a decoy sheet
+// comes first, and "Current"/"Previous" B2C columns sit beside the real one.
+const sst = ["EAN", "Previous B2C Price", "Model Number", "B2B Price", "B2C Agency Price", "Current B2C Price", "Future B2C Agency Price",
+  "Future B2C Agency Price Start Date", "Stock type (central or agency)", "ABC-123", "AGENCY", "XYZ9", "CENTRAL"];
+const si = sst.map((s) => `<si><t>${s}</t></si>`).join("");
+const cell = (ref: string, v: string | number) => (typeof v === "number" ? `<c r="${ref}"><v>${v}</v></c>` : `<c r="${ref}" t="s"><v>${sst.indexOf(v)}</v></c>`);
+const sheetXml = (rows: (string | number | null)[][]) => `<worksheet><sheetData>${rows.map((r, i) =>
+  `<row r="${i + 1}">${r.map((v, j) => (v === null ? "" : cell(`${String.fromCharCode(65 + j)}${i + 1}`, v))).join("")}</row>`).join("")}</sheetData></worksheet>`;
+const enc = (s: string) => new TextEncoder().encode(s);
+const book = zipSync({
+  "xl/workbook.xml": enc(`<workbook><sheets><sheet name="Yday" sheetId="1" r:id="rId1"/><sheet name="Full Data" sheetId="2" r:id="rId2"/></sheets></workbook>`),
+  "xl/_rels/workbook.xml.rels": enc(`<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Target="worksheets/sheet2.xml"/></Relationships>`),
+  "xl/sharedStrings.xml": enc(`<sst>${si}</sst>`),
+  "xl/worksheets/sheet1.xml": enc(sheetXml([["Model Number", "B2C Agency Price"], ["ABC-123", 1]])),
+  "xl/worksheets/sheet2.xml": enc(sheetXml([
+    ["EAN", "Previous B2C Price", "Model Number", "B2B Price", "B2C Agency Price", "Current B2C Price", "Future B2C Agency Price", "Future B2C Agency Price Start Date", "Stock type (central or agency)"],
+    [5012345678900, 529, "ABC-123", 300, 499.99, null, 459.99, 46289, "AGENCY"],
+    [null, null, "XYZ9", 180.5, null, null, null, null, "CENTRAL"],
+  ])),
+});
+const listToday = parsePriceList("list.xlsx", book, 46289), listYesterday = parsePriceList("list.xlsx", book, 46288);
+ok(listYesterday[0].model === "ABC-123" && listYesterday[0].price === 499.99, "price list: the B2C Agency Price column, found by its header on the Full Data tab");
+ok(listToday[0].price === 459.99, "price list: a future B2C price takes over on its start date");
+ok(listToday[0].ean === "5012345678900" && listToday[0].stockType === "AGENCY" && listToday[0].b2b === 300, "price list: EAN, stock type and trade price read");
+ok(listToday[1].model === "XYZ9" && listToday[1].price === null && listToday[1].b2b === 180.5, "price list: a central line with no B2C price stays unpriced");
+const csv = parsePriceList("list.csv", enc(`﻿"Model Number","Customer Price"\r\n"AB 12-3","£1,299.00"\r\nQ9,249\r\n`));
+ok(csv.length === 2 && csv[0].model === "AB 12-3" && csv[0].price === 1299 && csv[1].price === 249, "price list: a CSV with quoted £1,299.00 prices");
+let threw = false; try { parsePriceList("list.csv", enc("Name,Colour\nFridge,White\n")); } catch { threw = true; }
+ok(threw, "price list: a file without model and price columns is refused, not guessed at");
+// ---- WhatsApp reply (Sales & Leads)
+ok(waChatHref("07906 592250", "Hi there") === "https://wa.me/447906592250?text=Hi%20there", "WhatsApp: a UK mobile becomes 447…, message typed in");
+ok(waChatHref("+44 7906 592250", "x").startsWith("https://wa.me/447906592250?") && waChatHref("0044 7906 592250", "x").startsWith("https://wa.me/447906592250?"), "WhatsApp: +44 and 0044 forms too");
 
 console.log(`\n${n} unit assertions passed`);

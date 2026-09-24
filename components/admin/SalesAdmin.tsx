@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, EmptyState, Notice, PageTitle, type Tone } from "@/components/admin/ui";
 import { channelOf } from "@/lib/marketing/channels";
 import { STAGES, stageOf, STAGE_TONE, STAGE_LABEL } from "@/lib/leads";
+import { waChatHref } from "@/lib/format";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import {
   Sparkles, Send, Mail, Copy, Check, Loader2, Phone, ArrowUpRight, PoundSterling,
 } from "lucide-react";
@@ -219,6 +221,14 @@ function LeadDetail({ lead, patch, setDraft }: {
     window.location.href = `mailto:${encodeURIComponent(lead.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
+  // No WhatsApp API: this opens WhatsApp (app or web) with the reply typed in,
+  // and he presses send. Like the mail app, he is the confirmation, so the lead
+  // moves on to "contacted" here.
+  const openWhatsApp = () => {
+    void patch(lead.id, { aiDraftSubject: subject, aiDraftBody: body, ...(stageOf(lead.status) === "new" ? { status: "contacted" } : {}) });
+    window.open(waChatHref(lead.phone, body), "_blank", "noopener");
+  };
+
   const copyEmail = async () => {
     try {
       await navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
@@ -290,7 +300,7 @@ function LeadDetail({ lead, patch, setDraft }: {
       {/* ---------------- the email ---------------- */}
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Reply by email</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Reply by email or WhatsApp</h3>
           <Button small variant="secondary" onClick={draft} disabled={drafting}>
             {drafting ? <span className="inline-flex items-center gap-1.5"><Loader2 size={13} className="animate-spin" /> Drafting…</span>
               : <span className="inline-flex items-center gap-1.5"><Sparkles size={13} /> {subject || body ? "Redraft with AI" : "Draft with AI"}</span>}
@@ -320,10 +330,13 @@ function LeadDetail({ lead, patch, setDraft }: {
           <Button variant="secondary" onClick={openMailApp} disabled={!subject || !body || !lead.email}>
             <span className="inline-flex items-center gap-1.5"><Mail size={14} /> Open in my email app</span>
           </Button>
+          <Button variant="secondary" onClick={openWhatsApp} disabled={!body || !lead.phone} title={lead.phone ? undefined : "No phone number on this lead"}>
+            <span className="inline-flex items-center gap-1.5"><WhatsAppIcon size={14} /> Send on WhatsApp</span>
+          </Button>
           <Button variant="ghost" onClick={copyEmail} disabled={!subject || !body}>
             <span className="inline-flex items-center gap-1.5">{copied ? <Check size={14} className="text-success" /> : <Copy size={14} />} {copied ? "Copied" : "Copy"}</span>
           </Button>
-          {!lead.email && <span className="text-[12px] text-warning">No email on this lead — phone them instead.</span>}
+          {!lead.email && <span className="text-[12px] text-warning">No email on this lead — {lead.phone ? "send it on WhatsApp, or phone them." : "phone them instead."}</span>}
         </div>
       </Card>
     </div>

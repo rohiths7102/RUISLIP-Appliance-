@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, ArrowDownRight, ExternalLink, Info } from "lucide-react";
 import { Button, Card, Notice, PageTitle } from "@/components/admin/ui";
+import PriceListUpload from "@/components/admin/PriceListUpload";
 import type { AgentReport } from "@/lib/price-watch/agent-report";
 
 /* ------------------------------------------------------------------ types
@@ -356,6 +357,8 @@ export default function PriceWatchAdmin({
         What other shops are charging for the same appliances, newest reading first. Nothing here changes
         your website until you press Apply — or until you switch a trusted source to automatic below.
       </p>
+
+      <PriceListUpload />
 
       {/* ---------------------------------------------- the price agent
         * The owner's window onto the automation: per source, whether the
