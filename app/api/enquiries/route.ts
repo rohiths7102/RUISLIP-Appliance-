@@ -33,6 +33,8 @@ export async function POST(req: Request) {
     productCode: String(b.productCode || "").slice(0, 60),
     productTitle: String(b.productTitle || "").slice(0, 300),
     source: b.productCode ? "product" : "contact",
+    gclid: /^[A-Za-z0-9_-]{10,200}$/.test(String(b.gclid || "")) ? String(b.gclid) : "",
+    adSource: /^[a-z0-9][a-z0-9._-]{0,39}$/.test(String(b.adSource || "")) ? String(b.adSource) : "",
   };
 
   try {

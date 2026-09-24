@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TOWNS } from "@/lib/areas";
 import { Cormorant_Garamond, Hanken_Grotesk, Poppins, Space_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -40,10 +41,7 @@ import type { ReviewsData } from "@/components/GoogleReviews";
 // seed file narrows rating to `null`, which would kill the populated branch.
 const reviews = reviewsRaw as ReviewsData;
 
-const AREAS_SERVED = [
-  "Ruislip", "South Ruislip", "Ruislip Manor", "Eastcote", "Northolt",
-  "Pinner", "Ickenham", "Uxbridge", "Hillingdon", "Harrow", "West London",
-];
+const AREAS_SERVED = [...TOWNS.map((t) => t.name), "West London"];
 
 export async function generateMetadata(): Promise<Metadata> {
   const business = await getBusiness();
@@ -171,7 +169,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     brands: brands.slice(0, 12).map((b) => ({ slug: b.slug, name: b.name })),
   };
   return (
-    <html lang="en-GB" className={`${cormorant.variable} ${hanken.variable} ${poppins.variable} ${spaceMono.variable}`}>
+    <html lang="en-GB" data-scroll-behavior="smooth" className={`${cormorant.variable} ${hanken.variable} ${poppins.variable} ${spaceMono.variable}`}>
       <body>
         <LocalBusinessSchema business={business} />
         <BrandSchema business={business} />

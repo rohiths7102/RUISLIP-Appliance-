@@ -3,6 +3,7 @@ import { getPrisma } from "@/lib/prisma";
 import { loadCatalog } from "@/lib/repo";
 import AdminShell from "@/components/admin/AdminShell";
 import BrandsAdmin from "@/components/admin/BrandsAdmin";
+export const metadata = { title: "Brands" };
 export const dynamic = "force-dynamic";
 async function rows() {
   try { const db = await getPrisma(); const rs = await db.brand.findMany({ orderBy: [{ order: "asc" }, { name: "asc" }], select: { id: true, name: true, slug: true, logo: true, description: true, productCount: true, isVisible: true, order: true, priceOnApplication: true } }); if (rs.length) return rs; } catch {}

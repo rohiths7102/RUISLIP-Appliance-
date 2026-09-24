@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adsApiConfigured, uploadSale } from "@/lib/google-ads-api";
 import { getAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
@@ -57,5 +58,22 @@ export async function PATCH(req: Request) {
     entityType: "enquiry", entityId: b.id, action: "update", changedFields: changed,
     previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email,
   });
+
+  // Won, and it came from a Google Ads click: tell Google Ads it became a sale,
+  // with its value, once (saleReportedAt). A failed report retries on the next
+  // save. Best-effort — the pipeline update has already saved.
+  if (updated.status === "won" && updated.gclid && !updated.saleReportedAt && adsApiConfigured()) {
+    try {
+      await uploadSale(db, { gclid: updated.gclid, value: updated.quotedPrice ?? 0 });
+      const reported = await db.enquiry.update({ where: { id: b.id }, data: { saleReportedAt: new Date() } });
+      await writeAudit(db, {
+        entityType: "google-ads", entityId: "6099368375", action: "ads:sale_reported", changedFields: ["conversion"],
+        previousValue: {}, newValue: { enquiryId: b.id, value: updated.quotedPrice ?? 0 }, changedBy: admin.email,
+      });
+      return NextResponse.json(reported);
+    } catch (e) {
+      console.error("sale upload", e);
+    }
+  }
   return NextResponse.json(updated);
 }

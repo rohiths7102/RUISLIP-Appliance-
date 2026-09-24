@@ -66,7 +66,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
   // full menu covering the product the customer had just tapped.
   useEffect(() => { setOpen(false); setOpenDept(null); }, [pathname]);
   return (
-    <header className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
+    <header data-site-chrome className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
       {/* ---- white bar: name · member mark · search · phone ---- */}
       <div className="border-b border-line bg-paper">
         <div className="container-x flex h-[72px] items-center gap-2 md:gap-4 lg:h-[88px]">

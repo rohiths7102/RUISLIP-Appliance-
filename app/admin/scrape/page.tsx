@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { adminHref } from "@/lib/admin-config";
 import AdminShell from "@/components/admin/AdminShell";
 import ScrapeAdmin from "@/components/admin/ScrapeAdmin";
+export const metadata = { title: "Scrape a page" };
 
 export const dynamic = "force-dynamic";
 

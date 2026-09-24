@@ -3,6 +3,7 @@ import { loadCatalog } from "@/lib/repo";
 import { topCategories } from "@/lib/select";
 import AdminShell from "@/components/admin/AdminShell";
 import QuickAdd from "@/components/admin/QuickAdd";
+export const metadata = { title: "Add product" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminQuickAdd() {

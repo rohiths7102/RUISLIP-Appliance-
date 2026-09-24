@@ -330,7 +330,7 @@ export default function PriceWatchAdmin({
                   setSourceId(e.target.value);
                   setSelected(new Set());
                 }}
-                className="rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-blue"
+                className="min-w-0 max-w-[58vw] rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-blue sm:max-w-none"
               >
                 {sources.map((s) => (
                   <option key={s.id} value={s.id}>

@@ -3,6 +3,7 @@ import { getPrisma } from "@/lib/prisma";
 import { loadCatalog } from "@/lib/repo";
 import AdminShell from "@/components/admin/AdminShell";
 import CategoriesAdmin from "@/components/admin/CategoriesAdmin";
+export const metadata = { title: "Categories" };
 export const dynamic = "force-dynamic";
 async function rows() {
   try {

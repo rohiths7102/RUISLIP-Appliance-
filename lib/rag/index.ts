@@ -1,7 +1,5 @@
-import { getPrisma } from "../prisma";
 import { loadCatalog } from "../repo";
 import { buildDocuments, productDoc, businessDocs, faqDocs, categoryDoc, brandDoc, type RagDoc } from "./documents";
-import { retrieve, retrieveSemantic, type Doc, type Hit } from "./retriever";
 import { embedText, embeddingsEnabled } from "./embed";
 import { poaNamesFromDb, isPoaProduct } from "../poa";
 
@@ -136,21 +134,4 @@ export async function syncBrandProductsToRag(db: any, brandId: string): Promise<
   });
   for (let i = 0; i < writes.length; i += 250) await db.$transaction(writes.slice(i, i + 250));
   return rows.length;
-}
-
-/** Retrieve grounded context. Uses the DB index if built; otherwise builds
- * documents from the LIVE catalogue (DB, or seed if no DB) so results always
- * reflect current data — even before `rag:build` is run. */
-export async function searchIndex(query: string, k = 6): Promise<Hit[]> {
-  try {
-    const db = await getPrisma();
-    const rows = await db.rAGDocument.findMany();
-    if (rows.length) {
-      const docs: Doc[] = rows.map((r: any) => ({ sourceType: r.sourceType, sourceId: r.sourceId, title: r.title, content: r.content, metadata: r.metadata, embedding: Array.isArray(r.embedding) ? r.embedding : null }));
-      if (embeddingsEnabled()) { const qv = await embedText(query); if (qv) { const sem = retrieveSemantic(qv, docs, k); if (sem.length) return sem; } }
-      return retrieve(query, docs, k);
-    }
-  } catch { /* fall through */ }
-  const docs = buildDocuments(await loadCatalog()) as Doc[];
-  return retrieve(query, docs, k);
 }

@@ -4,6 +4,7 @@ import { loadCatalog } from "@/lib/repo";
 import { topCategories, childCategories } from "@/lib/select";
 import AdminShell from "@/components/admin/AdminShell";
 import ProductsAdmin from "@/components/admin/ProductsAdmin";
+export const metadata = { title: "Products" };
 export const dynamic = "force-dynamic";
 
 const SELECT = {
@@ -13,8 +14,9 @@ const SELECT = {
   adminOverrideFields: true,
 };
 
-export default async function AdminProducts() {
+export default async function AdminProducts({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const admin = await requireAdmin();
+  const initialQuery = String((await searchParams).q || "").slice(0, 80);
   const { categories } = await loadCatalog();
   const catTree = topCategories(categories).map((c) => ({
     name: c.name,
@@ -46,7 +48,7 @@ export default async function AdminProducts() {
           </p>
         </div>
       )}
-      <ProductsAdmin initial={rows} initialTotal={total} categories={catTree} />
+      <ProductsAdmin initial={rows} initialTotal={total} categories={catTree} initialQuery={initialQuery} />
     </AdminShell>
   );
 }

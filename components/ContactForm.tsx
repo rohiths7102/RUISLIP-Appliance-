@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { reportAdsConversion } from "@/lib/google-ads";
+import { adClickId, adSource } from "@/lib/ad-source";
 import { useSearchParams } from "next/navigation";
 import { Phone } from "lucide-react";
 import { telHref, STORE_PHONE } from "@/lib/format";
@@ -30,7 +31,7 @@ export default function ContactForm() {
       const r = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, productCode: code, productTitle: product }),
+        body: JSON.stringify({ ...form, productCode: code, productTitle: product, gclid: adClickId(), adSource: adSource() }),
       });
       if (r.ok) { setSent(true); reportAdsConversion("enquiry"); }
       else setError("We couldn't send that online — please call the shop and we'll sort it straight away.");

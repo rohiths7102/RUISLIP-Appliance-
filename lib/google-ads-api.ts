@@ -29,7 +29,8 @@ async function call(db: any, path: string, body: unknown): Promise<any> {
   };
   if (process.env.GOOGLE_ADS_DEVELOPER_TOKEN) headers["developer-token"] = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID) headers["login-customer-id"] = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID.replace(/-/g, "");
-  const r = await fetch(`${BASE}/${path}`, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
+  // Customer-level methods are "customers/{id}:method"; resources are ".../{id}/googleAds:…".
+  const r = await fetch(path.startsWith(":") ? `${BASE}${path}` : `${BASE}/${path}`, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
   const j: any = await r.json().catch(() => ({}));
   if (!r.ok) {
     const msg = j?.error?.details?.[0]?.errors?.[0]?.message || j?.error?.message || `HTTP ${r.status}`;
@@ -83,4 +84,23 @@ export async function pauseKeyword(db: any, key: string): Promise<void> {
       adGroupCriterionOperation: { update: { resourceName: `customers/${CUSTOMER}/adGroupCriteria/${key}`, status: "PAUSED" }, updateMask: "status" },
     }],
   });
+}
+
+/* ---------- a won sale, back to Google Ads ---------- */
+
+/** "Website sale" (UPLOAD_CLICKS, secondary), created 23 Sept 2026. */
+const SALE_ACTION = `customers/${CUSTOMER}/conversionActions/7790424716`;
+
+/**
+ * Report a sale against the ad click that brought the customer, so Google Ads
+ * sees which clicks became money, not just calls. Needs the gclid captured at
+ * enquiry time (only present if the visitor accepted cookies).
+ */
+export async function uploadSale(db: any, sale: { gclid: string; value: number; at?: Date }): Promise<void> {
+  const at = (sale.at ?? new Date()).toISOString().replace("T", " ").replace(/\.\d+Z$/, "+00:00");
+  const j = await call(db, ":uploadClickConversions", {
+    conversions: [{ gclid: sale.gclid, conversionAction: SALE_ACTION, conversionDateTime: at, conversionValue: Math.max(0, sale.value), currencyCode: "GBP" }],
+    partialFailure: true,
+  });
+  if (j.partialFailureError) throw new Error(`Google Ads: ${j.partialFailureError.message || "sale not accepted"}`);
 }

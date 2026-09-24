@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import AdminShell from "@/components/admin/AdminShell";
 import SyncAdmin from "@/components/admin/SyncAdmin";
+export const metadata = { title: "Sync" };
 export const dynamic = "force-dynamic";
 export default async function AdminSync() {
   const admin = await requireAdmin();

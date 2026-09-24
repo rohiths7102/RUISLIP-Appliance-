@@ -22,12 +22,14 @@ export function Sparkline({ points, stroke = "var(--color-blue)", fill }: {
   );
 }
 
-export function BarChart({ data }: { data: { label: string; value: number }[] }) {
+export function BarChart({ data, label = "Calls per day" }: { data: { label: string; value: number }[]; label?: string }) {
   const w = 560, h = 190, padB = 22, padL = 6;
   const max = Math.max(1, ...data.map((d) => d.value));
   const bw = (w - padL * 2) / data.length;
+  // At 30 or 90 bars the text overprints: label every Nth bar, always the latest.
+  const every = Math.ceil(data.length / 14);
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Calls per day">
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label={label}>
       {[0.25, 0.5, 0.75, 1].map((f) => (
         <line key={f} x1={padL} x2={w - padL} y1={h - padB - f * (h - padB - 12)} y2={h - padB - f * (h - padB - 12)} stroke="var(--color-line)" strokeWidth="1" />
       ))}
@@ -40,11 +42,13 @@ export function BarChart({ data }: { data: { label: string; value: number }[] })
             <rect x={x} y={h - padB - bh} width={bw * 0.6} height={Math.max(bh, d.value > 0 ? 3 : 0)} rx="3"
               fill={i === data.length - 1 ? "var(--color-blue)" : "var(--color-sky)"}
               fillOpacity={i === data.length - 1 ? undefined : 0.55} />
-            {d.value > 0 && (
+            {d.value > 0 && (data.length - 1 - i) % every === 0 && (
               <text x={x + bw * 0.3} y={h - padB - bh - 5} textAnchor="middle" fontSize="10" fill="var(--color-muted)">{d.value}</text>
             )}
             {/* muted at 75% approximates the lighter #8aa0b8 axis tint */}
-            <text x={x + bw * 0.3} y={h - 7} textAnchor="middle" fontSize="9" fill="var(--color-muted)" fillOpacity={0.75}>{d.label}</text>
+            {(data.length - 1 - i) % every === 0 && (
+              <text x={x + bw * 0.3} y={h - 7} textAnchor="middle" fontSize="9" fill="var(--color-muted)" fillOpacity={0.75}>{d.label}</text>
+            )}
           </g>
         );
       })}

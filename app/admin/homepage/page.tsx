@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import AdminShell from "@/components/admin/AdminShell";
 import HomepageAdmin from "@/components/admin/HomepageAdmin";
 import { PageTitle } from "@/components/admin/ui";
+export const metadata = { title: "Homepage" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminHomepage() {

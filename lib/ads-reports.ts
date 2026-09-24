@@ -18,6 +18,10 @@ export const ADS_REPORTS: Record<string, string> = {
   hours: `SELECT segments.hour, ${M} FROM campaign WHERE ${LAST30}`,
   postcodes: `SELECT campaign.id, segments.geo_target_postal_code, ${M} FROM user_location_view WHERE ${LAST30}`,
   conversionActions: `SELECT segments.conversion_action_name, metrics.all_conversions FROM campaign WHERE ${LAST30}`,
+  // What the account already refuses to show ads for — campaign negatives and
+  // negative keyword lists — so the admin never offers to block them again.
+  negatives: "SELECT campaign_criterion.keyword.text, campaign_criterion.keyword.match_type FROM campaign_criterion WHERE campaign_criterion.negative = TRUE AND campaign_criterion.type = 'KEYWORD' AND campaign.status = 'ENABLED'",
+  sharedNegatives: "SELECT shared_criterion.keyword.text, shared_criterion.keyword.match_type FROM shared_criterion WHERE shared_set.type = 'NEGATIVE_KEYWORDS' AND shared_set.status = 'ENABLED'",
 };
 
 /** Daily per-campaign numbers — the AdsCampaignDay table. */
@@ -63,6 +67,8 @@ export function shapeReport(report: string, raw: any[], geoNames: Record<string,
         return { label: geoNames[id] || id, key: id };
       }
       case "conversionActions": return { label: String(r.segments?.conversionActionName ?? "") };
+      case "negatives": return { label: String(r.campaignCriterion?.keyword?.text ?? "").toLowerCase(), detail: String(r.campaignCriterion?.keyword?.matchType ?? "") };
+      case "sharedNegatives": return { label: String(r.sharedCriterion?.keyword?.text ?? "").toLowerCase(), detail: String(r.sharedCriterion?.keyword?.matchType ?? "") };
       default: return null;
     }
   };
@@ -82,6 +88,23 @@ export function shapeReport(report: string, raw: any[], geoNames: Record<string,
   if (report === "weekdays") return rows.sort((a, b) => DAYS.indexOf(a.label) - DAYS.indexOf(b.label));
   if (report === "hours") return rows.sort((a, b) => Number(a.label) - Number(b.label));
   return rows.sort((a, b) => b.cost - a.cost || b.conversions - a.conversions);
+}
+
+/**
+ * Would this search be stopped by one of the account's negatives? Google's
+ * rules: EXACT = the same words; PHRASE = the words in that order, anywhere;
+ * BROAD = all the words, any order. (Negatives never match close variants.)
+ */
+export function isNegated(search: string, negatives: { label: string; detail?: string }[]): boolean {
+  const words = search.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(Boolean);
+  const joined = ` ${words.join(" ")} `;
+  return negatives.some((n) => {
+    const nw = n.label.replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(Boolean);
+    if (!nw.length) return false;
+    if (n.detail === "EXACT") return nw.join(" ") === words.join(" ");
+    if (n.detail === "PHRASE") return joined.includes(` ${nw.join(" ")} `);
+    return nw.every((w) => words.includes(w));
+  });
 }
 
 /** Postcode rows carry geo constant ids; this query names them. */

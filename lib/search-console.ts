@@ -9,7 +9,7 @@ const SITE = process.env.GSC_SITE || "sc-domain:kitchen-appliances.co.uk";
 
 export type GscRow = { key: string; clicks: number; impressions: number; ctr: number; position: number };
 
-export async function searchAnalytics(db: any, dimension: "query" | "page", days = 28): Promise<GscRow[] | null> {
+export async function searchAnalytics(db: any, dimension: "query" | "page" | "date", days = 28, page?: string): Promise<GscRow[] | null> {
   const token = await accessToken(db);
   if (!token) return null;
   const end = new Date(Date.now() - 2 * 86_400_000); // GSC data lags ~2 days
@@ -17,7 +17,11 @@ export async function searchAnalytics(db: any, dimension: "query" | "page", days
   const r = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(SITE)}/searchAnalytics/query`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10), dimensions: [dimension], rowLimit: 250 }),
+    body: JSON.stringify({
+      startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10), dimensions: [dimension], rowLimit: 250,
+      // Narrow to one page's searches (the SEO editor's "what people typed to find this page").
+      ...(page ? { dimensionFilterGroups: [{ filters: [{ dimension: "page", operator: "equals", expression: page }] }] } : {}),
+    }),
     signal: AbortSignal.timeout(20000),
   });
   const j: any = await r.json().catch(() => ({}));

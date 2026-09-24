@@ -10,7 +10,9 @@ export const groqConfigured = () => !!(process.env.GROQ_API_KEY || process.env.G
  */
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
-async function callGroqOnly(messages: ChatMsg[], opts: { model?: string; timeoutMs?: number; temperature?: number } = {}): Promise<string> {
+type CallOpts = { model?: string; timeoutMs?: number; temperature?: number; maxTokens?: number };
+
+async function callGroqOnly(messages: ChatMsg[], opts: CallOpts = {}): Promise<string> {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("GROQ_API_KEY not set");
   const model = opts.model || process.env.GROQ_MODEL || DEFAULT_MODEL;
@@ -21,7 +23,7 @@ async function callGroqOnly(messages: ChatMsg[], opts: { model?: string; timeout
       method: "POST", signal: ctrl.signal,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model, messages, temperature: opts.temperature ?? 0.3, max_tokens: 700, stream: false,
+        model, messages, temperature: opts.temperature ?? 0.3, max_tokens: opts.maxTokens ?? 700, stream: false,
         // Reasoning models bill their thinking against max_tokens and return it
         // in a separate `reasoning` field we never show. Left at default, a long
         // think can consume the whole budget and return EMPTY content — a
@@ -82,16 +84,21 @@ export async function callGemini(messages: ChatMsg[], timeoutMs: number): Promis
  * retired model id or a timeout leaves the customer just as stuck, and Gemini
  * answering is always better than the fallback sentence.
  */
-export async function callGroq(messages: ChatMsg[], opts: { model?: string; timeoutMs?: number; temperature?: number } = {}): Promise<string> {
+export async function callAssistant(messages: ChatMsg[], opts: CallOpts = {}): Promise<{ text: string; provider: "groq" | "gemini" }> {
   const timeoutMs = opts.timeoutMs ?? 20000;
   if (process.env.GROQ_API_KEY) {
     try {
       const out = await callGroqOnly(messages, opts);
-      if (out) return out;
+      if (out) return { text: out, provider: "groq" };
       console.warn("chat: Groq returned empty content, trying Gemini");
     } catch (e) {
       console.warn("chat: Groq failed, trying Gemini —", String((e as Error)?.message || e));
     }
   }
-  return callGemini(messages, timeoutMs);
+  return { text: await callGemini(messages, timeoutMs), provider: "gemini" };
+}
+
+/** callAssistant, text only. The chat audit is the one caller that needs to know which answered. */
+export async function callGroq(messages: ChatMsg[], opts: CallOpts = {}): Promise<string> {
+  return (await callAssistant(messages, opts)).text;
 }

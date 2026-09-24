@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { loadCatalog } from "@/lib/repo";
 import { slugOf } from "@/lib/select";
+import { TOWNS } from "@/lib/areas";
 // Crawlers hit this constantly and each hit pulled the full catalogue.
 // An hour of staleness in lastmod hints is nothing; the egress was not.
 export const revalidate = 3600;
@@ -10,9 +11,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   return [
     { url: base, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    ...["/products", "/categories", "/brands", "/about", "/delivery-services", "/contact"].map((p) => ({ url: base + p, lastModified: now, changeFrequency: "weekly" as const, priority: 0.8 })),
+    ...["/products", "/categories", "/brands", "/areas", "/about", "/delivery-services", "/contact"].map((p) => ({ url: base + p, lastModified: now, changeFrequency: "weekly" as const, priority: 0.8 })),
     ...products.map((p) => ({ url: `${base}/products/${slugOf(p)}`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.7 })),
     ...categories.map((c) => ({ url: `${base}/categories/${c.id}`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.6 })),
     ...brands.map((b) => ({ url: `${base}/brands/${b.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.5 })),
+    ...TOWNS.map((t) => ({ url: `${base}/areas/${t.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.6 })),
   ];
 }

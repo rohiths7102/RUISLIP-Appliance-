@@ -22,6 +22,9 @@ export default function ConsentAnalytics() {
   const [ready, setReady] = useState(false); // banner renders post-mount only, so SSR/first paint match
 
   useEffect(() => {
+    // The owner's back office: no banner and no Google tags, so his own clicks
+    // there are never measured.
+    if (document.querySelector("[data-admin-shell]")) return;
     try {
       const saved = localStorage.getItem(KEY);
       if (saved === "granted" || saved === "denied") setChoice(saved);

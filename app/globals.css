@@ -75,6 +75,9 @@ body {
   overflow-x: hidden;
 }
 ::selection { background: var(--color-blue); color: #fff; }
+/* The back office is its own app: no storefront header, strip, footer, chat or
+   cookie bar around it (app/admin/layout.tsx sets the marker). */
+body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
 /* Headings are semibold sans in this direction — the weight lives here so every
    .font-display heading lands consistent, whatever weight utility it carried
    under the old serif look. */
@@ -98,6 +101,8 @@ body {
 
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 .marquee { animation: marquee 70s linear infinite; }
+/* The brand band at the top runs the other way, a little quicker. */
+.marquee-rev { animation: marquee 55s linear infinite reverse; }
 
 @keyframes ctaUp { 0% { transform: translateY(120%); } 100% { transform: translateY(0); } }
 .cta-up { animation: ctaUp .5s cubic-bezier(.2,.8,.2,1); }

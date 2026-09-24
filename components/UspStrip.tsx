@@ -15,7 +15,7 @@ const USPS = [
 
 export default function UspStrip() {
   return (
-    <div className="border-b border-line bg-paper-2">
+    <div data-site-chrome className="border-b border-line bg-paper-2">
       <div className="container-x flex items-center justify-between gap-5 overflow-x-auto py-2">
         {/* Navy sentence-case text with icon chips — this bar carries the shop's
             four best claims and must read as information, not decoration. */}

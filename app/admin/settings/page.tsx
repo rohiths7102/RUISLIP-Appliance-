@@ -7,6 +7,7 @@ import { Card, Badge } from "@/components/admin/ui";
 import { graphConfigured } from "@/lib/mailer";
 import { groqConfigured } from "@/lib/chat/groq";
 import { Mail, Bot } from "lucide-react";
+export const metadata = { title: "Business" };
 export const dynamic = "force-dynamic";
 
 async function businessForm() {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminHref } from "@/lib/admin-config";
 import { requireAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { poaNamesFromDb } from "@/lib/poa";
@@ -11,6 +12,7 @@ import { oauthConfigured, redirectUri } from "@/lib/google-oauth";
 import { adsApiConfigured } from "@/lib/google-ads-api";
 import { Card, StatTile, Badge, EmptyState } from "@/components/admin/ui";
 import { Megaphone, PhoneCall, MapPin, CircleCheck, CircleAlert } from "lucide-react";
+export const metadata = { title: "Google Ads" };
 export const dynamic = "force-dynamic";
 
 const DAY = 86_400_000;
@@ -149,9 +151,9 @@ export default async function AdminAds({ searchParams }: { searchParams: Promise
       <AdsReports reports={d.reports} zone={d.zone} live={adsApiConfigured() && !!d.google} />
 
       {/* ---- feed health ---- */}
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_1fr] [&>*]:min-w-0">
         <Card className="p-5">
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Feed health</h2>
             <span className="font-mono text-[11px] text-ink/70">{eligible.toLocaleString("en-GB")} of {d.total.toLocaleString("en-GB")} products advertisable</span>
           </div>
@@ -187,8 +189,10 @@ export default async function AdminAds({ searchParams }: { searchParams: Promise
                   {!byDesign && n > 0 && (
                     <p className="mt-1 pl-6 text-[12px] text-muted">
                       {fix} —{" "}
-                      <Link href="/admin/products" className="font-semibold text-blue-deep hover:underline">open products</Link>
-                      <span className="text-ink/70"> · e.g. {d!.buckets[key].slice(0, 3).map((p) => p.productCode).join(", ")}</span>
+                      <Link href={adminHref("products")} className="font-semibold text-blue-deep hover:underline">open products</Link>
+                      <span className="text-ink/70"> · e.g. {d!.buckets[key].slice(0, 3).map((p, i) => (
+                        <span key={p.productCode}>{i > 0 && ", "}<Link href={`${adminHref("products")}?q=${encodeURIComponent(p.productCode)}`} className="hover:text-blue-deep hover:underline">{p.productCode}</Link></span>
+                      ))}</span>
                     </p>
                   )}
                 </li>

@@ -72,13 +72,15 @@ export default async function PrivacyPage() {
       <H>Who else sees it</H>
       <P>
         Only our staff, and the suppliers who run the systems behind this site: our website host and database
-        provider, and — where an appliance is delivered or installed by a supplier or manufacturer — that
+        provider, the AI services that write the chat assistant&apos;s answers (Groq, with Google as a back-up),
+        and — where an appliance is delivered or installed by a supplier or manufacturer — that
         company, so they can complete your order. Each is bound to keep your data confidential and to use it
         only on our instructions.
       </P>
 
       <H>How long we keep it</H>
       <P>
+        Chat assistant conversations are kept for 12 months and then deleted.
         Enquiries that do not lead to a sale are kept for up to 24 months and then deleted. Where you buy from
         us, we keep the sale record for six years, which is the period HMRC requires and which matches the
         guarantee and statutory-rights window.
@@ -99,6 +101,21 @@ export default async function PrivacyPage() {
         never used to show you adverts elsewhere. Nothing is loaded unless you choose &quot;Accept&quot; — choosing to decline leaves
         the site entirely cookie-free apart from the sign-in cookie used by shop staff in the admin area, which
         is strictly necessary and needs no consent.
+      </P>
+
+      <P>
+        Separately, the site counts visits anonymously: which page was shown and, when you arrive, which website
+        sent you (for example Google or ChatGPT). This uses no cookies and records nothing that identifies you.
+        If you accepted cookies and then send us an enquiry, we note which Google ad (if any) brought you, so that
+        if you go on to buy we can tell Google that ad worked. Declining cookies means this is never recorded.
+      </P>
+
+      <P>
+        <strong className="text-ink">The chat assistant.</strong> What you type into the &quot;Ask us&quot; chat is sent to
+        our AI service to write the answer, and saved with that answer, the page you were on and (if you came from
+        an advert) which kind, so we can check the assistant tells customers the right thing and see what people
+        ask about. We do not record who you are: no IP address or cookie, and no name or contact details unless you
+        type them in, so please don&apos;t share personal details there; for anything about an order, call us.
       </P>
 
       <P>

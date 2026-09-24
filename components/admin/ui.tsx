@@ -88,7 +88,7 @@ export function Notice({ tone = "info", className = "", children }: { tone?: Exc
 
 /* ----------------------------------------------------------- EmptyState */
 
-export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+export function EmptyState({ title, hint }: { title: string; hint?: React.ReactNode }) {
   return (
     <Card className="px-6 py-10 text-center">
       <p className="text-sm font-medium text-ink/70">{title}</p>
@@ -109,4 +109,33 @@ export function PageTitle({ children, count, actions }: { children: ReactNode; c
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
+}
+
+/* ------------------------------------------------------------- KpiTile */
+
+/**
+ * One number, this week against last. `neutral` shows the change without a
+ * good/bad colour (spend going down is not automatically good); `perCall`
+ * reads "no calls" instead of £0.00 when there were none to divide by.
+ */
+export type KpiValue = { label: string; now: number; before: number; money?: boolean; lowerIsBetter?: boolean; neutral?: boolean; perCall?: boolean };
+export function KpiTile({ k, inset = false }: { k: KpiValue; inset?: boolean }) {
+  const fmt = (v: number) => (!Number.isFinite(v) ? (k.perCall ? "no calls" : "—") : k.money ? `£${v.toFixed(2)}` : String(Math.round(v)));
+  const comparable = Number.isFinite(k.now) && Number.isFinite(k.before);
+  const diff = comparable ? k.now - k.before : 0;
+  const same = comparable && Math.abs(diff) < 0.005;
+  const good = k.lowerIsBetter ? diff < 0 : diff > 0;
+  const pct = comparable && k.before ? Math.round((diff / k.before) * 100) : null;
+  const tone = !comparable || same || k.neutral ? "text-muted" : good ? "text-success" : "text-danger";
+  const body = (
+    <>
+      <div className="font-display text-2xl">{fmt(k.now)}</div>
+      <div className="mt-0.5 text-xs text-muted">{k.label}</div>
+      <div className={cx("mt-1 text-[11.5px]", tone)}>
+        {!comparable ? `last week: ${fmt(k.before)}` : same ? "same as last week"
+          : `${diff > 0 ? "▲" : "▼"} ${pct === null ? fmt(Math.abs(diff)) : `${Math.abs(pct)}%`} vs last week (${fmt(k.before)})`}
+      </div>
+    </>
+  );
+  return inset ? <div className="rounded-xl bg-paper-2/60 p-3.5">{body}</div> : <Card className="p-4">{body}</Card>;
 }

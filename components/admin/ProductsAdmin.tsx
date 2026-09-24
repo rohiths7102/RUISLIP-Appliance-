@@ -36,11 +36,11 @@ const blank = (): Row => ({
 });
 
 export default function ProductsAdmin({
-  initial, initialTotal, categories,
-}: { initial: Row[]; initialTotal: number; categories: { name: string; subs: string[] }[] }) {
+  initial, initialTotal, categories, initialQuery = "",
+}: { initial: Row[]; initialTotal: number; categories: { name: string; subs: string[] }[]; initialQuery?: string }) {
   const [rows, setRows] = useState<Row[]>(initial);
   const [total, setTotal] = useState(initialTotal);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQuery);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
@@ -72,7 +72,8 @@ export default function ProductsAdmin({
 
   const first = useRef(true);
   useEffect(() => {
-    if (first.current) { first.current = false; return; }
+    // The server sent the first page; skip reloading it — unless we opened with a search (?q=).
+    if (first.current) { first.current = false; if (!q) return; }
     const t = setTimeout(() => load(q, page), 250);
     return () => clearTimeout(t);
   }, [q, page, load]);

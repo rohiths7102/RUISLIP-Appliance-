@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Button, Card, Notice, PageTitle, StatTile } from "@/components/admin/ui";
+import { Button, Card, Notice, StatTile } from "@/components/admin/ui";
 export default function ChatbotAdmin() {
   const [status, setStatus] = useState<any>(null); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
   const [q, setQ] = useState("Do you have any quiet Bosch dishwashers?"); const [ans, setAns] = useState<any>(null); const [testing, setTesting] = useState(false);
@@ -10,8 +10,8 @@ export default function ChatbotAdmin() {
   async function test() { setTesting(true); setAns(null); const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: [{ role: "user", content: q }] }) }); setTesting(false); setAns(r.ok ? await r.json() : { reply: "Request failed.", sources: [] }); }
   return (
     <div className="max-w-2xl">
-      <PageTitle>Chatbot / RAG</PageTitle>
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Assistant setup</h2>
+      <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
         {[["Indexed docs", status?.documents ?? "—"], ["Groq", status?.groqConfigured ? "configured" : "not set"], ["Embeddings", status?.embeddings ? "on" : "lexical"], ["Last built", status?.lastBuilt ? new Date(status.lastBuilt).toLocaleDateString() : "—"]].map(([l, v]) => (
           <StatTile key={l as string} label={l as string} value={v as any} />
         ))}
@@ -22,6 +22,7 @@ export default function ChatbotAdmin() {
       {msg && <Notice tone={msg.startsWith("Rebuilt") ? "success" : "warning"} className="mt-3">{msg}</Notice>}
       <Card className="mt-8 p-5">
         <div className="font-medium">Test the chatbot</div>
+        <p className="mt-0.5 text-xs text-muted">Your tests are listed above as &quot;your test&quot; and left out of the numbers.</p>
         <div className="mt-2 flex gap-2"><input value={q} onChange={(e) => setQ(e.target.value)} className="flex-1 rounded-full border border-line px-3 py-2 text-sm" /><Button small onClick={test} disabled={testing} className="bg-blue! text-white!">{testing ? "…" : "Ask"}</Button></div>
         {ans && (
           <div className="mt-3 rounded-xl bg-paper p-3 text-sm">

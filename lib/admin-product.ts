@@ -6,6 +6,7 @@ export const EDITABLE = [
   "title", "brand", "productCode", "category", "subcategory",
   "priceNow", "priceWas", "saving", "availabilityNormalised", "availabilityRaw",
   "warranty", "shortDescription", "descriptionText", "deliveryNotes", "mainImage", "isVisible", "featured",
+  "seoTitle", "seoDescription",
 ] as const;
 
 /** Fields a re-scrape owns — once the owner edits one, it gets locked. */

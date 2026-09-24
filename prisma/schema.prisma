@@ -143,6 +143,9 @@ model BusinessInfo {
   /// (lib/homepage.ts). null = that file's defaults, which are the homepage as
   /// it stood when this became editable.
   homepage               Json?
+  /// Marketing engine settings (lib/marketing/settings.ts): automation switches,
+  /// thresholds and the weekly-report recipient. null = everything off.
+  marketing              Json?
   updatedAt              DateTime @updatedAt
 }
 
@@ -263,9 +266,39 @@ model TrackedEvent {
   // gclid/gbraid/wbraid or cpc UTMs, another utm_source verbatim, else "".
   // Lets the Ads page show which calls the owner's ad spend actually produced.
   source      String   @default("")
+  // page_view only: the site the visitor came from (host only, e.g.
+  // "www.google.com", "chatgpt.com"; "" = typed/bookmarked) and whether this
+  // was the first page of the visit. No cookies, no identifiers.
+  referrer    String   @default("")
+  landing     Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   @@index([type, createdAt])
+}
+
+/// The website chat, for the owner to audit: one row per customer question and
+/// the answer the assistant sent. A random per-tab id groups a conversation — no
+/// IP address, no cookie, nothing that identifies the visitor. Kept 12 months
+/// (the daily cron deletes older rows).
+model ChatTurn {
+  id             String   @id @default(cuid())
+  conversationId String
+  question       String
+  answer         String
+  // Products the answer named, in its order: [{ code, title, url }].
+  products       Json
+  // What the finder understood: { brand, category, maxPrice, minPrice, codes: [{ asked, status, codes }] }.
+  understood     Json
+  // answered | corrected (a wrong code or price was caught before sending) | unsure | no_match | fallback
+  outcome        String
+  provider       String   @default("")  // groq | gemini | "" when no AI answered
+  latencyMs      Int      @default(0)
+  page           String   @default("")  // where the chat was opened
+  source         String   @default("")  // traffic tag, as TrackedEvent.source; "admin" = the owner testing
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([conversationId])
 }
 
 model Enquiry {
@@ -286,6 +319,11 @@ model Enquiry {
   // Last AI-drafted email, cached so a half-edited draft survives a page reload.
   aiDraftSubject String @default("")
   aiDraftBody    String @default("")
+  // Which Google Ads click brought them (only when they accepted cookies), so a
+  // won sale can be reported back to Google Ads with its value.
+  gclid          String @default("")
+  adSource       String @default("")
+  saleReportedAt DateTime?
   createdAt    DateTime @default(now())
 
   @@index([status])
@@ -325,4 +363,12 @@ model GoogleConnection {
   refreshToken String
   connectedBy  String   @default("")
   updatedAt    DateTime @updatedAt
+}
+
+/// An action on Admin → Today the owner chose to ignore; hidden until `until`.
+model ActionDismissal {
+  key         String   @id
+  until       DateTime
+  dismissedBy String   @default("")
+  createdAt   DateTime @default(now())
 }

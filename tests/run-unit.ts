@@ -4,7 +4,7 @@ import { slugOf, poaNamesFrom } from "../lib/select.js";
 import { isPoaProduct } from "../lib/poa.js";
 import { productDoc, buildDocuments, faqDocs } from "../lib/rag/documents.js";
 import { retrieve } from "../lib/rag/retriever.js";
-import { buildSystemPrompt, extractSources } from "../lib/chat/prompt.js";
+import { buildSystemPrompt, factsBlock, sourcesFor, plainReply } from "../lib/chat/prompt.js";
 import * as seed from "../lib/data.js";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
@@ -52,7 +52,16 @@ ok(retrieve("do you deliver", rdocs, 5).slice(0, 3).some((h: any) => h.doc.sourc
 // chat prompt
 const sp = buildSystemPrompt(seed.business);
 ok(/never/i.test(sp) && sp.includes(seed.business.phone), "system prompt: no-fabrication + phone");
-ok(extractSources(retrieve("bosch dishwasher", rdocs, 6)).some((s) => s.url.startsWith("/products/")), "sources carry product links");
+// chat facts and links (lib/chat/prompt.ts)
+const fact = { code: "WAN28258GB", name: "Bosch Serie 4 washing machine", brand: "Bosch", department: "Washing Machines", price: 499, was: null, saving: null,
+  callForPrice: false, availability: "", warranty: "", url: "/products/bosch-wan28258gb", specs: "", about: "", why: "exact code match" };
+const found: any = { products: [fact], codes: [], range: null, knowledge: [], understood: {}, searched: true };
+ok(factsBlock(found).includes("£499.00") && factsBlock(found).includes("WAN28258GB"), "facts carry the live price, to the penny, and the code");
+ok(!/£/.test(factsBlock({ ...found, products: [{ ...fact, price: null, callForPrice: true }] })), "a call-for-price product reaches the model with no number");
+ok(/closest listed codes: WGG254Z1GB/i.test(factsBlock({ ...found, codes: [{ asked: "WGG254Z0GB", status: "near", codes: ["WGG254Z1GB"] }] })), "an unlisted code is said so, with the nearest listed code");
+ok(sourcesFor("Bosch Serie 4 — WAN28258GB — £499.00", found)[0]?.url === "/products/bosch-wan28258gb", "links: the product the reply named");
+ok(sourcesFor("Hello, what are you looking for?", found).length === 0, "links: none when the reply names no product");
+ok(plainReply(found, "0208 864 5763").includes("WAN28258GB — £499.00"), "the plain fallback reply is the facts");
 
 // ---- catalogue integrity ----------------------------------------------------
 // These lock in the properties the build script guarantees. If a future re-scrape

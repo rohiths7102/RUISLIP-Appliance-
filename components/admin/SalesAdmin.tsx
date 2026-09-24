@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, EmptyState, Notice, PageTitle, type Tone } from "@/components/admin/ui";
+import { channelOf } from "@/lib/marketing/channels";
+import { STAGES, stageOf, STAGE_TONE, STAGE_LABEL } from "@/lib/leads";
 import {
   Sparkles, Send, Mail, Copy, Check, Loader2, Phone, ArrowUpRight, PoundSterling,
 } from "lucide-react";
@@ -10,13 +12,15 @@ type Lead = {
   name: string; email: string; phone: string; message: string; status: string;
   notes: string; quotedPrice: number | null; lastEmailedAt: string | null;
   aiDraftSubject: string; aiDraftBody: string;
+  adSource: string; gclid: string; saleReportedAt: string | null;
 };
+/** Hours since the enquiry arrived; a "new" lead past a day is overdue. */
+const hoursOld = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+const waited = (h: number) => (h < 1 ? "under an hour" : h < 48 ? `${h}h` : `${Math.floor(h / 24)} days`);
+const OVERDUE_HOURS = 24;
 
 /** Pipeline stages ("closed" is legacy data — shown as won). */
-const STAGES = ["new", "contacted", "quoted", "won", "lost"] as const;
-const stageOf = (s: string) => (s === "closed" ? "won" : s);
-const STAGE_TONE: Record<string, Tone> = { new: "info", contacted: "warning", quoted: "info", won: "success", lost: "neutral" };
-const STAGE_LABEL: Record<string, string> = { new: "New", contacted: "Contacted", quoted: "Quoted", won: "Won", lost: "Lost" };
+
 
 /**
  * The sales side of the back office. Left: the pipeline. Right: one lead —
@@ -89,13 +93,25 @@ export default function SalesAdmin() {
       {/* pipeline chips */}
       <div className="mt-4 flex flex-wrap gap-1.5">
         {(["all", ...STAGES] as string[]).map((s) => (
-          <button key={s} onClick={() => setFilter(s)}
+          <button key={s} onClick={() => setFilter(s)} aria-pressed={filter === s}
             className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors ${filter === s ? "bg-navy text-white" : "bg-paper-2 text-ink/70 hover:bg-line"}`}>
             {s === "all" ? "All" : STAGE_LABEL[s]} <span className="opacity-60">({counts[s] ?? 0})</span>
           </button>
         ))}
       </div>
 
+      {rows.length > 0 && (() => {
+        const replied = rows.filter((r) => stageOf(r.status) !== "new").length;
+        const decided = (counts.won ?? 0) + (counts.lost ?? 0);
+        const overdue = rows.filter((r) => stageOf(r.status) === "new" && hoursOld(r.createdAt) >= OVERDUE_HOURS).length;
+        return (
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-muted">
+            <span>Replied to <strong className="text-ink">{Math.round((replied / rows.length) * 100)}%</strong></span>
+            <span>Win rate <strong className="text-ink">{decided ? `${Math.round(((counts.won ?? 0) / decided) * 100)}%` : "—"}</strong> of decided</span>
+            {overdue > 0 && <span className="text-danger">{overdue} waiting over a day</span>}
+          </p>
+        );
+      })()}
       {err && <Notice tone="warning" className="mt-4">{err} Leads appear here when customers use the enquiry forms.</Notice>}
       {patchErr && <Notice tone="danger" className="mt-4">{patchErr}</Notice>}
       {!loaded && <p className="mt-6 text-sm text-muted">Loading leads…</p>}
@@ -106,10 +122,14 @@ export default function SalesAdmin() {
       {rows.length > 0 && (
         <div className="mt-4 grid items-start gap-4 lg:grid-cols-[340px_1fr]">
           {/* ---------------- list ---------------- */}
-          <Card className="max-h-[70vh] divide-y divide-line overflow-y-auto">
+          <Card className="max-h-[45vh] divide-y divide-line overflow-y-auto lg:max-h-[70vh]">
             {shown.length === 0 && <p className="p-4 text-sm text-muted">Nothing in this stage.</p>}
             {shown.map((l) => (
-              <button key={l.id} onClick={() => setSelId(l.id)}
+              <button key={l.id} onClick={() => {
+                setSelId(l.id);
+                // On a phone the detail sits under the list: bring it into view.
+                if (window.innerWidth < 1024) setTimeout(() => document.getElementById("lead-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+              }}
                 className={`block w-full px-4 py-3 text-left transition-colors ${selId === l.id ? "bg-paper-2" : "hover:bg-paper-2/60"}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-[13.5px] font-semibold">{l.name}</span>
@@ -118,8 +138,12 @@ export default function SalesAdmin() {
                 <div className="mt-0.5 truncate text-[12px] text-muted">
                   {l.productTitle || l.message.slice(0, 60) || "General enquiry"}
                 </div>
-                <div className="mt-1 flex items-center gap-2 font-mono text-[10px] text-ink/70">
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[10px] text-ink/70">
                   {new Date(l.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                  {stageOf(l.status) === "new" && (
+                    <span className={hoursOld(l.createdAt) >= OVERDUE_HOURS ? "font-bold text-danger" : ""}>· waiting {waited(hoursOld(l.createdAt))}</span>
+                  )}
+                  {l.adSource && <span className="text-blue-deep">· {channelOf(l.adSource)}</span>}
                   {l.quotedPrice != null && <span className="text-blue-deep">· quoted £{l.quotedPrice}</span>}
                   {l.lastEmailedAt && <span className="text-success">· emailed</span>}
                 </div>
@@ -204,7 +228,7 @@ function LeadDetail({ lead, patch, setDraft }: {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div id="lead-detail" className="flex scroll-mt-24 flex-col gap-4">
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -217,9 +241,14 @@ function LeadDetail({ lead, patch, setDraft }: {
               </span>
             </p>
           </div>
-          {lead.lastEmailedAt && (
-            <Badge tone="success">emailed {new Date(lead.lastEmailedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}</Badge>
-          )}
+          <div className="flex flex-wrap gap-1.5">
+            {lead.adSource && <Badge tone="info">from {channelOf(lead.adSource)}</Badge>}
+            {lead.saleReportedAt && <Badge tone="success">sale sent to Google Ads</Badge>}
+            {!lead.saleReportedAt && stageOf(lead.status) === "won" && lead.gclid && <Badge tone="warning">sale not sent to Google yet — press Won again to retry</Badge>}
+            {lead.lastEmailedAt && (
+              <Badge tone="success">emailed {new Date(lead.lastEmailedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}</Badge>
+            )}
+          </div>
         </div>
 
         <p className="mt-3 rounded-xl bg-paper-2/70 p-3.5 text-[13.5px] leading-relaxed text-ink/80">&ldquo;{lead.message}&rdquo;</p>
@@ -238,7 +267,7 @@ function LeadDetail({ lead, patch, setDraft }: {
         {/* pipeline controls */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {STAGES.map((s) => (
-            <button key={s} onClick={() => void patch(lead.id, { status: s })}
+            <button key={s} onClick={() => void patch(lead.id, { status: s })} aria-pressed={stageOf(lead.status) === s}
               className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors ${stageOf(lead.status) === s ? "bg-navy text-white" : "border border-line text-ink/70 hover:border-blue hover:text-blue-deep"}`}>
               {STAGE_LABEL[s]}
             </button>

@@ -14,6 +14,7 @@ import PriceWatchAdmin, {
   type PriceWatchRow,
   type PriceWatchSource,
 } from "@/components/admin/PriceWatchAdmin";
+export const metadata = { title: "Price watch" };
 
 export const dynamic = "force-dynamic";
 

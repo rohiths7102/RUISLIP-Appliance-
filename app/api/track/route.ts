@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { ADMIN_PATH } from "@/lib/admin-config";
 export const dynamic = "force-dynamic";
 
 /**
  * First-party analytics beacon. Records two things the owner asked for:
+ *   page_view       — a page was shown (with, on arrival, the referring host)
  *   call_click      — someone pressed a "Call" button (with the page / product)
  *   postcode_check  — someone entered their postcode in the prompt
  *
@@ -12,7 +14,7 @@ export const dynamic = "force-dynamic";
  * must NEVER break the customer experience, so every path out of here is a
  * quiet 204 — including when the database is down.
  */
-const TYPES = new Set(["call_click", "postcode_check"]);
+const TYPES = new Set(["call_click", "postcode_check", "page_view"]);
 
 /**
  * Traffic tags the site itself stamps (lib/ad-source): the literal "google-ads"
@@ -28,12 +30,15 @@ const normaliseSource = (raw: unknown): string => {
   return AD_SOURCE.test(s) ? s : "";
 };
 
+/** The owner's own back-office pages aren't traffic, whatever the admin's public path. */
+const isBackOffice = (p: string) => ["/admin", `/${ADMIN_PATH}`].some((a) => p === a || p.startsWith(`${a}/`));
+
 export async function POST(req: Request) {
   // Analytics never surfaces errors — over-limit is a silent 204, not a 429.
   if (!rateLimit("track", clientIp(req), 60, 60_000).ok) return new NextResponse(null, { status: 204 });
 
   const b = await req.json().catch(() => null);
-  if (!b || !TYPES.has(b.type)) return new NextResponse(null, { status: 204 });
+  if (!b || !TYPES.has(b.type) || isBackOffice(String(b.path || ""))) return new NextResponse(null, { status: 204 });
 
   try {
     const db = await getPrisma();
@@ -45,6 +50,8 @@ export async function POST(req: Request) {
         postcode: String(b.postcode || "").toUpperCase().slice(0, 10),
         isLocal: typeof b.isLocal === "boolean" ? b.isLocal : null,
         source: normaliseSource(b.source),
+        referrer: /^[a-z0-9.-]{1,100}$/i.test(String(b.referrer || "")) ? String(b.referrer).toLowerCase() : "",
+        landing: b.type === "page_view" && b.landing === true,
       },
     });
   } catch { /* analytics never surfaces errors */ }

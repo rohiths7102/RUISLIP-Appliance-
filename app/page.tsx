@@ -15,6 +15,7 @@ import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
 import { getHomepage, toHomepage, FEATURED_SHOWN } from "@/lib/homepage";
 import { getPrisma } from "@/lib/prisma";
+import { AREA_GROUPS, TOWNS } from "@/lib/areas";
 import categoryHeroes from "@/data/category-heroes.json";
 export const revalidate = 300;
 
@@ -40,8 +41,8 @@ const STEPS = [
   ["04", "Arrange delivery / fitting", "We book in delivery and installation that suits you."],
 ];
 
-const AREAS = ["Ruislip", "South Ruislip", "Eastcote", "Northolt", "Pinner", "Ickenham", "Ruislip Manor",
-  "Greenford", "Ealing", "Southall", "Watford"];
+// The owner's delivery reach, grouped the way he quotes it: by postcode (lib/areas.ts).
+const AREAS = AREA_GROUPS.map((g) => [g, TOWNS.filter((t) => t.group === g)] as const);
 
 export default async function Home() {
   const { products, categories, brands, business } = await loadCatalog();
@@ -136,23 +137,42 @@ export default async function Home() {
                  bleeds past the grid so it reads as a room, not a thumbnail.
                  No .shot/multiply here — that is for light grounds; this image
                  is a true cutout and needs no blend. ------- */}
-      {/* ------- QUOOKER — the owner asked for this above everything else: the
-                 shop is a stockist and prices the range keenly. Quooker's own
-                 mark, as supplied by them. ------- */}
-      <Link href="/brands/quooker"
-        className="group block border-b border-line bg-paper-2 transition-colors hover:bg-[#e2e8f5]">
-        <div className="container-x wide flex flex-wrap items-center justify-center gap-x-5 gap-y-2 py-3.5 text-center sm:justify-start sm:text-left">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brands/quooker.svg" alt="Quooker" width={132} height={48} className="h-[30px] w-auto shrink-0" />
-          <p className="text-[15px] font-semibold text-navy">
-            Quooker stockist — unbeatable prices on the full range
-          </p>
-          <span className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-blue-deep">
-            See the taps
-            <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-[3px]" />
-          </span>
+      {/* ------- BRAND BAND — Quooker first (the owner asked for it above
+                 everything: the shop is a stockist and prices the range keenly),
+                 then every brand we sell on a running tape, in full colour. It
+                 runs the opposite way to the tape lower down; hovering pauses it. ------- */}
+      <div className="border-b border-line bg-paper-2">
+        <div className="flex flex-col items-stretch sm:flex-row">
+          <Link href="/brands/quooker"
+            className="group relative z-10 flex shrink-0 items-center justify-center gap-3.5 border-b border-line bg-paper-2 px-5 py-3 transition-colors hover:bg-[#e2e8f5] sm:justify-start sm:border-b-0 sm:border-r sm:pl-[max(1.25rem,calc((100vw-1280px)/2))] sm:shadow-[12px_0_18px_-10px_rgba(8,21,56,.18)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brands/quooker.svg" alt="Quooker" width={132} height={48} className="h-[28px] w-auto shrink-0" />
+            <span className="leading-tight">
+              <span className="block text-[13.5px] font-semibold text-navy">Quooker stockist — unbeatable prices</span>
+              <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-blue-deep">
+                See the taps <ArrowRight size={13} className="transition-transform duration-300 group-hover:translate-x-[3px]" />
+              </span>
+            </span>
+          </Link>
+          <div className="group/band relative flex min-w-0 flex-1 items-center overflow-hidden py-2.5 [mask-image:linear-gradient(90deg,transparent,#000_5%,#000_95%,transparent)]">
+            <div className="marquee-rev flex w-max items-center gap-2.5 group-hover/band:[animation-play-state:paused]">
+              {[...brandTape, ...brandTape].map((b, i) => (
+                <Link key={`band-${b.id}-${i}`} href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
+                  aria-hidden={i >= brandTape.length} tabIndex={i >= brandTape.length ? -1 : undefined}
+                  className="group/logo flex h-[46px] w-[112px] shrink-0 items-center justify-center rounded-md border border-line bg-white px-3 transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-blue hover:shadow-[0_6px_14px_-8px_rgba(10,39,136,.45)]">
+                  {b.logo ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={b.logo} alt={`${b.name} logo`} loading="lazy"
+                      className="max-h-[26px] max-w-[88%] object-contain" />
+                  ) : (
+                    <span className="text-center text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-blue-deep">{b.name}</span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
-      </Link>
+      </div>
 
       <section className="relative overflow-hidden bg-[#1b3d7d]">
         <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
@@ -482,22 +502,29 @@ export default async function Home() {
               Proudly serving Ruislip &amp; South Ruislip
             </h2>
             <p className="mb-7 text-base leading-relaxed text-muted">
-              Our own local delivery and fitting covers Ruislip, South Ruislip, Eastcote, Northolt, Pinner,
-              Ickenham, Greenford, Ealing, Southall and Watford — the <strong className="font-semibold text-ink">HA</strong>,{" "}
-              <strong className="font-semibold text-ink">UB</strong>, <strong className="font-semibold text-ink">W3&ndash;W6</strong>{" "}
-              and <strong className="font-semibold text-ink">WD3&ndash;WD24</strong> postcodes. Because we deliver
-              ourselves, we can talk you through dates, access and installation before anything leaves the shop.
+              Our own local delivery and fitting covers the <strong className="font-semibold text-ink">HA</strong>,{" "}
+              <strong className="font-semibold text-ink">UB</strong>, <strong className="font-semibold text-ink">W3&ndash;W6</strong>,{" "}
+              <strong className="font-semibold text-ink">WD3&ndash;WD24</strong> and <strong className="font-semibold text-ink">SL</strong>{" "}
+              postcodes — from Ruislip out to Harrow, Watford, Ealing and Slough. Because we deliver ourselves, we can
+              talk you through dates, access and installation before anything leaves the shop.
             </p>
-            <div className="flex flex-wrap gap-2.5">
-              {AREAS.map((a) => (
-                <span key={a} className="rounded-full border border-ink/15 px-4 py-2 text-[12.5px] font-medium">{a}</span>
+            <div className="divide-y divide-ink/10 border-y border-ink/10">
+              {AREAS.map(([code, towns], i) => (
+                <Reveal key={code} delay={i * 70} className="grid grid-cols-[92px_1fr] items-start gap-4 py-3.5">
+                  <span className="pt-1.5 font-mono text-[12px] font-semibold tracking-[0.08em] text-blue-deep">{code}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {towns.map((t) => (
+                      <Link key={t.slug} href={`/areas/${t.slug}`} className="rounded-full border border-ink/15 bg-white px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:border-blue hover:text-blue-deep">{t.name}</Link>
+                    ))}
+                  </div>
+                </Reveal>
               ))}
             </div>
           </div>
           <div className="rounded-[4px] border border-ink/10 bg-card p-9">
             <h3 className="mb-3 font-display text-[28px]">Are we in your area?</h3>
             <p className="mb-6 text-[14.5px] leading-relaxed text-muted">
-              We deliver to the HA, UB, W3&ndash;W6 and WD3&ndash;WD24 postcodes from {business.address.postcode}.
+              We deliver to the HA, UB, W3&ndash;W6, WD3&ndash;WD24 and SL postcodes from {business.address.postcode}.
               Rather than overpromise, we&apos;d sooner you call — we&apos;ll tell you honestly whether we cover
               you, what it costs and when we can come.
             </p>
