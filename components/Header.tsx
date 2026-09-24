@@ -87,8 +87,9 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
                 blue chip behind it: it was drawn for a white bar. */}
             <span className="flex shrink-0 items-center sm:border-l sm:border-line sm:pl-3 md:pl-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/euronics-member.png" alt="A member of Euronics"
-                width={320} height={110} className="h-[44px] w-auto shrink-0 sm:h-[48px] md:h-[52px] lg:h-[58px]" />
+              {/* -bold: the same artwork with thickened strokes (owner, 24 Sept 2026: "slightly bigger and bolder"). */}
+              <img src="/brand/euronics-member-bold.png" alt="A member of Euronics"
+                width={320} height={110} className="h-[48px] w-auto shrink-0 sm:h-[52px] md:h-[57px] lg:h-[64px]" />
             </span>
           </div>
 
