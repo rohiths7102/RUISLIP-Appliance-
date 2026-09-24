@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   // price is re-checked every night; at 500 a line waited ~6 nights, long enough
   // to miss a promo ending (WF3S1043BW3 sat at £320 after Euronics went back to
   // £349). The collector posts observations back in 500-row chunks.
-  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.trunc(limitRaw), 1), 3000) : 100;
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.trunc(limitRaw), 1), 4000) : 100;
 
   try {
     const db = await getPrisma();
