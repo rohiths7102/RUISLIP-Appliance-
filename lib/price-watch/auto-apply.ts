@@ -94,10 +94,23 @@ export async function autoApplySource(
   for (const [id, h] of history) latest.set(id, h[0]);
   if (!latest.size) return out;
 
-  const [products, poaNames] = await Promise.all([
+  const [products, poaNames, listRows] = await Promise.all([
     db.product.findMany({ where: { id: { in: [...latest.keys()] } } }),
     poaNamesFromDb(db),
+    // Sachin's CIH/Euronics price list (source "cih", imported from his emailed
+    // workbook) is the B2C price for the lines it covers. Where another source
+    // disagrees with a list read from the last two days, the list stands and
+    // the difference waits for a person (24 Sept 2026: HGE64200SM list £249.99,
+    // euronics.co.uk £189). An old list no longer outranks anything.
+    sourceId === "cih" ? [] : db.priceObservation.findMany({
+      where: { sourceId: "cih", status: "ok", observedAt: { gte: new Date(Date.now() - 2 * 86400_000) } },
+      orderBy: { observedAt: "desc" }, select: { productId: true, price: true },
+    }),
   ]);
+  const listPrice = new Map<string, number>();
+  for (const o of listRows as { productId: string; price: number | null }[]) {
+    if (!listPrice.has(o.productId) && typeof o.price === "number") listPrice.set(o.productId, o.price);
+  }
 
   type Candidate = { p: any; obs: any; proposedPrice: number | null };
   const candidates: Candidate[] = [];
@@ -110,6 +123,7 @@ export async function autoApplySource(
     if (obs.status === "no_offer") {
       if (p.priceNow === null) { out.unchanged++; continue; }
       if (isPoa) { refuse("poa_category"); continue; }
+      if (listPrice.has(p.id)) { refuse("price_list_differs"); continue; }
       const prev = history.get(p.id)![1];
       if (!prev || prev.status !== "no_offer") { refuse("no_offer_unconfirmed"); continue; }
       const fresh = Date.now() - new Date(obs.observedAt).getTime() <= CFG.staleAfterDays * 86400_000;
@@ -125,6 +139,8 @@ export async function autoApplySource(
       ? round2(includesVat ? obs.deliveryCost : obs.deliveryCost * (1 + CFG.vatRate))
       : null;
     if (typeof p.priceNow === "number" && Math.abs(p.priceNow - proposedPrice) < 0.01) { out.unchanged++; continue; }
+    const listed = listPrice.get(p.id);
+    if (listed !== undefined && Math.abs(listed - proposedPrice) >= 0.01) { refuse("price_list_differs"); continue; }
 
     // No price on our shelf: measure the move against the last price this
     // source gave, so a re-listed product comes back but a mis-read (£1,099 ->

@@ -20,7 +20,7 @@ const TYPES: [string, string][] = [
 /** Plain words for the codes the owner sees most. */
 const LABELS: Record<string, string> = {
   "marketing:auto-block": "Auto-blocked a search", "marketing:daily": "Daily engine run", "marketing:settings": "Changed engine settings",
-  "price-watch:auto-apply": "Nightly price sync", "price-watch:apply": "Price changed in Price watch", "price-update": "Price updated",
+  "price-watch:auto-apply": "Nightly price sync", "price-watch:apply": "Price changed in Price watch", "price-watch:manual-apply": "Price matched to Euronics", "price-watch:link-euronics": "Linked to Euronics pages", "price-update": "Price updated",
   "price-watch:source-toggle": "Switched a price source", "price-watch:source-create": "Added a price source",
   "price-check:add-site": "Added a price-check shop", "price-check:remove-site": "Removed a price-check shop",
   "ads:block_search": "Blocked a search", "ads:pause_keyword": "Paused a keyword", "ads:sale_reported": "Sale sent to Google Ads",

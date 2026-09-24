@@ -143,18 +143,14 @@ if (CATEGORIES.length) {
   console.log(`--category ${CATEGORIES.join(",")}: ${euro.length} of ${before} Euronics pages`);
 }
 
-// Learn each brand's SKU prefix so a SKU reduces to a manufacturer model number.
-const byBrand = new Map();
-for (const e of euro) { if (!byBrand.has(e.brandSlug)) byBrand.set(e.brandSlug, []); byBrand.get(e.brandSlug).push(e.sku); }
-const prefixOf = new Map();
-for (const [b, skus] of byBrand) {
-  if (skus.length < 3) continue;
-  let p = skus[0];
-  for (const s of skus) { let i = 0; while (i < p.length && i < s.length && p[i] === s[i]) i++; p = p.slice(0, i); if (!p) break; }
-  const alpha = (p.match(/^[A-Z]+/) || [""])[0].slice(0, 5);
-  if (alpha.length >= 2) prefixOf.set(b, alpha);
-}
-const modelOf = (e) => { const pre = prefixOf.get(e.brandSlug); return pre && e.sku.startsWith(pre) ? e.sku.slice(pre.length) : e.sku; };
+// A Euronics SKU is a three-letter brand code and the manufacturer's model
+// number: AEG + DEB331010M, FGM + MCF198E (2,899 of 3,047 matched lines, Sept
+// 2026). This used to LEARN each brand's prefix as the longest common prefix of
+// its SKUs, and a brand whose models all start with one letter learned a letter
+// too many (FGMM, HAIH, ZENZ, RSHRH): 101 products were created under clipped
+// codes (CF198E, CS3582W), 56 of them beside the real listing at another price.
+// SKUs that carry no brand code fall through to the whole-SKU match below.
+const modelOf = (e) => (/^[A-Z]{3}/.test(e.sku) ? e.sku.slice(3) : e.sku);
 
 // ---- what we hold ----------------------------------------------------------
 const poaNames = new Set((await db.category.findMany({ where: { priceOnApplication: true }, select: { name: true } })).map((c) => c.name));
@@ -162,11 +158,9 @@ const existing = await db.product.findMany({ select: { id: true, productCode: tr
 const byCode = new Map();
 for (const p of existing) byCode.set(norm(p.productCode), p);
 // One Euronics page is one product, so a row already pointing at this page IS
-// the product — whatever shape its code is in. The prefix below is learned by
-// longest-common-prefix, and every Haden model already starts with H
-// (HK240W, HL316WH, HR111W), so it learns "HADH" and strips a character too
-// many. Matching on the URL as well stops that recreating a second row on
-// every run.
+// the product — whatever shape its code is in, including the clipped codes the
+// old learned prefix created (Haden "K240W" for HK240W). Matching on the URL as
+// well stops those recreating a second row on every run.
 const byUrl = new Map();
 for (const p of existing) if (p.sourceUrl) byUrl.set(String(p.sourceUrl).split("?")[0].replace(/\/+$/, "").toLowerCase(), p);
 const haveSlug = new Set(existing.map((p) => p.slug));

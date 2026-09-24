@@ -167,7 +167,7 @@ export async function actions(db: any, opts: { gsc?: boolean } = {}): Promise<{ 
   }
   if (drift) out.push({
     key: `prices:euronics-drift:${drift}`, area: "Prices", title: `${drift} price${drift === 1 ? "" : "s"} don't match Euronics`,
-    why: "Euronics' latest price differs from ours and the nightly sync held the change for a person to check. Members are held to Euronics prices, so apply or correct each one.",
+    why: "Euronics' latest price differs from ours and the nightly sync held the change for a person to check (a move over 50%, a page it couldn't confirm, or Sachin's price list saying otherwise). Members are held to Euronics prices, so apply or correct each one.",
     score: 900 + drift, cta: { kind: "link", label: "Open Price watch", href: adminHref("price-watch") },
   });
 
