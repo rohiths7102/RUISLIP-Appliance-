@@ -3,7 +3,7 @@ export type AvailabilityNormalised =
 
 export interface Product {
   id: string; sourceUrl: string; oldUrl: string; newSlug: string;
-  title: string; brand: string; productCode: string;
+  title: string; brand: string; productCode: string; gtin?: string;
   category: string; subcategory: string; breadcrumbs: string[];
   priceNow: number | null; priceWas: number | null; saving: number | null; currency: string;
   availability: string; availabilityNormalised: AvailabilityNormalised;

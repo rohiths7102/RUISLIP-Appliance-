@@ -48,28 +48,31 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const catRow = categories.find((c) => c.name === p.subcategory) || categories.find((c) => c.name === p.category);
   const catId = catRow?.id || String(p.meta?.leaf || "");
 
+  // Marked up as a Product only when it has a published price: Google counts a
+  // Product with no offer as an error, and 2,607 pages (spares with no price,
+  // call-for-price lines) each reported one (Search Console, 24 Sept 2026).
   // Availability is InStoreOnly on purpose: there is no online checkout, and the
   // shop confirms real stock by phone.
-  const schema = {
+  const schema = p.priceNow !== null && !poa ? {
     "@context": "https://schema.org", "@type": "Product",
     name: p.title, sku: p.productCode, mpn: p.productCode,
+    ...(/^\d{8,14}$/.test(p.gtin || "") && { gtin: p.gtin }),
     brand: { "@type": "Brand", name: p.brand },
     // Google requires fully-qualified image URLs in structured data; catalogue
     // images are already absolute (Blob), uploads are root-relative.
     image: p.image ? [/^https?:\/\//.test(p.image) ? p.image : SITE() + p.image] : [],
     description: p.shortDescription || p.title,
-    ...(p.priceNow !== null && !poa && {
-      offers: {
-        "@type": "Offer", priceCurrency: "GBP", price: p.priceNow,
-        availability: "https://schema.org/InStoreOnly",
-        seller: { "@type": "Store", name: business.businessName, telephone: business.phone },
-      },
-    }),
-  };
+    offers: {
+      "@type": "Offer", url: `${SITE()}/products/${slug}`, priceCurrency: "GBP", price: p.priceNow,
+      itemCondition: "https://schema.org/NewCondition",
+      availability: "https://schema.org/InStoreOnly",
+      seller: { "@type": "Store", name: business.businessName, telephone: business.phone },
+    },
+  } : null;
 
   return (
     <div className="bg-paper pb-32">
-      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(schema)} />
+      {schema && <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(schema)} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(breadcrumbJsonLd([
         { name: "Home", url: "/" },
         { name: "Appliances", url: "/products" },
