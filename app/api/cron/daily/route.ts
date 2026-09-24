@@ -7,6 +7,8 @@ import { getSettings } from "@/lib/marketing/settings";
 import { runAutoBlock } from "@/lib/marketing/automation";
 import { buildWeeklyReport, sendReport } from "@/lib/marketing/report";
 import { recomputeCounts } from "@/lib/counts";
+import { indexNow } from "@/lib/indexnow";
+import { SITE } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
@@ -17,6 +19,7 @@ export const maxDuration = 60;
  *   3. on Mondays, email the weekly report — only if switched on
  *   4. delete chat conversations older than 12 months (the privacy notice's promise)
  *   5. recount every category and brand ("Search 5,100+ appliances", "343 models")
+ *   6. tell Bing (IndexNow) which product pages changed since yesterday
  * Vercel calls it with "Authorization: Bearer $CRON_SECRET"; anything else is
  * refused. Each run leaves one "marketing:daily" audit row with what it did.
  */
@@ -52,6 +55,11 @@ export async function GET(req: Request) {
 
   run.chatDeleted = await db.chatTurn.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 365 * 86_400_000) } } })
     .then((r: any) => r.count).catch((e: any) => `failed: ${e?.message}`);
+
+  // Prices change nightly; Bing and Copilot quote them, so they re-read those pages today.
+  run.indexNow = await db.product.findMany({ where: { isVisible: true, updatedAt: { gte: new Date(Date.now() - 25 * 3_600_000) } }, select: { slug: true } })
+    .then((ps: any[]) => indexNow(ps.map((p) => `${SITE().replace(/\/+$/, "")}/products/${p.slug}`)))
+    .then((n: number) => `${n} pages`).catch((e: any) => `failed: ${e?.message}`);
 
   await writeAudit(db, {
     entityType: "marketing", entityId: "daily", action: "marketing:daily", changedFields: [],

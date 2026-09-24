@@ -10,6 +10,8 @@ import { evaluateGuards } from "../lib/price-watch/guards.js";
 import { changeBudget } from "../lib/price-watch/auto-apply.js";
 import { parsePriceList } from "../lib/price-list.js";
 import { NoSearchConsoleAccess, searchConsoleSite } from "../lib/search-console.js";
+import { INDEXNOW_KEY, indexNow } from "../lib/indexnow.js";
+import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
@@ -155,6 +157,13 @@ const denied = await searchConsoleSite(gscDb, "t3").then(() => null, (e) => e);
 ok(denied instanceof NoSearchConsoleAccess && denied.who === "shop@example.com" && /can't see kitchen-appliances\.co\.uk/.test(denied.message) && /other-shop/.test(denied.message),
   "Search Console: an unverified or unrelated property is refused, naming the account and what it can see");
 ok((await searchConsoleSite(gscDb, null)) === null, "Search Console: not connected is null, not an error");
+// ---- IndexNow (Bing): what Bing checks against the key file in public/
+let sent: any = null;
+globalThis.fetch = (async (_u: any, init: any) => { sent = JSON.parse(init.body); return new Response("", { status: 200 }); }) as any;
+const nSent = await indexNow(Array.from({ length: 10_050 }, (_, i) => `https://www.kitchen-appliances.co.uk/products/p${i}`));
+ok(nSent === 10_000 && sent.urlList.length === 10_000 && sent.host === "www.kitchen-appliances.co.uk" && sent.keyLocation === `https://www.kitchen-appliances.co.uk/${INDEXNOW_KEY}.txt`,
+  "IndexNow: www host, key file on the same host, at most 10,000 pages a call");
+ok(readFileSync(`public/${INDEXNOW_KEY}.txt`, "utf8").trim() === INDEXNOW_KEY, "IndexNow: the key file in public/ holds the key");
 globalThis.fetch = realFetch;
 
 console.log(`\n${n} unit assertions passed`);

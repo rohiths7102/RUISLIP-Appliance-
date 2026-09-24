@@ -145,7 +145,10 @@ function LocalBusinessSchema({ business }: { business: any }) {
     openingHoursSpecification: [
       { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], opens: "09:00", closes: "17:30" },
     ],
-    sameAs: (business.socialLinks || []).map((s: any) => s.url),
+    // The shop's page on euronics.co.uk links back here: the pair tells Bing and
+    // Google this site is that Euronics store's own, which "euronics ruislip" needs.
+    sameAs: [...(business.socialLinks || []).map((s: any) => s.url), "https://www.euronics.co.uk/store/Jyotsna%20Electrical%20Ltd%203548"],
+    memberOf: { "@type": "Organization", name: "Euronics", url: "https://www.euronics.co.uk" },
     // aggregateRating only once real review figures land in data/reviews.json —
     // Google penalises schema ratings with no visible on-page source.
     ...(reviews.rating !== null && reviews.count > 0
