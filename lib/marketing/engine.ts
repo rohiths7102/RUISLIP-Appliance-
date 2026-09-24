@@ -151,22 +151,24 @@ export async function actions(db: any, opts: { gsc?: boolean } = {}): Promise<{ 
     score: 1000 + stale, cta: { kind: "link", label: "Open Sales & Leads", href: adminHref("enquiries") },
   });
 
-  // --- Prices: owner-locked prices that no longer match Euronics
+  // --- Prices: any live price that differs from Euronics' latest read. Euronics
+  // holds its members to its prices, so this is compliance, not housekeeping:
+  // the nightly sync applies nearly every change itself, and what is left here
+  // was held by a safety check (a move over 50%, an unconfirmed page).
   const recent = await db.priceObservation.findMany({
     where: { sourceId: "euronics", status: "ok", observedAt: { gte: new Date(Date.now() - 3 * DAY) } },
     orderBy: { observedAt: "desc" },
-    select: { productId: true, price: true, product: { select: { priceNow: true, adminOverrideFields: true } } },
+    select: { productId: true, price: true, product: { select: { priceNow: true } } },
   }).catch(() => []);
   const seen = new Set<string>(); let drift = 0;
   for (const o of recent) {
     if (seen.has(o.productId)) continue; seen.add(o.productId);
-    const locked = Array.isArray(o.product?.adminOverrideFields) && o.product.adminOverrideFields.includes("priceNow");
-    if (locked && o.price != null && o.product.priceNow != null && Math.abs(o.price - o.product.priceNow) >= 1) drift++;
+    if (o.price != null && o.product?.priceNow != null && Math.abs(o.price - o.product.priceNow) >= 0.01) drift++;
   }
   if (drift) out.push({
-    key: `prices:locked-drift:${drift}`, area: "Prices", title: `${drift} hand-set price${drift === 1 ? "" : "s"} no longer match Euronics`,
-    why: "You locked these prices yourself, so the nightly sync leaves them alone. Check each one is still what you want.",
-    score: 40 + drift, cta: { kind: "link", label: "Open Price watch", href: adminHref("price-watch") },
+    key: `prices:euronics-drift:${drift}`, area: "Prices", title: `${drift} price${drift === 1 ? "" : "s"} don't match Euronics`,
+    why: "Euronics' latest price differs from ours and the nightly sync held the change for a person to check. Members are held to Euronics prices, so apply or correct each one.",
+    score: 900 + drift, cta: { kind: "link", label: "Open Price watch", href: adminHref("price-watch") },
   });
 
   // --- Shopping feed: products Google can't advertise

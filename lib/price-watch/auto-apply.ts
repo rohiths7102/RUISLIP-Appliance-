@@ -40,6 +40,16 @@ export type AutoApplyOutcome = {
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * How many prices one run may change before it applies none. A quarter of the
+ * lines it read, never under 100: a broken parser moves nearly every line, a
+ * real Euronics repricing a few per cent. The flat 100 held a whole night's
+ * changes when Euronics repriced ~150 lines on 23 Sept 2026, and the nightly
+ * run now reads every line (~3,000). A caller may ask for less, never more.
+ */
+export const changeBudget = (considered: number, requested?: number) =>
+  Math.max(1, Math.min(requested ?? Infinity, Math.max(100, Math.floor(considered / 4))));
 const CFG = DEFAULT_GUARD_CONFIG;
 
 export async function autoApplySource(
@@ -47,9 +57,6 @@ export async function autoApplySource(
   opts: { sourceId: string; maxChanges?: number; appliedBy?: string },
 ): Promise<AutoApplyOutcome> {
   const sourceId = opts.sourceId;
-  // Default 100, the ceiling: the nightly collector sends no budget, and at 25
-  // one real Euronics promotion held the whole night's changes.
-  const maxChanges = Math.min(Math.max(1, opts.maxChanges ?? 100), 100);
   const appliedBy = opts.appliedBy || "price-agent (automated)";
   const out: AutoApplyOutcome = {
     sourceId, considered: 0, applied: [], unchanged: 0, refused: {}, halted: false, haltReason: "",
@@ -174,6 +181,7 @@ export async function autoApplySource(
   }
 
   // ---- circuit breaker: all or nothing ----
+  const maxChanges = changeBudget(out.considered, opts.maxChanges);
   if (candidates.length > maxChanges) {
     out.halted = true;
     out.haltReason = `${candidates.length} changes exceed the ${maxChanges}-change budget — held for review`;

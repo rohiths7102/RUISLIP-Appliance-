@@ -6,6 +6,8 @@ import { productDoc, buildDocuments, faqDocs } from "../lib/rag/documents.js";
 import { retrieve } from "../lib/rag/retriever.js";
 import { buildSystemPrompt, factsBlock, sourcesFor, plainReply } from "../lib/chat/prompt.js";
 import * as seed from "../lib/data.js";
+import { evaluateGuards } from "../lib/price-watch/guards.js";
+import { changeBudget } from "../lib/price-watch/auto-apply.js";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
 
@@ -86,5 +88,18 @@ ok(divergent.length === 0, `cross-feed twins agree on category (${byCode.size} c
 
 // No cart, ever.
 ok(!all.some((p) => /add to basket|checkout|buy now/i.test(p.title)), "no checkout language in the catalogue");
+
+// ---- price sync: Euronics is the member price --------------------------------
+// A line Euronics sells follows Euronics, cost on file or not; any other source
+// still needs a cost floor; the scraper sanity check still holds a wild move.
+const guard = (sourceId: string, current: number, proposed: number) => evaluateGuards({
+  proposal: { productId: "p", currentPrice: current, proposedPrice: proposed, sourceId, sourceKind: "authorised", sourceAllowsAutoApply: true,
+    observation: { price: proposed, deliveryCost: null, inStock: true, includesVat: true, matchConfidence: 1, status: "ok", sourceUrl: "https://www.euronics.co.uk/x", observedAt: new Date() } },
+  product: { costPrice: null, floorPrice: null, category: "Washing Machines", subcategory: "Washing Machines", isPoa: false },
+});
+ok(guard("euronics", 449, 529).blocking.length === 0, "a Euronics price applies to a line with no cost on file");
+ok(guard("cih", 449, 529).blocking.includes("no_floor_data"), "any other source still needs a cost floor");
+ok(guard("euronics", 449, 1049).blocking.includes("implausible_move"), "a move over 50% still waits for a person");
+ok(changeBudget(3000) === 750 && changeBudget(200) === 100 && changeBudget(3000, 40) === 40, "the change budget is a quarter of the run, never under 100, lowered only on request");
 
 console.log(`\n${n} unit assertions passed`);

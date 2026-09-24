@@ -31,6 +31,16 @@ export const DEFAULT_IMPLAUSIBLE_MOVE_PCT = 0.5;
  * we are not certain it is even the same appliance.
  */
 export const DEFAULT_MIN_MATCH_CONFIDENCE = 1;
+/**
+ * Sources whose price is the price the shop must sell at, for EVERY line they
+ * price — not only agency stock. Euronics holds its members to its prices
+ * (Sachin, 24 Sept 2026: he answers to Euronics for any difference), so matching
+ * euronics.co.uk is compliance, not a margin decision, and the cost-floor and
+ * delivery guards step aside exactly as they do for agency stock. Before this,
+ * 2,412 of the 3,047 lines Euronics sells had no cost on file, so `no_floor_data`
+ * held every nightly change to them. The scraper sanity checks still run.
+ */
+export const MEMBER_PRICE_SOURCES = new Set(["euronics"]);
 
 export type GuardConfig = {
   vatRate: number;
@@ -308,9 +318,10 @@ export function evaluateGuards(input: GuardInput): GuardResult {
 
   // Agency/mandated stock carries no shop-side cost, so the two cost-floor
   // guards are not just skipped but MEANINGLESS here — applying the group's
-  // mandated retail price is compliance, not a margin decision. Every other
-  // guard below still runs.
-  const mandated = product.mandated === true;
+  // mandated retail price is compliance, not a margin decision. The same holds
+  // for any line priced by a member-price source (Euronics). Every other guard
+  // below still runs.
+  const mandated = product.mandated === true || MEMBER_PRICE_SOURCES.has(proposal.sourceId);
 
   // --- 1. below_floor — THE critical guard ---------------------------------
   // A penny of float noise must not be treated as a breach, but nothing wider
