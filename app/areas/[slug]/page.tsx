@@ -24,11 +24,17 @@ export function generateStaticParams() {
   return TOWNS.map((t) => ({ slug: t.slug }));
 }
 
+/** "1 mile" / "4 miles" — the nearest towns round to 1, and "1 miles" read wrong. */
+function milesText(t: { lat: number; lng: number }) {
+  const m = milesFromShop(t);
+  return `${m} mile${m === 1 ? "" : "s"}`;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const t = townBySlug((await params).slug);
   if (!t) return { title: "Area not found" };
   const title = `Appliances Delivered & Fitted in ${t.name} (${t.districts.join(", ")})`;
-  const description = `Kitchen and home appliances delivered by our own van and fitted in ${t.name}, about ${milesFromShop(t)} miles from our South Ruislip shop. Old appliance recycling. Call 0208 864 5763.`;
+  const description = `Kitchen and home appliances delivered by our own van and fitted in ${t.name}, about ${milesText(t)} from our South Ruislip shop. Old appliance recycling. Call 0208 864 5763.`;
   return { title, description, alternates: { canonical: `/areas/${t.slug}` }, openGraph: { title: `${title} | Euronics Ruislip`, description } };
 }
 
@@ -40,7 +46,7 @@ export default async function AreaPage({ params }: { params: Promise<{ slug: str
     getBusiness(),
     getPrisma().then(getHomepage).catch(() => toHomepage(null)),
   ]);
-  const miles = milesFromShop(t);
+  const miles = milesText(t);
   const districts = t.districts.join(", ");
   const nearby = nearestTowns(t);
 
@@ -52,7 +58,7 @@ export default async function AreaPage({ params }: { params: Promise<{ slug: str
   const departments = topCategories(categories).filter((c) => (c.productCount ?? 0) > 0);
 
   const faqs = [
-    { q: `Do you deliver to ${t.name}?`, a: `Yes. ${t.name} (${districts}) is inside our own delivery area, about ${miles} miles from our shop at ${business.address.postcode}. We deliver in our own van — call ${business.phone} to book a day.` },
+    { q: `Do you deliver to ${t.name}?`, a: `Yes. ${t.name} (${districts}) is inside our own delivery area, about ${miles} from our shop at ${business.address.postcode}. We deliver in our own van — call ${business.phone} to book a day.` },
     { q: `How quickly can you deliver to ${t.name}?`, a: `If the appliance is in stock locally, usually within a day or two. Call ${business.phone} with the product code and we'll confirm stock and give you a date before you pay.` },
     { q: `Do you install appliances in ${t.name}?`, a: `Yes — our own team fits washing machines, dishwashers, cookers, ovens, hobs, fridge freezers and integrated appliances in ${t.name}, and can take away and recycle the old one.` },
     { q: "How do I buy?", a: `Browse the range on this site, then call ${business.phone} or visit the shop in South Ruislip. Payment, delivery and fitting are arranged with us directly — there is no online checkout.` },
@@ -80,7 +86,7 @@ export default async function AreaPage({ params }: { params: Promise<{ slug: str
       ]))} />
 
       <PageHead eyebrow={`Delivering to ${t.name} · ${districts}`} title={`Appliances delivered and fitted in ${t.name}`}
-        intro={`Our own van, our own fitters — ${t.name} is about ${miles} miles from our South Ruislip shop. To check stock and book a day, call`} />
+        intro={`Our own van, our own fitters — ${t.name} is about ${miles} from our South Ruislip shop. To check stock and book a day, call`} />
 
       <div className="container-x py-12">
         <div className="grid gap-4 sm:grid-cols-3">

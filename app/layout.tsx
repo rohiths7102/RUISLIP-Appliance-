@@ -43,6 +43,11 @@ const reviews = reviewsRaw as ReviewsData;
 
 const AREAS_SERVED = [...TOWNS.map((t) => t.name), "West London"];
 
+// The site name Google shows above our results (the owner's choice, Sept 2026).
+// "Euronics Ruislip" alone also fits the other Euronics dealer in Ruislip, so it
+// stays as an alternate name and in page titles, where people search for it.
+const SITE_NAME = "Euronics Jyotsna Electrical";
+
 export async function generateMetadata(): Promise<Metadata> {
   const business = await getBusiness();
   const { categories } = await getNav();
@@ -54,7 +59,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3005"),
     title: {
-      default: `${business.tradingName} | Kitchen & Home Appliances in Ruislip, West London`,
+      default: `${SITE_NAME} | Kitchen & Home Appliances in Ruislip, West London`,
       // tradingName already contains "Ruislip" — appending the locality again
       // produced "… | Euronics Ruislip Ruislip", classic keyword-stuffing smell.
       template: `%s | ${business.tradingName}`,
@@ -64,11 +69,11 @@ export async function generateMetadata(): Promise<Metadata> {
     keywords: [
       "appliances Ruislip", "kitchen appliances Ruislip", "appliance shop South Ruislip",
       "washing machines Ruislip", "fridge freezers Ruislip", "dishwashers Ruislip",
-      "Euronics Ruislip", "appliance delivery West London", "HA4 appliances",
+      "Euronics Ruislip", SITE_NAME, "appliance delivery West London", "HA4 appliances",
     ],
     alternates: { canonical: "/" },
     openGraph: {
-      type: "website", siteName: business.tradingName, locale: "en_GB",
+      type: "website", siteName: SITE_NAME, locale: "en_GB",
       title: `Euronics Jyotsna Electrical — Kitchen & Home Appliances in South Ruislip`,
       description: `${shelfSize} appliances from Jyotsna Electrical, the family-run Euronics shop in South Ruislip since 1977. Call ${business.phone}.`,
       images: [{ url: "/og.jpg", width: 1200, height: 630, alt: `${business.tradingName} — big-brand kitchen appliances at honest local prices` }],
@@ -88,7 +93,7 @@ function BrandSchema({ business }: { business: any }) {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": `${base}/#org`,
-    name: business.tradingName,
+    name: SITE_NAME,
     legalName: business.businessName,
     url: base,
     logo: { "@type": "ImageObject", url: `${base}/brand/euronics-badge.png`, width: 512, height: 512 },
@@ -101,7 +106,8 @@ function BrandSchema({ business }: { business: any }) {
     "@type": "WebSite",
     "@id": `${base}/#website`,
     url: base,
-    name: business.tradingName,
+    name: SITE_NAME,
+    alternateName: ["Jyotsna Electrical", business.tradingName],
     publisher: { "@id": `${base}/#org` },
     potentialAction: {
       "@type": "SearchAction",
