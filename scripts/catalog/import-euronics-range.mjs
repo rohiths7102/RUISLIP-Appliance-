@@ -4,6 +4,7 @@
  *   node scripts/catalog/import-euronics-range.mjs --dry-run [--limit N]
  *   node scripts/catalog/import-euronics-range.mjs                        (full sync)
  *   node scripts/catalog/import-euronics-range.mjs --category laundry,dishwashers
+ *   node scripts/catalog/import-euronics-range.mjs --sku MIEBOOSTCX1,MIEH2465BP   (just these)
  *
  * The client is a Euronics member, so the group's range is what he can sell and
  * the group's price is the price he shows. One pass does both halves:
@@ -20,7 +21,8 @@
  *     He has not said he holds stock, so the site must not imply it — and it keeps
  *     them out of the Google feed, which needs a stock status he can stand behind.
  *  3. Call-for-price categories are skipped entirely. Those must never carry a
- *     published price, whatever the source says.
+ *     published price, whatever the source says. A model the owner names with
+ *     --sku is still created there, but with no price stored at all.
  *  4. Images are referenced at their Euronics URL, never rehosted.
  *
  * Resumable and safe to re-run: it compares before writing, so a second run is a
@@ -140,6 +142,18 @@ if (CATEGORIES.length) {
   euro = euro.filter((e) => CATEGORIES.includes((e.url.split("/catalogue/")[1] || "").split("/")[0]));
   console.log(`--category ${CATEGORIES.join(",")}: ${euro.length} of ${before} Euronics pages`);
 }
+// Exact Euronics SKUs, for when the owner sends the models he wants: a brand's
+// sitemap also carries lines he does not stock. The sitemap misses some live
+// lines (MIEH2465BP, Sept 2026), so those are read from their short /p/ address,
+// which redirects to the product page.
+const SKUS = (args.indexOf("--sku") >= 0 ? (args[args.indexOf("--sku") + 1] || "") : "")
+  .split(",").map(norm).filter(Boolean);
+if (SKUS.length) {
+  euro = euro.filter((e) => SKUS.includes(e.sku));
+  const inSitemap = new Set(euro.map((e) => e.sku));
+  for (const sku of SKUS) if (!inSitemap.has(sku)) euro.push({ url: `https://www.euronics.co.uk/p/${sku}`, brandSlug: "", sku });
+  console.log(`--sku: ${SKUS.length} requested, ${inSitemap.size} found in the sitemap`);
+}
 
 // A Euronics SKU is a three-letter brand code and the manufacturer's model
 // number: AEG + DEB331010M, FGM + MCF198E (2,899 of 3,047 matched lines, Sept
@@ -168,7 +182,7 @@ if (LIMIT) work = work.slice(0, LIMIT);
 console.log(`Euronics range: ${euro.length}   we hold: ${existing.length}   processing: ${work.length}${DRY ? "  (dry run)" : ""}\n`);
 
 // ---- sync ------------------------------------------------------------------
-let created = 0, repriced = 0, alreadyOk = 0, lockedSkipped = 0, poaSkipped = 0, unclassified = 0, fetchFailed = 0, noPrice = 0, skippedNew = 0;
+let created = 0, repriced = 0, alreadyOk = 0, lockedSkipped = 0, poaSkipped = 0, poaCreated = 0, unclassified = 0, fetchFailed = 0, noPrice = 0, skippedNew = 0;
 const priceMoves = [];
 const problems = [];
 
@@ -223,7 +237,9 @@ for (const e of work) {
     } catch { /* try the description, then give up below */ }
   }
   if (!category) { unclassified++; problems.push(`${e.sku}: unclassifiable — ${d.title.slice(0, 46)}`); await sleep(DELAY_MS); continue; }
-  if (poaNames.has(category) || poaNames.has(subcategory)) { poaSkipped++; await sleep(DELAY_MS); continue; }
+  const poa = poaNames.has(category) || poaNames.has(subcategory);
+  if (poa && !SKUS.length) { poaSkipped++; await sleep(DELAY_MS); continue; }
+  if (poa) poaCreated++;
   if (d.price === null) noPrice++;
 
   const code = model || e.sku;
@@ -236,7 +252,7 @@ for (const e of work) {
     await db.product.create({ data: {
       slug, title: d.title, brand: d.brand || "Unbranded", productCode: code, gtin: d.gtin || "",
       category, subcategory, breadcrumbs: [category, subcategory].filter(Boolean),
-      priceNow: d.price, priceWas: null, saving: null, currency: "GBP",
+      priceNow: poa ? null : d.price, priceWas: null, saving: null, currency: "GBP",
       availabilityNormalised: "call_to_confirm", availabilityRaw: "",
       warranty: "", shortDescription: d.description.slice(0, 400), descriptionText: d.description,
       descriptionHtml: "", mainImage: d.image || "", galleryImages: d.image ? [d.image] : [],
@@ -263,6 +279,7 @@ console.log(`  prices corrected      : ${repriced}`);
 console.log(`  already in sync       : ${alreadyOk}`);
 console.log(`  owner-set, left alone : ${lockedSkipped}`);
 console.log(`  call-for-price, skipped: ${poaSkipped}`);
+if (poaCreated) console.log(`  of the created, call-for-price (no price): ${poaCreated}`);
 console.log(`  no price on page      : ${noPrice}`);
 console.log(`  unclassifiable        : ${unclassified}`);
 console.log(`  could not fetch       : ${fetchFailed}`);

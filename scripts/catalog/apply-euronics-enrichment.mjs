@@ -5,13 +5,17 @@
  *   (copy both back)  public/catalog/euronics/<CODE>/01.jpg  +  manifest.json
  *   node scripts/catalog/apply-euronics-enrichment.mjs manifest.json [--dry-run]
  *
+ * An image may also be a Euronics CDN link, the way import-euronics-range.mjs
+ * stores them: { "CIMD91B": { "status": "ok", "image": "https://cdn.media.amplience.net/…" } }.
+ *
  * Only fills in what is MISSING. A product whose image or title the owner has
  * already set is left alone — the manifest is a source of last resort, not an
  * authority. Prices are never touched here at all: that is the price-watch
  * system's job and it has guards this script does not.
  *
- * The image path is only written when the file actually exists under public/,
- * so a half-copied download can never leave a product pointing at a 404.
+ * The image is only written when the file actually exists under public/ (or the
+ * link answers with an image), so a half-copied download or a dead link can
+ * never leave a product pointing at a 404.
  */
 import { createRequire } from "module";
 import { readFileSync, existsSync } from "node:fs";
@@ -24,6 +28,11 @@ const file = process.argv.find((a) => a.endsWith(".json"));
 if (!file) { console.error("usage: apply-euronics-enrichment.mjs <manifest.json> [--dry-run]"); process.exit(1); }
 
 const PUBLIC = join(process.cwd(), "public");
+const imageExists = async (src) => {
+  if (!/^https:\/\//.test(src)) return existsSync(join(PUBLIC, src));
+  try { const r = await fetch(src, { method: "HEAD" }); return r.ok && /^image\//.test(r.headers.get("content-type") || ""); }
+  catch { return false; }
+};
 const manifest = JSON.parse(readFileSync(file, "utf8"));
 const db = new PrismaClient();
 
@@ -33,6 +42,8 @@ for (const [code, m] of Object.entries(manifest)) {
   if (!m || m.status !== "ok") continue;
   const p = await db.product.findFirst({
     where: { productCode: code },
+    // A hidden duplicate must not take the image meant for the live listing.
+    orderBy: { isVisible: "desc" },
     select: { id: true, mainImage: true, title: true, descriptionText: true, shortDescription: true },
   });
   if (!p) continue;
@@ -40,7 +51,7 @@ for (const [code, m] of Object.entries(manifest)) {
   const patch = {};
 
   if (m.image && !p.mainImage) {
-    if (existsSync(join(PUBLIC, m.image))) {
+    if (await imageExists(m.image)) {
       patch.mainImage = m.image;
       patch.galleryImages = [m.image];
       imageSet++;
@@ -67,5 +78,5 @@ for (const [code, m] of Object.entries(manifest)) {
 }
 
 console.log(`${DRY ? "DRY RUN — " : ""}images set ${imageSet}, titles improved ${titleSet}, descriptions added ${descSet}`);
-console.log(`skipped: ${missingFile} image file not found under public/, ${untouched} already complete`);
+console.log(`skipped: ${missingFile} image not found (no file under public/, or the link is not an image), ${untouched} already complete`);
 await db.$disconnect();
