@@ -36,12 +36,50 @@ export function coerce(key: string, v: any): any {
   }
   if (BOOL.has(key)) return Boolean(v);
   if (key === "warranty") return normaliseWarranty(String(v ?? ""));
+  if (key === "mainImage") {
+    const s = String(v ?? "").trim();
+    // Google and the storefront need a full https:// address (or our own /path);
+    // "www.x.com/a.jpg" or http:// breaks the photo on every surface.
+    if (s && !/^https:\/\//.test(s) && !s.startsWith("/")) throw new ValidationError("Image link must start with https://");
+    return s;
+  }
   if (key === "availabilityNormalised") {
     const s = String(v);
     if (!AVAILABILITY.includes(s)) throw new ValidationError(`availability must be one of: ${AVAILABILITY.join(", ")}`);
     return s;
   }
   return typeof v === "string" ? v.trim() : v;
+}
+
+type Cat = { id: string; name: string; parentId: string | null };
+export const loadCategories = (db: any): Promise<Cat[]> =>
+  db.category.findMany({ select: { id: true, name: true, parentId: true } });
+
+/**
+ * A product must sit in a real department AND one of its sub-categories:
+ * department pages and search match on these exact names, so Zenith ZE501
+ * saved as "Cooking" with no sub-category (26 Sept 2026) was on no page and in
+ * no "cookers" search. Returns both names in their stored spelling.
+ */
+export function checkTaxonomy(cats: Cat[], category: string, subcategory: string) {
+  const eq = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const top = cats.find((c) => !c.parentId && eq(c.name, category || ""));
+  if (!top) throw new ValidationError(category ? `"${category}" is not a department — pick one from the list` : "Pick a department");
+  const kids = cats.filter((c) => c.parentId === top.id);
+  if (!kids.length) return { category: top.name, subcategory: "" };
+  const leaf = kids.find((c) => eq(c.name, subcategory || ""));
+  if (!leaf) throw new ValidationError(subcategory
+    ? `"${subcategory}" is not a sub-category of ${top.name}`
+    : `Pick a sub-category of ${top.name} — without one the product shows on no department page`);
+  return { category: top.name, subcategory: leaf.name };
+}
+
+/** Same code + same brand is the same appliance (Bosch/Neff twins share codes legitimately). */
+export async function findDuplicate(db: any, productCode: string, brand: string, exceptId?: string) {
+  const rows: { id: string; title: string; productCode: string; brand: string }[] =
+    await db.product.findMany({ select: { id: true, title: true, productCode: true, brand: true } });
+  const k = (s: string) => (s || "").trim().toUpperCase();
+  return rows.find((p) => p.id !== exceptId && k(p.productCode) === k(productCode) && k(p.brand) === k(brand)) || null;
 }
 
 export const slugify = (s: string) =>

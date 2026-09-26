@@ -3,7 +3,7 @@ import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag, dropProductDoc } from "@/lib/rag/index";
-import { EDITABLE, SCRAPE_OWNED, coerce, reconcileSaving, ValidationError } from "@/lib/admin-product";
+import { EDITABLE, SCRAPE_OWNED, coerce, reconcileSaving, ValidationError, checkTaxonomy, loadCategories, findDuplicate } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 import { setFeatured } from "@/lib/homepage";
@@ -33,6 +33,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     if (!changed.length) return NextResponse.json(existing);
 
+    for (const k of ["title", "productCode", "brand"]) if (k in data && !data[k]) throw new ValidationError(`${k} cannot be empty`);
+    if ("category" in data || "subcategory" in data) {
+      Object.assign(data, checkTaxonomy(await loadCategories(db), data.category ?? existing.category, data.subcategory ?? existing.subcategory));
+    }
+    // File under the brand's stored spelling: call-for-price and the feed match it exactly.
+    if ("brand" in data) data.brand = (await ensureBrand(db, data.brand)).name;
+    if ("productCode" in data || "brand" in data) {
+      const dup = await findDuplicate(db, data.productCode ?? existing.productCode, data.brand ?? existing.brand, id);
+      if (dup) throw new ValidationError(`${dup.productCode} is already listed as "${dup.title}"`);
+    }
+    // The product page draws from the gallery, so the new photo leads it.
+    if ("mainImage" in data) {
+      const rest = ((existing.galleryImages as string[]) || []).filter((u) => u !== existing.mainImage && u !== data.mainImage);
+      data.galleryImages = data.mainImage ? [data.mainImage, ...rest] : rest;
+    }
+    // Keep the browser/Google title in step with a rename, unless the owner wrote his own.
+    if (("title" in data || "brand" in data) && !("seoTitle" in data)) {
+      const auto = (b: string, t: string) => `${b || ""} ${t}`.trim().slice(0, 68);
+      if (!existing.seoTitle || existing.seoTitle === auto(existing.brand, existing.title)) {
+        data.seoTitle = auto(data.brand ?? existing.brand, data.title ?? existing.title);
+      }
+    }
+
     reconcileSaving(data, existing);
 
     // Lock edited fields so a future re-scrape can't silently undo the owner.
@@ -46,6 +69,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       entityType: "product", entityId: id, action: "update", changedFields: changed,
       previousValue: pick(existing, changed), newValue: pick(updated, changed), changedBy: admin.email,
     });
+    // A new code: the chatbot and the homepage row are keyed by code, so retire the old one.
+    if (data.productCode && data.productCode !== existing.productCode) {
+      await dropProductDoc(db, existing.productCode, id).catch(() => {});
+      if (existing.featured) await setFeatured(db, [existing.productCode], false, admin.email);
+      if (updated.featured && !changed.includes("featured")) await setFeatured(db, [updated.productCode], true, admin.email);
+    }
     // Keep the chatbot's answers in step with the catalogue.
     try { await syncProductToRag(db, id); } catch { /* best effort */ }
     // "Featured" puts it on (or takes it off) the homepage row — Admin → Homepage.
@@ -53,7 +82,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // Brand/category/visibility moves change the counts those pages display.
     if (changed.some((k) => ["brand", "category", "subcategory", "isVisible"].includes(k))) {
       try {
-        if (changed.includes("brand")) await ensureBrand(db, updated.brand);
         await recomputeCounts(db, {
           brands: [existing.brand, updated.brand],
           categories: [existing.category, existing.subcategory, updated.category, updated.subcategory],
@@ -84,6 +112,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     // Docs are keyed by productCode, and BSH part numbers are listed twice (Bosch
     // and Neff), so this must not take a surviving twin out of the chatbot.
     await dropProductDoc(db, existing.productCode).catch(() => {});
+    // Off the homepage row too, unless a twin still carries the code.
+    if (!(await db.product.findFirst({ where: { productCode: existing.productCode } }))) {
+      await setFeatured(db, [existing.productCode], false, admin.email).catch(() => {});
+    }
     await writeAudit(db, {
       entityType: "product", entityId: id, action: "delete", changedFields: ["*"],
       previousValue: { title: existing.title, productCode: existing.productCode, priceNow: existing.priceNow },

@@ -108,13 +108,15 @@ export async function saveHomepage(db: any, raw: unknown, changedBy: string): Pr
   return next;
 }
 
-/** The product tick-box and bulk "Feature": add to the end of the row, or take off it. */
+/** The product tick-box and bulk "Feature": add to the FRONT of the row, or take off it.
+ *  The homepage shows only the first few, and the list is capped — a tick added at
+ *  the end was cut off or never shown while the admin said "live". */
 export async function setFeatured(db: any, codes: string[], on: boolean, changedBy: string): Promise<void> {
   const h = await getHomepage(db);
   const key = (c: string) => c.toUpperCase();
   const listed = new Set(h.featured.map((f) => key(f.code)));
   const featured = on
-    ? [...h.featured, ...codes.filter((c) => !listed.has(key(c))).map((code) => ({ code, bestSeller: false }))]
+    ? [...codes.filter((c) => !listed.has(key(c))).map((code) => ({ code, bestSeller: false })), ...h.featured]
     : h.featured.filter((f) => !codes.some((c) => key(c) === key(f.code)));
   await saveHomepage(db, { ...h, featured: featured.slice(0, MAX_FEATURED) }, changedBy);
 }

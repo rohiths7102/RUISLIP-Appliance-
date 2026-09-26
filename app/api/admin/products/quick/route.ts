@@ -3,7 +3,7 @@ import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
-import { coerce, slugify, reconcileSaving, ValidationError, AVAILABILITY } from "@/lib/admin-product";
+import { coerce, slugify, reconcileSaving, ValidationError, AVAILABILITY, checkTaxonomy, loadCategories } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 import { classify, LEAF } from "../../../../../scripts/catalog/taxonomy.mjs";
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const { admin } = gate;
   const b = await req.json().catch(() => ({}));
 
-  const brand = String(b.brand || "").trim();
+  let brand = String(b.brand || "").trim();
   // The admin field only LOOKS uppercase (that is CSS) — store the uppercase
   // form so a phone lookup and a CSV round trip (which matches codes uppercased)
   // find the same row whichever way the owner typed it.
@@ -71,8 +71,12 @@ export async function POST(req: Request) {
         });
         const hit = LEAF.get(leaf);
         if (hit) { category = hit.topName; subcategory = hit.leafName; auto = true; }
-      } catch { /* unclassifiable — created uncategorised, surfaced in the response */ }
+      } catch { /* unclassifiable — asked for below */ }
     }
+    if (!category) throw new ValidationError("Couldn't file this automatically — pick a department and sub-category");
+    ({ category, subcategory } = checkTaxonomy(await loadCategories(db), category, subcategory));
+    const ensured = await ensureBrand(db, brand);
+    brand = ensured.name;
 
     const data: Record<string, number | null> = { priceNow, priceWas };
     reconcileSaving(data);
@@ -108,11 +112,9 @@ export async function POST(req: Request) {
     // path, and best-effort like them. The product row already exists at this
     // point, so a counts failure must not cost it the audit line, the chatbot
     // doc and the cache purge below — it would be live nowhere but the database.
-    let brandCreated = false;
+    const brandCreated = ensured.created;
     try {
-      const ensured = await ensureBrand(db, brand);
-      brandCreated = ensured.created;
-      await recomputeCounts(db, { brands: [ensured.name], categories: [category, subcategory] });
+      await recomputeCounts(db, { brands: [brand], categories: [category, subcategory] });
     } catch { /* best effort */ }
 
     await writeAudit(db, {

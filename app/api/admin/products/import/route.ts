@@ -4,7 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
 import { parseCsv } from "@/lib/csv";
-import { AVAILABILITY, SCRAPE_OWNED, reconcileSaving } from "@/lib/admin-product";
+import { AVAILABILITY, SCRAPE_OWNED, reconcileSaving, checkTaxonomy, loadCategories } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 import { setFeatured } from "@/lib/homepage";
@@ -23,6 +23,7 @@ export const dynamic = "force-dynamic";
 const UPDATABLE = ["title", "brand", "category", "subcategory", "priceNow", "priceWas", "availabilityNormalised", "warranty", "isVisible", "featured"] as const;
 const NUM = new Set(["priceNow", "priceWas"]);
 const BOOL = new Set(["isVisible", "featured"]);
+const TEXT = new Set(["title", "brand", "category", "subcategory"]);
 const MAX_ROWS = 5000;
 const MAX_BYTES = 2 * 1024 * 1024;
 
@@ -66,6 +67,8 @@ export async function POST(req: Request) {
     const changes: { id: string; slug: string; code: string; data: Record<string, any>; fields: { field: string; from: any; to: any }[]; before: any }[] = [];
     const creates: { data: Record<string, any>; code: string }[] = [];
     let unchanged = 0;
+    const cats = await loadCategories(db);
+    const newCodes = new Set<string>();
 
     for (let r = 1; r < grid.length; r++) {
       const rowNo = r + 1;
@@ -101,6 +104,8 @@ export async function POST(req: Request) {
           v = b;
         } else if (k === "warranty") {
           v = normaliseWarranty(raw);
+        } else if (TEXT.has(k)) {
+          if (raw === "") continue; // an empty cell leaves the field alone, never blanks it
         } else if (k === "availabilityNormalised") {
           if (raw === "") continue;
           if (!AVAILABILITY.includes(raw)) { errors.push(`row ${rowNo}: availability "${raw}" — use one of ${AVAILABILITY.join("/")}`); bad = true; break; }
@@ -108,6 +113,13 @@ export async function POST(req: Request) {
         if (target ? v !== (target as any)[k] : raw !== "") { data[k] = v; if (target) fields.push({ field: k, from: (target as any)[k], to: v }); }
       }
       if (bad) continue;
+      if (!target || "category" in data || "subcategory" in data) {
+        try {
+          const t = checkTaxonomy(cats, data.category ?? target?.category ?? "", data.subcategory ?? target?.subcategory ?? "");
+          if (!target || t.category !== target.category) data.category = t.category;
+          if (!target || t.subcategory !== target.subcategory) data.subcategory = t.subcategory;
+        } catch (e: any) { errors.push(`row ${rowNo}: ${e.message}`); continue; }
+      }
 
       if (target) {
         if (!fields.length) { unchanged++; continue; }
@@ -115,6 +127,8 @@ export async function POST(req: Request) {
       } else {
         // brand-new product from the spreadsheet
         if (!data.title || !code) { errors.push(`row ${rowNo}: unknown product — a new row needs productCode and title`); continue; }
+        if (newCodes.has(code.toUpperCase())) { errors.push(`row ${rowNo}: ${code} appears twice in this file`); continue; }
+        newCodes.add(code.toUpperCase());
         creates.push({ data: { ...data, productCode: code }, code });
       }
     }
@@ -140,11 +154,13 @@ export async function POST(req: Request) {
       // A price edited in the spreadsheet has to carry the saving with it, or the
       // storefront keeps advertising the pre-edit delta as "Save £X".
       reconcileSaving(c.data, c.before);
+      if (c.data.brand) c.data.brand = (await ensureBrand(db, c.data.brand)).name;
       await db.product.update({ where: { id: c.id }, data: { ...c.data, adminOverrideFields: [...overrides], lastUpdatedByAdmin: new Date() } });
       try { await syncProductToRag(db, c.id); } catch {}
     }
     for (const c of creates) {
       reconcileSaving(c.data);
+      c.data.brand = (await ensureBrand(db, c.data.brand || "Unbranded")).name;
       const base = slugify(`${c.data.brand || "product"}-${c.code}`);
       let slug = base;
       for (let i = 2; await db.product.findUnique({ where: { slug } }); i++) slug = `${base}-${i}`;

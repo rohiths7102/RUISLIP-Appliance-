@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, url, bytes: file.size, stored: "blob" });
     } catch (e) {
       console.error("blob upload failed", e);
-      return NextResponse.json({ error: "Could not save the image." }, { status: 500 });
+      return NextResponse.json({ error: "Photo upload is unavailable right now — paste an https:// image link instead." }, { status: 500 });
     }
   }
 

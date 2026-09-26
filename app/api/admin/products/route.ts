@@ -3,7 +3,7 @@ import { getAdmin, requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncProductToRag } from "@/lib/rag/index";
-import { EDITABLE, coerce, slugify, reconcileSaving, ValidationError } from "@/lib/admin-product";
+import { EDITABLE, coerce, slugify, reconcileSaving, ValidationError, checkTaxonomy, loadCategories, findDuplicate } from "@/lib/admin-product";
 import { recomputeCounts, ensureBrand } from "@/lib/counts";
 import { revalidateStorefront } from "@/lib/revalidate";
 import { setFeatured } from "@/lib/homepage";
@@ -79,6 +79,10 @@ export async function POST(req: Request) {
     const db = await getPrisma();
     const data: Record<string, any> = {};
     for (const k of EDITABLE) if (k in body) data[k] = coerce(k, body[k]);
+    Object.assign(data, checkTaxonomy(await loadCategories(db), data.category || "", data.subcategory || ""));
+    data.brand = (await ensureBrand(db, data.brand || "Unbranded")).name;
+    const dup = await findDuplicate(db, data.productCode, data.brand);
+    if (dup) throw new ValidationError(`${dup.productCode} is already listed as "${dup.title}" — edit that one instead`);
     reconcileSaving(data);
 
     // Unique slug: base it on brand + code, then disambiguate.
@@ -124,9 +128,8 @@ export async function POST(req: Request) {
     });
     try { await syncProductToRag(db, created.id); } catch { /* best effort */ }
     if (created.featured) await setFeatured(db, [created.productCode], true, admin.email);
-    // A brand-new brand gets its page; the counts the storefront shows follow.
+    // The counts the storefront shows follow (the brand row was ensured above).
     try {
-      await ensureBrand(db, created.brand);
       await recomputeCounts(db, { brands: [created.brand], categories: [created.category, created.subcategory] });
     } catch { /* best effort */ }
     revalidateStorefront([`/products/${created.slug}`]);
