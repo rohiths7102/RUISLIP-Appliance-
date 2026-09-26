@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma";
-import { poaNamesFrom } from "@/lib/select";
+import { feedRows } from "@/lib/merchant-feed";
 export const dynamic = "force-dynamic";
 
 /** Escape the five XML special characters for safe element content. */
@@ -13,42 +13,13 @@ function esc(s: string): string {
  * the ~474 "call_to_confirm" products are EXCLUDED deliberately: we never claim
  * availability we can't promise, so Google only sees stock we'd stand behind on the phone.
  */
-type FeedRow = {
-  productCode: string; title: string; brand: string; slug: string; priceNow: number;
-  mainImage: string; shortDescription: string; descriptionText: string; gtin: string;
-};
-
 export async function GET() {
   const base = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3005").replace(/\/+$/, "");
 
   try {
-    const db = await getPrisma();
-    // Call-for-price categories never enter the feed: Google requires the shown
-    // price to be honoured, and the owner deliberately doesn't publish these.
-    // Read every category and mask through the storefront's helper rather than
-    // querying the flags alone — of all the surfaces, this is the worst one to
-    // publish a withheld price on when the flags are missing.
-    const cats: { name: string; priceOnApplication: boolean }[] =
-      await db.category.findMany({ select: { name: true, priceOnApplication: true } });
-    const brands: { name: string; priceOnApplication: boolean }[] =
-      await db.brand.findMany({ select: { name: true, priceOnApplication: true } }).catch(() => []);
-    const poaNames = [...poaNamesFrom(cats, brands)];
-    const rows = await db.product.findMany({
-      where: {
-        isVisible: true,
-        priceNow: { not: null },
-        mainImage: { not: "" },
-        availabilityNormalised: { in: ["in_stock", "limited"] },
-        ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }, { brand: { in: poaNames } }] }),
-      },
-      select: {
-        productCode: true, title: true, brand: true, slug: true, priceNow: true,
-        mainImage: true, shortDescription: true, descriptionText: true, gtin: true,
-      },
-      orderBy: { productCode: "asc" },
-    });
+    const rows = await feedRows(await getPrisma());
 
-    const items = (rows as FeedRow[]).map((p) => {
+    const items = rows.map((p) => {
       const title = esc(p.title.slice(0, 150));
       // Prefer the short blurb, fall back to the long text, then the title — Google rejects empty descriptions.
       const desc = esc((p.shortDescription || p.descriptionText || p.title).slice(0, 5000));
