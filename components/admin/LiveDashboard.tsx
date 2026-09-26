@@ -1,14 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Bot, Eye, MapPin, Phone, Search, ShieldCheck, ShoppingBag, Sparkles, Users } from "lucide-react";
-import { Badge, Card } from "./ui";
+import { ArrowDownRight, ArrowUpRight, Bot, ChevronRight, Eye, MapPin, Phone, ShieldCheck, ShoppingBag, Users } from "lucide-react";
 import type { LiveSnapshot } from "@/lib/marketing/live";
 
 /**
  * Admin → Live. Polls /api/admin/live every 15s. Everything here is real:
  * the site's own anonymous beacon, the enquiry pipeline, the crawl log, and
  * Search Console's freshest (hourly) figures. Nothing is estimated.
+ *
+ * Look: soft blue glass (the owner's reference, 27 Sept 2026) — rounded white
+ * cards on a pale blue wash, small caps labels, trend lines, pill tags.
  */
 type Row = { key: string; clicks: number; impressions: number; ctr: number; position: number };
 type Data = LiveSnapshot & { google: { connected: boolean; error?: string; hours?: Row[]; queries?: Row[] } };
@@ -21,10 +23,14 @@ const ago = (iso: string, now: number) => {
 };
 const ukDay = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { timeZone: "Europe/London" });
 const ukHour = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", timeZone: "Europe/London" });
+const greeting = () => { const h = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/London" })); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
 const BOT: Record<string, string> = {
   googlebot: "Googlebot", "googlebot-image": "Googlebot Images", "google-inspection": "Google URL Inspection",
   "google-storebot": "Google Shopping bot", "google-other": "Google (other)", bingbot: "Bingbot",
 };
+const STATUS: Record<string, string> = { new: "bg-info-soft text-blue ring-sky", contacted: "bg-warning-soft text-warning ring-warning/30",
+  quoted: "bg-info-soft text-blue ring-sky", won: "bg-success-soft text-success ring-success/30",
+  closed: "bg-success-soft text-success ring-success/30", lost: "bg-danger-soft text-danger ring-danger/30" };
 
 export default function LiveDashboard({ salesHref }: { salesHref: string }) {
   const [d, setD] = useState<Data | null>(null);
@@ -46,200 +52,273 @@ export default function LiveDashboard({ salesHref }: { salesHref: string }) {
     return () => { alive = false; clearInterval(poll); clearInterval(tick); };
   }, []);
 
-  if (!d) return <div className="p-10 text-sm text-muted">{err || "Connecting to the live site…"}</div>;
+  if (!d) return <Wash><div className="p-10 text-sm text-muted">{err || "Connecting to the live site…"}</div></Wash>;
 
   const g = d.google;
-  // Google keys its hours in its own time zone (ISO with offset); the shop thinks in UK days.
   const gToday = (g.hours || []).filter((h) => ukDay(h.key) === ukDay(new Date().toISOString()));
-  const kpi = (label: string, icon: React.ReactNode, a: number, b: number) => ({ label, icon, a, b });
-  const tiles = [
-    kpi("Visits", <Users size={16} />, d.today.visits, d.yesterday.visits),
-    kpi("Product views", <Eye size={16} />, d.today.productViews, d.yesterday.productViews),
-    kpi("Call taps", <Phone size={16} />, d.today.calls, d.yesterday.calls),
-    kpi("Postcode checks", <MapPin size={16} />, d.today.postcodes, d.yesterday.postcodes),
-    kpi("Enquiries", <ShoppingBag size={16} />, d.today.enquiries, d.yesterday.enquiries),
+  const series = (k: "visits" | "productViews" | "calls" | "views") => d.hours.map((h) => h[k]);
+  const salesMix = [
+    { label: "Won this month", value: d.sales.wonValue, color: "#37853c" },
+    { label: "Open quotes", value: d.sales.openValue, color: "#0a2788" },
   ];
 
   return (
-    <div className="space-y-5">
-      {/* ---------- Right now ---------- */}
-      <section className="overflow-hidden rounded-xl bg-[var(--color-navy)] p-6 text-white">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4ade80] opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-[#22c55e]" />
+    <Wash>
+      {/* ---------- Greeting + headline numbers ---------- */}
+      <div className="grid gap-4 lg:grid-cols-4">
+        <Glass className="flex flex-col justify-between p-5">
+          <div className="flex items-center justify-between">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-blue text-sm font-semibold text-white">SK</span>
+            <span className="flex items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-1 text-[11px] font-medium text-success">
+              <span className="relative flex h-2 w-2"><span className="absolute h-full w-full animate-ping rounded-full bg-cta opacity-75" /><span className="relative h-2 w-2 rounded-full bg-cta" /></span>
+              Live
             </span>
-            <h1 className="font-display text-2xl">Live</h1>
-            <span className="text-sm text-white/60">kitchen-appliances.co.uk, as it happens</span>
           </div>
-          <span className="text-xs text-white/60">{err ? err : `updated ${ago(d.at, now)} · refreshes every 15s`}</span>
-        </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <Big value={d.rightNow.views5} label="pages viewed in the last 5 minutes" />
-          <Big value={d.rightNow.visits30} label={`visits in the last 30 minutes · ${n(d.rightNow.views30)} pages`} />
-          <Big value={d.crawl.last24h} label={`pages Google & Bing crawled in 24h · ${n(d.crawl.pages)} different pages`} />
-        </div>
-      </section>
+          <div className="mt-6">
+            <div className="text-lg font-semibold text-ink">{greeting()}, Sachin</div>
+            <div className="mt-0.5 text-sm text-muted">
+              {d.rightNow.views5 ? `${n(d.rightNow.views5)} page${d.rightNow.views5 === 1 ? "" : "s"} viewed in the last 5 minutes` : "The site is quiet this minute"}
+            </div>
+            <div className="mt-3 text-[11px] text-muted/80">{err || `Updated ${ago(d.at, now)} · refreshes every 15s`}</div>
+          </div>
+        </Glass>
+        <Kpi label="Visits today" value={d.today.visits} before={d.yesterday.visits} points={series("visits")} icon={<Users size={14} />} />
+        <Kpi label="Products viewed today" value={d.today.productViews} before={d.yesterday.productViews} points={series("productViews")} icon={<Eye size={14} />} />
+        <Kpi label="Call taps today" value={d.today.calls} before={d.yesterday.calls} points={series("calls")} icon={<Phone size={14} />} />
+      </div>
 
-      {/* ---------- Today vs yesterday ---------- */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        {tiles.map((k) => (
-          <Card key={k.label} className="p-4">
-            <div className="flex items-center gap-1.5 text-xs text-muted">{k.icon}{k.label} today</div>
-            <div className="mt-1 font-display text-3xl">{n(k.a)}</div>
-            <Delta a={k.a} b={k.b} />
-          </Card>
-        ))}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Mini label="Visits, last 30 minutes" value={n(d.rightNow.visits30)} sub={`${n(d.rightNow.views30)} pages`} />
+        <Mini label="Delivery postcode checks today" value={n(d.today.postcodes)} sub={`${n(d.yesterday.postcodes)} yesterday by now`} icon={<MapPin size={14} />} />
+        <Mini label="Enquiries today" value={n(d.today.enquiries)} sub={`${n(d.yesterday.enquiries)} yesterday by now`} icon={<ShoppingBag size={14} />} />
       </div>
 
       {/* ---------- Charts ---------- */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <Head title="Last 24 hours on the site" note="page views per hour · Google's crawler in blue" />
-          <Bars data={d.hours.map((h) => ({ label: h.label, a: h.views, b: h.crawls }))} aColor="var(--color-cta)" bColor="var(--color-sky)" />
-        </Card>
-        <Card className="p-5">
-          <Head title="Seen on Google, hour by hour" note="Search Console · free results · last 3 days, today's hours included" />
-          {!g.connected ? <p className="text-sm text-muted">Connect Google in Admin → Google Ads to see this.</p>
+        <Glass className="p-5">
+          <Head title="Last 24 hours on the site" right={<Legend items={[["People", "#37853c"], ["Google's crawler", "#93a8ef"]]} />} />
+          <Area lines={[{ points: series("views"), color: "#37853c" }, { points: d.hours.map((h) => h.crawls), color: "#93a8ef" }]} labels={d.hours.map((h) => h.label)} />
+        </Glass>
+        <Glass className="p-5">
+          <Head title="Seen on Google, hour by hour" right={<Legend items={[["Impressions", "#0a2788"], ["Clicks", "#37853c"]]} />} />
+          {!g.connected ? <Empty>Connect Google in Admin → Google Ads to see this.</Empty>
             : g.error ? <p className="text-sm text-danger">{g.error}</p>
-            : (g.hours?.length ? <>
-                <div className="mb-2 flex gap-5 text-sm">
-                  <span><b className="font-display text-xl">{n(gToday.reduce((s, h) => s + h.impressions, 0))}</b> impressions today</span>
-                  <span><b className="font-display text-xl">{n(gToday.reduce((s, h) => s + h.clicks, 0))}</b> clicks today</span>
+            : g.hours?.length ? <>
+                <div className="mb-1 flex gap-6">
+                  <Stat value={n(gToday.reduce((s, h) => s + h.impressions, 0))} label="impressions today" />
+                  <Stat value={n(gToday.reduce((s, h) => s + h.clicks, 0))} label="clicks today" />
                 </div>
-                <Bars data={(g.hours || []).slice(-48).map((h) => ({ label: ukHour(h.key), a: h.impressions, b: h.clicks }))} aColor="var(--color-blue)" bColor="var(--color-cta)" />
-              </> : <p className="text-sm text-muted">Google hasn't reported any hours yet today.</p>)}
-        </Card>
+                <Area lines={[{ points: g.hours.slice(-48).map((h) => h.impressions), color: "#0a2788" }, { points: g.hours.slice(-48).map((h) => h.clicks), color: "#37853c" }]}
+                  labels={g.hours.slice(-48).map((h) => ukHour(h.key))} />
+              </> : <Empty>Google hasn't reported any hours yet today.</Empty>}
+        </Glass>
       </div>
 
-      {/* ---------- What people want ---------- */}
+      {/* ---------- Products (table) ---------- */}
+      <Glass className="p-5">
+        <Head title="What people are looking at today" right={<span className="text-xs text-muted/80">most viewed first</span>} />
+        {d.topProducts.length ? (
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-line text-left text-[11px] uppercase tracking-wider text-muted/80">
+              <th className="pb-2 font-medium">Product</th><th className="pb-2 font-medium">Brand</th><th className="pb-2 font-medium">Price</th><th className="pb-2 text-right font-medium">Views</th>
+            </tr></thead>
+            <tbody>{d.topProducts.map((p, i) => (
+              <tr key={p.slug} className="border-b border-line/70 last:border-0">
+                <td className="py-2.5 pr-3">
+                  <Link href={`/products/${p.slug}`} target="_blank" className="flex items-center gap-3 font-medium text-ink hover:text-blue">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[10px] bg-white ring-1 ring-line">{p.mainImage && <img src={p.mainImage} alt="" className="h-full w-full object-contain" />}</span>
+                    <span className="line-clamp-1">{p.title}</span>
+                  </Link>
+                </td>
+                <td className="text-muted">{p.brand}</td>
+                <td className="text-muted">{p.priceNow != null ? `£${p.priceNow}` : <Pill className="bg-card text-muted ring-line">Call</Pill>}</td>
+                <td className="text-right"><Pill className={i === 0 ? "bg-info-soft text-blue ring-sky" : "bg-card text-muted ring-line"}>{p.views}</Pill></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        ) : <Empty>No product pages viewed yet today.</Empty>}
+      </Glass>
+
+      {/* ---------- Activity + sources ---------- */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
-          <Head title="What people are looking at today" note="product pages, most viewed first" />
-          {d.topProducts.length ? (
-            <ul className="divide-y divide-line">
-              {d.topProducts.map((p) => (
-                <li key={p.slug} className="flex items-center gap-3 py-2.5">
-                  <div className="h-11 w-11 shrink-0 bg-white">{p.mainImage && <img src={p.mainImage} alt="" className="h-full w-full object-contain" />}</div>
-                  <Link href={`/products/${p.slug}`} target="_blank" className="min-w-0 flex-1 truncate text-sm hover:text-blue">{p.title}</Link>
-                  <span className="text-sm text-muted">{p.priceNow != null ? `£${p.priceNow}` : "call"}</span>
-                  <Badge tone="info">{p.views} view{p.views === 1 ? "" : "s"}</Badge>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="text-sm text-muted">No product pages viewed yet today.</p>}
-        </Card>
-        <Card className="p-5">
-          <Head title="Where visits came from today" />
-          {d.sources.length ? d.sources.map((s) => (
-            <div key={s.name} className="mb-2.5">
-              <div className="flex justify-between text-sm"><span>{s.name}</span><b>{s.visits}</b></div>
-              <div className="mt-1 h-1.5 bg-paper-2"><div className="h-full bg-[var(--color-blue)]" style={{ width: `${(s.visits / d.sources[0].visits) * 100}%` }} /></div>
-            </div>
-          )) : <p className="text-sm text-muted">No visits yet today.</p>}
-        </Card>
-      </div>
-
-      {/* ---------- Feeds ---------- */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <Head title="Live activity" note="anonymous — no names, no cookies" />
-          <ul className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+        <Glass className="p-5 lg:col-span-2">
+          <Head title="Live activity" right={<span className="text-xs text-muted/80">anonymous · no names, no cookies</span>} />
+          <ul className="max-h-[380px] divide-y divide-line/70 overflow-y-auto pr-1">
             {d.feed.map((e, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm">
-                <span className="mt-0.5 text-muted">{e.type === "call_click" ? <Phone size={14} /> : e.type === "postcode_check" ? <MapPin size={14} /> : <Eye size={14} />}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="font-medium">{e.type === "call_click" ? "Tapped Call" : e.type === "postcode_check" ? "Checked delivery postcode" : e.from ? "Arrived on" : "Viewed"}</span>{" "}
-                  <span className="text-muted">{e.product || e.path || "/"}</span>
-                  {e.from && <span className="ml-1 text-xs text-blue">from {e.from}</span>}
+              <li key={i} className="flex items-start gap-3 py-2.5">
+                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${e.type === "call_click" ? "bg-success-soft text-success" : e.type === "postcode_check" ? "bg-warning-soft text-warning" : "bg-info-soft text-blue"}`}>
+                  {e.type === "call_click" ? <Phone size={13} /> : e.type === "postcode_check" ? <MapPin size={13} /> : <Eye size={13} />}
                 </span>
-                <span className="shrink-0 text-xs text-muted">{ago(e.at, now)}</span>
+                <span className="min-w-0 flex-1 text-sm">
+                  <span className="font-medium text-ink">{e.type === "call_click" ? "Tapped Call" : e.type === "postcode_check" ? "Checked delivery postcode" : e.from ? "Arrived on" : "Viewed"}</span>{" "}
+                  <span className="text-muted">{e.product || e.path || "/"}</span>
+                  {e.from && <div className="mt-0.5 text-xs text-blue">from {e.from}</div>}
+                </span>
+                <span className="shrink-0 text-xs text-muted/80">{ago(e.at, now)}</span>
               </li>
             ))}
-            {!d.feed.length && <li className="text-sm text-muted">Waiting for the first visitor…</li>}
+            {!d.feed.length && <li className="py-3 text-sm text-muted">Waiting for the first visitor…</li>}
           </ul>
-        </Card>
-        <Card className="p-5">
-          <Head title="Google crawling the site" note={`${n(d.crawl.verified)} of ${n(d.crawl.last24h)} checked against Google's own address list`} />
-          <div className="mb-3 flex flex-wrap gap-2">{d.crawl.byBot.map((b) => <Badge key={b.bot} tone="neutral">{BOT[b.bot] || b.bot} · {b.hits}</Badge>)}</div>
-          <ul className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
-            {d.crawl.recent.map((c, i) => (
-              <li key={i} className="flex items-center gap-2.5 text-sm">
-                {c.verified ? <ShieldCheck size={14} className="text-success" /> : <Bot size={14} className="text-muted" />}
-                <span className="shrink-0 text-xs">{BOT[c.bot] || c.bot}</span>
-                <span className="min-w-0 flex-1 truncate text-muted">{c.path}</span>
-                <span className="shrink-0 text-xs text-muted">{ago(c.at, now)}</span>
-              </li>
-            ))}
-            {!d.crawl.recent.length && <li className="text-sm text-muted">No crawler visits recorded yet — they appear here as Google fetches pages.</li>}
-          </ul>
-        </Card>
+        </Glass>
+        <Glass className="p-5">
+          <Head title="Where visits came from" right={<span className="text-xs text-muted/80">today</span>} />
+          {d.sources.length ? d.sources.map((s) => (
+            <div key={s.name} className="mb-3">
+              <div className="flex justify-between text-sm"><span className="text-ink">{s.name}</span><span className="font-semibold text-ink">{s.visits}</span></div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-paper-2"><div className="h-full rounded-full bg-gradient-to-r from-blue to-sky" style={{ width: `${(s.visits / d.sources[0].visits) * 100}%` }} /></div>
+            </div>
+          )) : <Empty>No visits yet today.</Empty>}
+        </Glass>
       </div>
 
-      {/* ---------- Money + Google searches ---------- */}
+      {/* ---------- Sales + searches + crawl ---------- */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5">
-          <Head title="Sales" note="from Sales & Leads" />
-          <div className="grid grid-cols-2 gap-3">
-            <div><div className="font-display text-3xl text-success">{money(d.sales.wonValue)}</div><div className="text-xs text-muted">{d.sales.wonThisMonth} won this month</div></div>
-            <div><div className="font-display text-3xl">{money(d.sales.openValue)}</div><div className="text-xs text-muted">{d.sales.open} open enquiries quoted</div></div>
+        <Glass className="p-5">
+          <Head title="Sales" right={<Link href={salesHref} className="flex items-center text-xs text-muted hover:text-blue">Sales & Leads <ChevronRight size={14} /></Link>} />
+          <div className="flex items-end gap-5">
+            <div className="flex h-24 items-end gap-2">
+              {salesMix.map((m) => (
+                <div key={m.label} className="w-3 rounded-full" style={{ background: m.color, height: `${Math.max(8, (m.value / Math.max(1, ...salesMix.map((x) => x.value))) * 96)}px` }} />
+              ))}
+            </div>
+            <div className="flex-1 space-y-2 text-sm">
+              {salesMix.map((m) => (
+                <div key={m.label} className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-muted"><span className="h-2 w-2 rounded-full" style={{ background: m.color }} />{m.label}</span>
+                  <span className="font-semibold text-ink">{money(m.value)}</span>
+                </div>
+              ))}
+              <div className="text-xs text-muted/80">{d.sales.wonThisMonth} won · {d.sales.open} open</div>
+            </div>
           </div>
-          <ul className="mt-4 space-y-1.5 text-sm">
+          <ul className="mt-4 space-y-2 border-t border-line/70 pt-3 text-sm">
             {d.sales.recent.map((e, i) => (
-              <li key={i} className="flex justify-between gap-2"><span className="truncate">{e.product || "General enquiry"}</span><Badge tone={e.status === "won" || e.status === "closed" ? "success" : e.status === "lost" ? "danger" : "warning"}>{e.status}</Badge></li>
+              <li key={i} className="flex items-center justify-between gap-2">
+                <span className="truncate text-ink">{e.product || "General enquiry"}</span>
+                <Pill className={STATUS[e.status] || STATUS.new}>{e.status}</Pill>
+              </li>
             ))}
+            {!d.sales.recent.length && <li className="text-muted">No enquiries this month yet.</li>}
           </ul>
-          <Link href={salesHref} className="mt-3 inline-block text-sm text-blue">Open Sales & Leads →</Link>
-        </Card>
-        <Card className="p-5 lg:col-span-2">
-          <Head title="What people searched on Google" note="since yesterday, including today's fresh data" icon={<Search size={15} />} />
+        </Glass>
+        <Glass className="p-5">
+          <Head title="What people searched on Google" right={<span className="text-xs text-muted/80">since yesterday</span>} />
           {g.queries?.length ? (
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-xs text-muted"><th className="pb-1.5 font-normal">Search</th><th className="font-normal">Seen</th><th className="font-normal">Clicks</th><th className="font-normal">Position</th></tr></thead>
-              <tbody>{g.queries.map((q) => (
-                <tr key={q.key} className="border-t border-line"><td className="py-1.5 pr-2">{q.key}</td><td>{n(q.impressions)}</td><td>{n(q.clicks)}</td><td>{q.position.toFixed(1)}</td></tr>
+              <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted/80"><th className="pb-2 font-medium">Search</th><th className="pb-2 text-right font-medium">Seen</th><th className="pb-2 text-right font-medium">Clicks</th></tr></thead>
+              <tbody>{g.queries.slice(0, 10).map((q) => (
+                <tr key={q.key} className="border-t border-line/70"><td className="py-2 pr-2 text-ink">{q.key}</td><td className="text-right text-muted">{n(q.impressions)}</td>
+                  <td className="text-right">{q.clicks ? <Pill className="bg-success-soft text-success ring-success/30">{n(q.clicks)}</Pill> : <span className="text-muted/80">0</span>}</td></tr>
               ))}</tbody>
             </table>
-          ) : <p className="text-sm text-muted">{g.connected ? "No searches reported for today yet." : "Connect Google in Admin → Google Ads to see this."}</p>}
-        </Card>
+          ) : <Empty>{g.connected ? "No searches reported for today yet." : "Connect Google in Admin → Google Ads to see this."}</Empty>}
+        </Glass>
+        <Glass className="p-5">
+          <Head title="Google crawling the site" right={<span className="text-xs text-muted/80">{n(d.crawl.last24h)} in 24h</span>} />
+          <div className="mb-3 flex flex-wrap gap-1.5">{d.crawl.byBot.map((b) => <Pill key={b.bot} className="bg-info-soft text-blue ring-sky">{BOT[b.bot] || b.bot} · {b.hits}</Pill>)}</div>
+          <ul className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
+            {d.crawl.recent.map((c, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm">
+                {c.verified ? <ShieldCheck size={14} className="shrink-0 text-success" /> : <Bot size={14} className="shrink-0 text-muted/80" />}
+                <span className="min-w-0 flex-1 truncate text-muted">{c.path}</span>
+                <span className="shrink-0 text-xs text-muted/80">{ago(c.at, now)}</span>
+              </li>
+            ))}
+            {!d.crawl.recent.length && <li className="text-sm text-muted">Pages appear here as Google fetches them.</li>}
+          </ul>
+          <p className="mt-3 text-[11px] text-muted/80">{n(d.crawl.verified)} of {n(d.crawl.last24h)} confirmed as the real Google</p>
+        </Glass>
       </div>
-      <p className="flex items-center gap-1.5 text-xs text-muted"><Sparkles size={12} /> Site figures are live. Google's figures arrive hourly and can lag a few hours. Visits count arrivals, not people; there is no online checkout, so sales are the enquiries marked won.</p>
-    </div>
+
+      <p className="px-1 text-xs text-muted">Site figures are live. Google&apos;s figures arrive hourly and can lag a few hours. Visits count arrivals, not people; there is no online checkout, so sales are the enquiries marked won.</p>
+    </Wash>
   );
 }
 
-function Big({ value, label }: { value: number; label: string }) {
-  return <div><div className="font-display text-5xl tabular-nums">{n(value)}</div><div className="mt-1 text-sm text-white/65">{label}</div></div>;
+/* ------------------------------------------------------------ pieces */
+
+function Wash({ children }: { children: ReactNode }) {
+  return <div className="-m-4 space-y-4 rounded-[28px] bg-gradient-to-br from-card via-paper-2 to-[#dde3f1] p-4 sm:-m-6 sm:p-6">{children}</div>;
 }
-function Head({ title, note, icon }: { title: string; note?: string; icon?: React.ReactNode }) {
-  return <div className="mb-3"><h2 className="flex items-center gap-1.5 font-display text-lg">{icon}{title}</h2>{note && <p className="text-xs text-muted">{note}</p>}</div>;
+function Glass({ className = "", children }: { className?: string; children: ReactNode }) {
+  return <div className={`rounded-[20px] border border-white/80 bg-white/70 shadow-[0_10px_30px_-12px_rgba(8,21,56,0.18)] backdrop-blur-md ${className}`}>{children}</div>;
 }
-function Delta({ a, b }: { a: number; b: number }) {
-  if (!a && !b) return <div className="mt-1 text-xs text-muted">same as yesterday</div>;
-  if (!b) return <div className="mt-1 text-xs text-success">none yesterday by now</div>;
-  const up = a >= b, pct = b ? Math.round(((a - b) / b) * 100) : 100;
+function Head({ title, right }: { title: string; right?: ReactNode }) {
+  return <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">{title}</h2>{right}</div>;
+}
+function Pill({ className, children }: { className: string; children: ReactNode }) {
+  return <span className={`inline-flex items-center rounded-[10px] px-2 py-0.5 text-xs font-medium capitalize ring-1 ${className}`}>{children}</span>;
+}
+function Empty({ children }: { children: ReactNode }) { return <p className="py-6 text-center text-sm text-muted">{children}</p>; }
+function Stat({ value, label }: { value: string; label: string }) {
+  return <div><div className="text-2xl font-semibold text-ink">{value}</div><div className="text-xs text-muted">{label}</div></div>;
+}
+function Legend({ items }: { items: [string, string][] }) {
+  return <div className="flex gap-3">{items.map(([l, c]) => <span key={l} className="flex items-center gap-1.5 text-xs text-muted"><span className="h-2 w-2 rounded-full" style={{ background: c }} />{l}</span>)}</div>;
+}
+function Mini({ label, value, sub, icon }: { label: string; value: string; sub: string; icon?: ReactNode }) {
   return (
-    <div className={`mt-1 flex items-center gap-0.5 text-xs ${up ? "text-success" : "text-danger"}`}>
-      {up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{Math.abs(pct)}% vs yesterday by now ({n(b)})
-    </div>
+    <Glass className="flex items-center justify-between p-4">
+      <div><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">{label}</div><div className="mt-1 text-xs text-muted/80">{sub}</div></div>
+      <div className="flex items-center gap-1.5 text-2xl font-semibold text-ink">{icon && <span className="text-muted/80">{icon}</span>}{value}</div>
+    </Glass>
   );
 }
-function Bars({ data, aColor, bColor }: { data: { label: string; a: number; b: number }[]; aColor: string; bColor: string }) {
-  const w = 560, h = 170, pb = 18, max = Math.max(1, ...data.map((x) => Math.max(x.a, x.b)));
-  const bw = w / Math.max(1, data.length), every = Math.ceil(data.length / 12);
+function Kpi({ label, value, before, points, icon }: { label: string; value: number; before: number; points: number[]; icon: ReactNode }) {
+  const up = value >= before, pct = before ? Math.round(((value - before) / before) * 100) : null;
+  const color = !before && !value ? "#5b6577" : up ? "#37853c" : "#b3261e";
+  return (
+    <Glass className="p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">{icon}{label}</div>
+        <Spark points={points} color={color} />
+      </div>
+      <div className="mt-3 text-3xl font-semibold text-ink">{n(value)}</div>
+      <div className="mt-1 flex items-center justify-between text-xs">
+        <span className="text-muted/80">vs {n(before)} yesterday by now</span>
+        <span className="flex items-center font-semibold" style={{ color }}>
+          {pct === null ? (value ? "new" : "—") : <>{up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{Math.abs(pct)}%</>}
+        </span>
+      </div>
+    </Glass>
+  );
+}
+
+/** Smooth path through points (Catmull-Rom → cubic Bézier); control points never dip below `floor`, so a sudden jump can't draw a negative count. */
+function smooth(xy: [number, number][], floor = Infinity) {
+  const c = (y: number) => Math.min(y, floor).toFixed(1);
+  if (!xy.length) return "";
+  let p = `M${xy[0][0]},${xy[0][1]}`;
+  for (let i = 0; i < xy.length - 1; i++) {
+    const [x0, y0] = xy[i - 1] || xy[i], [x1, y1] = xy[i], [x2, y2] = xy[i + 1], [x3, y3] = xy[i + 2] || xy[i + 1];
+    p += ` C${(x1 + (x2 - x0) / 6).toFixed(1)},${c(y1 + (y2 - y0) / 6)} ${(x2 - (x3 - x1) / 6).toFixed(1)},${c(y2 - (y3 - y1) / 6)} ${x2},${y2}`;
+  }
+  return p;
+}
+function Spark({ points, color }: { points: number[]; color: string }) {
+  const w = 96, h = 34, max = Math.max(1, ...points);
+  const xy = points.map((v, i) => [i * (w / Math.max(1, points.length - 1)), h - 3 - (v / max) * (h - 6)] as [number, number]);
+  return <svg width={w} height={h} aria-hidden><path d={smooth(xy, h - 3)} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" /></svg>;
+}
+function Area({ lines, labels }: { lines: { points: number[]; color: string }[]; labels: string[] }) {
+  const w = 560, h = 180, pb = 20, max = Math.max(1, ...lines.flatMap((l) => l.points));
+  const every = Math.ceil(labels.length / 8);
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="hourly chart">
-      {data.map((x, i) => {
-        const ha = (x.a / max) * (h - pb - 4), hb = (x.b / max) * (h - pb - 4);
+      {[0.25, 0.5, 0.75].map((f) => <line key={f} x1="0" x2={w} y1={(h - pb) * f} y2={(h - pb) * f} stroke="#d9dfee" strokeDasharray="3 4" />)}
+      {lines.map((l, k) => {
+        const xy = l.points.map((v, i) => [i * (w / Math.max(1, l.points.length - 1)), h - pb - (v / max) * (h - pb - 8)] as [number, number]);
+        const line = smooth(xy, h - pb);
         return (
-          <g key={i}>
-            <rect x={i * bw + 1} y={h - pb - ha} width={bw * 0.55} height={ha} fill={aColor}><title>{`${x.label}:00 · ${x.a} / ${x.b}`}</title></rect>
-            <rect x={i * bw + 1 + bw * 0.55} y={h - pb - hb} width={bw * 0.35} height={hb} fill={bColor} />
-            {i % every === 0 && <text x={i * bw + bw / 2} y={h - 4} fontSize="10" textAnchor="middle" fill="var(--color-muted)">{x.label}</text>}
+          <g key={k}>
+            <defs><linearGradient id={`fill${k}`} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={l.color} stopOpacity="0.22" /><stop offset="100%" stopColor={l.color} stopOpacity="0" /></linearGradient></defs>
+            {xy.length > 1 && <path d={`${line} L${w},${h - pb} L0,${h - pb} Z`} fill={`url(#fill${k})`} />}
+            <path d={line} fill="none" stroke={l.color} strokeWidth="2.4" strokeLinecap="round" />
+            {xy.length > 0 && <circle cx={xy[xy.length - 1][0]} cy={xy[xy.length - 1][1]} r="3.5" fill="white" stroke={l.color} strokeWidth="2" />}
           </g>
         );
       })}
+      {labels.map((lb, i) => i % every === 0 && <text key={i} x={i * (w / Math.max(1, labels.length - 1))} y={h - 4} fontSize="10" textAnchor="middle" fill="#5b6577">{lb}</text>)}
     </svg>
   );
 }

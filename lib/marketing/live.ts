@@ -58,6 +58,9 @@ export async function liveSnapshot(db: any) {
     return {
       label: new Date(end).toLocaleTimeString("en-GB", { hour: "2-digit", timeZone: "Europe/London" }),
       views: human.filter((e) => e.type === "page_view" && at(e)).length,
+      visits: human.filter((e) => e.type === "page_view" && e.landing && at(e)).length,
+      productViews: human.filter((e) => e.type === "page_view" && e.productSlug && at(e)).length,
+      calls: human.filter((e) => e.type === "call_click" && at(e)).length,
       crawls: crawl.filter(at).length,
     };
   });
