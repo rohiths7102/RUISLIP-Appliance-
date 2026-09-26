@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server";
 import { ADMIN_PATH, usingSecretAdminPath, ipAllowed, clientIpFrom, ipAllowlistActive } from "@/lib/admin-config";
 
 /**
@@ -16,8 +16,20 @@ import { ADMIN_PATH, usingSecretAdminPath, ipAllowed, clientIpFrom, ipAllowlistA
  * NOTE: full session verification (HMAC/scrypt) stays in the routes/pages — this
  * edge layer is defence in depth, not the only gate.
  */
-export function middleware(req: NextRequest) {
+export function middleware(req: NextRequest, event: NextFetchEvent) {
   const { pathname } = req.nextUrl;
+
+  // Crawl log for Admin → Live: a search crawler fetching a page is posted to
+  // /api/track/crawl after the response, so it never slows the page down.
+  const ua = req.headers.get("user-agent") || "";
+  if (req.method === "GET" && /Googlebot|Google-InspectionTool|Storebot-Google|GoogleOther|bingbot/i.test(ua)
+      && process.env.SESSION_SECRET && !pathname.startsWith("/api/")) {
+    event.waitUntil(fetch(new URL("/api/track/crawl", req.url), {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-crawl-key": process.env.SESSION_SECRET },
+      body: JSON.stringify({ path: pathname, ua, ip: clientIpFrom(req.headers) }),
+    }).catch(() => {}));
+  }
 
   // The old site linked brands with capitals (/brands/Hotpoint); ours are
   // lowercase and the lookup is exact, so the capitalised form is a 404. A

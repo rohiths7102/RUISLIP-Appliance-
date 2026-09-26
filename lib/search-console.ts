@@ -66,3 +66,29 @@ export async function searchAnalytics(db: any, dimension: "query" | "page" | "da
   if (!r.ok) throw new Error(`Search Console: ${j?.error?.message || r.status}`);
   return (j.rows || []).map((x: any) => ({ key: x.keys[0], clicks: x.clicks, impressions: x.impressions, ctr: x.ctr, position: x.position }));
 }
+
+/**
+ * The freshest data Search Console has, for Admin → Live: impressions and clicks
+ * per hour over the last 3 days (dataState "hourly_all" includes today's
+ * partial hours — hours, not the ~2-day lag above), or today's-so-far searches
+ * (dataState "all" = final + fresh). Null when Google isn't connected.
+ */
+export async function searchFresh(db: any, dimension: "hour" | "query"): Promise<GscRow[] | null> {
+  const token = await accessToken(db);
+  if (!token) return null;
+  const site = await searchConsoleSite(db, token);
+  if (!site) return null;
+  const day = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString().slice(0, 10);
+  const r = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(site)}/searchAnalytics/query`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      startDate: day(dimension === "hour" ? 3 : 1), endDate: day(0), dimensions: [dimension], rowLimit: dimension === "hour" ? 100 : 15,
+      dataState: dimension === "hour" ? "hourly_all" : "all",
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  const j: any = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`Search Console: ${j?.error?.message || r.status}`);
+  return (j.rows || []).map((x: any) => ({ key: x.keys[0], clicks: x.clicks, impressions: x.impressions, ctr: x.ctr, position: x.position }));
+}

@@ -4,7 +4,7 @@ import { usingDevPassword } from "@/lib/auth";
 import { adminHref, SIGNIN_PATH } from "@/lib/admin-config";
 import {
   LayoutDashboard, PackagePlus, Package, LayoutGrid, Tag, Megaphone,
-  MessageCircle, Inbox, Store, RefreshCw, ArrowUpRight, TrendingUp, Globe, Home, Search, ListChecks, Activity, ScrollText, type LucideIcon,
+  MessageCircle, Inbox, Store, RefreshCw, ArrowUpRight, TrendingUp, Globe, Home, Search, ListChecks, Activity, ScrollText, Radio, type LucideIcon,
 } from "lucide-react";
 
 /**
@@ -19,7 +19,7 @@ import {
  * /admin/* key.
  */
 const GROUPS: { title: string; items: [string, string, LucideIcon][] }[] = [
-  { title: "Overview", items: [["", "Dashboard", LayoutDashboard], ["today", "Today", ListChecks], ["telemetry", "Telemetry", Activity]] },
+  { title: "Overview", items: [["", "Dashboard", LayoutDashboard], ["live", "Live", Radio], ["today", "Today", ListChecks], ["telemetry", "Telemetry", Activity]] },
   {
     title: "Sell",
     items: [
