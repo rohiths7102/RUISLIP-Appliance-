@@ -12,7 +12,9 @@ export const dynamic = "force-dynamic";
  *   - BLOB_READ_WRITE_TOKEN set  -> Vercel Blob (serverless-safe, production)
  *   - otherwise                  -> public/uploads/ on local disk (dev)
  */
-const MAX_BYTES = 8 * 1024 * 1024;
+// Vercel rejects request bodies over 4.5 MB before this runs; the admin shrinks
+// photos in the browser first (lib/upload-photo.ts), so this is a backstop.
+const MAX_BYTES = 4 * 1024 * 1024;
 
 // Allow-list by real MIME + extension. Never trust the client-supplied filename:
 // it can contain "../" and traverse out of the uploads directory.
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
 
   const ext = TYPES[file.type];
   if (!ext) return NextResponse.json({ error: `Unsupported type "${file.type}". Use JPG, PNG, WebP, AVIF or GIF.` }, { status: 415 });
-  if (file.size > MAX_BYTES) return NextResponse.json({ error: `Image is ${(file.size / 1e6).toFixed(1)}MB — the limit is 8MB.` }, { status: 413 });
+  if (file.size > MAX_BYTES) return NextResponse.json({ error: `Image is ${(file.size / 1e6).toFixed(1)}MB — the limit is 4MB.` }, { status: 413 });
   if (file.size === 0) return NextResponse.json({ error: "File is empty" }, { status: 400 });
 
   const bytes = Buffer.from(await file.arrayBuffer());

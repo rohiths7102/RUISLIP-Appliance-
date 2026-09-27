@@ -5,6 +5,7 @@ import { Badge, Button, Card, Notice, PageTitle } from "@/components/admin/ui";
 import PriceCheckPanel from "@/components/admin/PriceCheckPanel";
 import WarrantyPicker from "@/components/admin/WarrantyPicker";
 import { WARRANTY_YEARS, warrantyLabel } from "@/lib/warranty";
+import { uploadPhoto } from "@/lib/upload-photo";
 
 type ImportPreview = {
   rows: number; updates: number; creates: number; unchanged: number;
@@ -436,13 +437,9 @@ function Editor({
   async function upload(file?: File) {
     if (!file) return;
     setUploading(true); setUpErr("");
-    const fd = new FormData();
-    fd.append("file", file);
-    const r = await fetch("/api/admin/upload", { method: "POST", body: fd });
-    const j = await r.json().catch(() => ({}));
-    setUploading(false);
-    if (!r.ok) { setUpErr(j.error || "Upload failed"); return; }
-    set("mainImage", j.url);
+    try { set("mainImage", await uploadPhoto(file)); }
+    catch (e: any) { setUpErr(e.message); }
+    finally { setUploading(false); }
   }
 
   return (
@@ -531,13 +528,13 @@ function Editor({
               <div className="flex-1">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-navy/20 px-4 py-2 text-xs font-semibold hover:border-blue">
                   <Upload size={14} /> {uploading ? "Uploading…" : "Upload photo"}
-                  <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" className="hidden"
+                  <input type="file" accept="image/*,.heic,.heif" className="hidden"
                     onChange={(e) => upload(e.target.files?.[0])} />
                 </label>
                 <input value={row.mainImage} onChange={(e) => set("mainImage", e.target.value)}
                   className={`mt-2 ${input} text-xs`} placeholder="…or paste an image URL" />
                 {upErr && <p className="mt-1 text-xs text-danger">{upErr}</p>}
-                <p className="mt-1 text-[11px] text-muted">JPG, PNG, WebP, AVIF or GIF · max 8MB</p>
+                <p className="mt-1 text-[11px] text-muted">Any photo from your phone or computer — big photos are shrunk automatically</p>
               </div>
             </div>
           </div>

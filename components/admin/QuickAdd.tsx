@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { Card, Button, Notice } from "@/components/admin/ui";
 import { UploadCloud, X, Star, Check, Loader2, ArrowUpRight, Sparkles } from "lucide-react";
+import { uploadPhoto } from "@/lib/upload-photo";
 
 type Shot = { file: File; preview: string };
 type Phase = "form" | "working" | "done";
@@ -33,7 +34,8 @@ export default function QuickAdd({ brands, departments }: { brands: string[]; de
     if (!list) return;
     const next = [...shots];
     for (const f of Array.from(list)) {
-      if (!f.type.startsWith("image/") || next.length >= 8) continue;
+      // iPhone HEIC often arrives with no type on Windows: keep it, so the upload explains what to do.
+      if (!(f.type.startsWith("image/") || /.hei[cf]$/i.test(f.name)) || next.length >= 8) continue;
       next.push({ file: f, preview: URL.createObjectURL(f) });
     }
     setShots(next);
@@ -75,14 +77,7 @@ export default function QuickAdd({ brands, departments }: { brands: string[]; de
       // each POST is independent and the shop's wifi made eight of them a
       // sixteen-second wait in a row.
       setStep(0, "run");
-      const urls: string[] = await Promise.all(shots.map(async (s) => {
-        const fd = new FormData();
-        fd.append("file", s.file);
-        const r = await fetch("/api/admin/upload", { method: "POST", body: fd });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error || "A photo failed to upload");
-        return j.url as string;
-      }));
+      const urls: string[] = await Promise.all(shots.map((s) => uploadPhoto(s.file)));
       setStep(0, "done");
 
       // 2 + 3 — one call does the rest server-side
@@ -257,7 +252,7 @@ export default function QuickAdd({ brands, departments }: { brands: string[]; de
           <UploadCloud size={22} aria-hidden />
           <span className="text-[13px] font-medium">Drop photos here or tap to choose</span>
         </button>
-        <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+        <input ref={fileInput} type="file" accept="image/*,.heic,.heif" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
 
         {shots.length > 0 && (
           <ul className="mt-3 grid grid-cols-3 gap-2">
