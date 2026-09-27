@@ -147,9 +147,14 @@ if (line) {
   ok("apply with errors is refused", r.status === 400);
 
   // a brand-new row creates a product
-  const newCsv = [header, header.split(",").map((c) =>
-    c.includes("productCode") ? '"AUDIT-CSV-NEW"' : c.includes("title") ? '"CSV Created Washer"' : c.includes("brand") ? '"Bosch"' : c.includes("priceNow") ? '"250"' : '""'
-  ).join(",")].join("\n");
+  const row = (dept) => header.split(",").map((c) => { const h = c.replace(/"/g, "");
+    return h === "productCode" ? '"AUDIT-CSV-NEW"' : h === "title" ? '"CSV Created Washer"' : h === "brand" ? '"Bosch"' : h === "priceNow" ? '"250"'
+      : h === "category" && dept ? '"Laundry"' : h === "subcategory" && dept ? '"Washing Machines"' : '""'; }).join(",");
+  // A new row with no department would be on no department page: refused (26 Sept, Zenith ZE501).
+  r = await jpost("/api/admin/products/import", { csv: [header, row(false)].join("\n"), mode: "preview" });
+  j = await json(r);
+  ok("import refuses a new product with no department", j?.errorCount === 1 && j?.creates === 0, JSON.stringify(j?.errors));
+  const newCsv = [header, row(true)].join("\n");
   r = await jpost("/api/admin/products/import", { csv: newCsv, mode: "apply" });
   j = await json(r);
   ok("import creates a brand-new product", r.status === 200 && j.creates === 1, JSON.stringify({ creates: j?.creates, errors: j?.errors }));

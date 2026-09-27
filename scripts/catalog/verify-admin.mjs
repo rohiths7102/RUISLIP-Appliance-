@@ -92,7 +92,7 @@ check("executable type rejected", r.status === 415, `HTTP ${r.status}`);
 if (up?.url) {
   r = await api(`/api/admin/products/${created.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mainImage: up.url }) });
   check("uploaded image attached to product", r.status === 200);
-  const img = await fetch(BASE + up.url);
+  const img = await fetch(up.url.startsWith("http") ? up.url : BASE + up.url); // Blob uploads return a full URL
   check("uploaded image is publicly served", img.status === 200, `${up.url} -> ${img.status}`);
 }
 
