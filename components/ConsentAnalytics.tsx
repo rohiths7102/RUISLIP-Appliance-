@@ -9,13 +9,18 @@ const KEY = "ga-consent";
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
 type Choice = "granted" | "denied";
+const GRANTED = { analytics_storage: "granted", ad_storage: "granted", ad_user_data: "granted" };
+const DENIED = { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied" };
 
 /**
- * UK-compliant (PECR/UK GDPR) opt-in analytics and Google Ads measurement.
- * Nothing loads until the visitor explicitly accepts; "No thanks" loads
- * nothing, ever. The choice is remembered in localStorage so the banner
- * appears once per browser. Ads is measurement only: ad_personalization
- * stays denied, so no remarketing.
+ * Google Analytics + Google Ads measurement in Consent Mode v2 "advanced"
+ * (owner's decision, 27 Sept 2026): the tag loads for every visitor with ALL
+ * consent denied, so no Google cookie is set until "Accept". Before that, or
+ * after "No thanks", Google receives only cookieless pings with ad-click IDs
+ * redacted (ads_data_redaction), which it uses to model conversions — the
+ * strict "load nothing" version left both Ads conversion actions unverified.
+ * "Accept" grants analytics + ad measurement; ad_personalization always stays
+ * denied, so no remarketing. The choice is remembered in localStorage.
  */
 export default function ConsentAnalytics() {
   const [choice, setChoice] = useState<Choice | null>(null);
@@ -37,6 +42,8 @@ export default function ConsentAnalytics() {
   const decide = (v: Choice) => {
     try { localStorage.setItem(KEY, v); } catch {}
     setChoice(v);
+    const gtag = (window as any).gtag;
+    if (typeof gtag === "function") gtag("consent", "update", v === "granted" ? GRANTED : DENIED);
   };
 
   return (
@@ -73,11 +80,10 @@ export default function ConsentAnalytics() {
         </div>
       )}
 
-      {choice === "granted" && (
+      {ready && (
         <>
-          {/* Consent mode v2: defaults queue on dataLayer before gtag.js loads.
-              Analytics and ad measurement are granted; ad_personalization stays
-              denied — no remarketing lists are built from this site. */}
+          {/* Consent mode v2: the denied defaults queue on dataLayer before
+              gtag.js loads; a remembered "Accept" is applied straight after. */}
           <Script id="ga-init" strategy="afterInteractive">{`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -87,7 +93,8 @@ export default function ConsentAnalytics() {
               ad_personalization: 'denied',
               analytics_storage: 'denied'
             });
-            gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'granted', ad_user_data: 'granted' });
+            gtag('set', 'ads_data_redaction', true);
+            ${choice === "granted" ? `gtag('consent', 'update', ${JSON.stringify(GRANTED)});` : ""}
             gtag('js', new Date());
             ${GA_ID ? `gtag('config', '${GA_ID}');` : ""}
             gtag('config', '${GOOGLE_ADS_ID}');

@@ -10,7 +10,7 @@ const SEND_TO = {
   enquiry: `${GOOGLE_ADS_ID}/DwasCN7-xIIdEOyA4d0D`,
 };
 
-/** Tell Google Ads a visitor called or enquired. A no-op unless they accepted cookies (gtag only exists then). */
+/** Tell Google Ads a visitor called or enquired. Before "Accept" (or after "No thanks") consent mode sends it as a cookieless ping Google models from. */
 export function reportAdsConversion(kind: keyof typeof SEND_TO) {
   const gtag = (window as any).gtag;
   if (typeof gtag === "function") gtag("event", "conversion", { send_to: SEND_TO[kind] });

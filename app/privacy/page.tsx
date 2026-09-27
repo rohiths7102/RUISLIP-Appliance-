@@ -98,9 +98,12 @@ export default async function PrivacyPage() {
       <P>
         This site asks before setting any Google cookies. They let us see which pages help customers and
         whether a visit came from one of our Google ads (so we know if a call or enquiry followed); they are
-        never used to show you adverts elsewhere. Nothing is loaded unless you choose &quot;Accept&quot; — choosing to decline leaves
-        the site entirely cookie-free apart from the sign-in cookie used by shop staff in the admin area, which
-        is strictly necessary and needs no consent.
+        never used to show you adverts elsewhere. Google's measurement tag loads on every page in Google&apos;s
+        &quot;consent mode&quot;: until you choose &quot;Accept&quot; it sets no cookies and sends Google only anonymous,
+        cookieless signals (for example that a page was viewed or the call button pressed), with ad-click
+        identifiers removed, which Google uses to estimate how well our ads work. Choosing &quot;No thanks&quot; keeps it
+        that way — the site then sets no cookies apart from the sign-in cookie used by shop staff in the admin
+        area, which is strictly necessary and needs no consent.
       </P>
 
       <P>
