@@ -102,13 +102,34 @@ function mapCategory(r: any): Category {
 
 export interface Catalog { products: Product[]; categories: Category[]; brands: Brand[]; business: Business; services: Service[]; source: "database" | "seed"; }
 
+/**
+ * The product rows are ~13 MB a read and every uncached page and every search
+ * keystroke read them: on 27 Sept 2026 a read took 4–6s, pages 5–25s, and
+ * visitors got the error page ("the catalogue didn't respond"). This server
+ * instance now keeps the rows and re-reads only when a cheap signature changes
+ * — the product count and the newest updatedAt across ALL rows, so a create,
+ * edit, hide (updatedAt) or delete (count) anywhere is seen on the next render,
+ * exactly as before. The in-flight read is shared, so a burst waits on one read.
+ */
+let productRows: { sig: string; rows: Promise<any[]> } | null = null;
+async function visibleProductRows(db: any): Promise<any[]> {
+  const agg = await db.product.aggregate({ _count: { _all: true }, _max: { updatedAt: true } });
+  const sig = `${agg._count._all}:${agg._max.updatedAt ? new Date(agg._max.updatedAt).getTime() : 0}`;
+  if (productRows?.sig !== sig) {
+    const rows = db.product.findMany({ where: { isVisible: true }, orderBy: { title: "asc" } });
+    productRows = { sig, rows };
+    rows.catch(() => { if (productRows?.rows === rows) productRows = null; });
+  }
+  return productRows.rows;
+}
+
 async function readCatalog(): Promise<Catalog> {
   const fallback: Catalog = { products: seed.products, categories: seed.categories, brands: seed.brands, business: seed.business, services: seed.services, source: "seed" };
   const db = await getDb();
   if (!db) return seedAllowed() ? fallback : refuseSeed();
   try {
     const [prod, cats, brds, biz, svcs] = await Promise.all([
-      db.product.findMany({ where: { isVisible: true }, orderBy: { title: "asc" } }),
+      visibleProductRows(db),
       db.category.findMany({ where: { isVisible: true } }),
       // Owner's main brands pin first (order asc), then alphabetical.
       // A Brand column the generated client knows but the database does not
