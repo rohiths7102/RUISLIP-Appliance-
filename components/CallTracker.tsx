@@ -20,7 +20,7 @@ let firstView = true;
 // the campaign bids on.
 const inBackOffice = () => !!document.querySelector("[data-admin-shell]");
 
-const beacon = (payload: string) => {
+export const beacon = (payload: string) => {
   try {
     if (!navigator.sendBeacon?.("/api/track", new Blob([payload], { type: "application/json" }))) {
       fetch("/api/track", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: payload });

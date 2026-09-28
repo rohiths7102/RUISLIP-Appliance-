@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Phone, LayoutGrid, Tag, ArrowUpRight } from "lucide-react";
 import { formatPrice, PRICE_ON_APPLICATION } from "@/lib/format";
+import { beacon } from "@/components/CallTracker";
+import { adSource } from "@/lib/ad-source";
 
 type Hit = {
   slug: string; title: string; brand: string; productCode: string;
@@ -33,6 +35,21 @@ export default function SearchBar({ className = "", shelfSize = 0 }: { className
   const boxRef = useRef<HTMLDivElement | null>(null);
   const count = sugs.length + hits.length;
 
+  // What people search for, for Admin → Live — one anonymous "search" event per
+  // term: when they pick a result, press Enter, or click away. `found` is known
+  // only when the dropdown is showing results for exactly this term.
+  const shownFor = useRef("");
+  const logged = useRef("");
+  const logSearch = (productSlug = "") => {
+    const q = v.trim();
+    if (q.length < 2 || logged.current === q.toLowerCase()) return;
+    logged.current = q.toLowerCase();
+    const found = shownFor.current === q ? total > 0 || sugs.length > 0 : null;
+    beacon(JSON.stringify({ type: "search", query: q, found, productSlug, source: adSource() }));
+  };
+  const logRef = useRef(logSearch);
+  logRef.current = logSearch;
+
   // Drops the armed debounce and any in-flight request, and retires their
   // sequence number. Enter fires inside the 180ms debounce, so without this a
   // late response would re-open the dropdown on top of the results page the
@@ -59,7 +76,7 @@ export default function SearchBar({ className = "", shelfSize = 0 }: { className
         if (!r.ok) return;
         const j = await r.json();
         if (seq !== seqRef.current) return;
-        setSugs(j.suggestions || []); setHits(j.items || []); setTotal(j.total || 0);
+        setSugs(j.suggestions || []); setHits(j.items || []); setTotal(j.total || 0); shownFor.current = q;
         setOpen(true); setActive(-1);
       } catch { /* aborted or offline — keep whatever is shown */ }
     }, 180);
@@ -69,13 +86,13 @@ export default function SearchBar({ className = "", shelfSize = 0 }: { className
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { logRef.current(); setOpen(false); }
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const go = (href: string) => { cancelPending(); setOpen(false); setActive(-1); router.push(href); };
+  const go = (href: string) => { logSearch(href.startsWith("/products/") ? href.split("/")[2] : ""); cancelPending(); setOpen(false); setActive(-1); router.push(href); };
   const hrefAt = (i: number) =>
     i < sugs.length ? sugs[i].href : `/products/${hits[i - sugs.length].slug}`;
   const submit = () => {

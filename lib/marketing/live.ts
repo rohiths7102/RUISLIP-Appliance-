@@ -1,6 +1,6 @@
 /**
  * Admin → Live: what is happening on the site right now, from the site's own
- * anonymous beacon (TrackedEvent: page_view / call_click / postcode_check),
+ * anonymous beacon (TrackedEvent: page_view / call_click / postcode_check / search),
  * the enquiry pipeline, and the crawl log (TrackedEvent "bot_crawl", written by
  * middleware → /api/track/crawl). Google's own figures are added by the API
  * route (lib/search-console.ts searchFresh). No personal data leaves here:
@@ -20,14 +20,19 @@ function ukMidnight(back = 0): number {
 }
 const host = (r: string) => r.replace(/^www\./, "");
 
-type Ev = { type: string; path: string; productSlug: string; source: string; referrer: string; landing: boolean; createdAt: Date };
+type Ev = { type: string; path: string; productSlug: string; source: string; referrer: string; landing: boolean; isLocal: boolean | null; createdAt: Date };
 
 export async function liveSnapshot(db: any) {
   const now = Date.now(), today = ukMidnight(0), yday = today - DAY;
   const ev: Ev[] = await db.trackedEvent.findMany({
     where: { createdAt: { gte: new Date(yday) } },
-    select: { type: true, path: true, productSlug: true, source: true, referrer: true, landing: true, createdAt: true },
+    select: { type: true, path: true, productSlug: true, source: true, referrer: true, landing: true, isLocal: true, createdAt: true },
     orderBy: { createdAt: "desc" },
+  });
+  // Search-box terms, last 7 UK days (path = the term, isLocal = anything matched).
+  const searches: { path: string; isLocal: boolean | null; productSlug: string; createdAt: Date }[] = await db.trackedEvent.findMany({
+    where: { type: "search", createdAt: { gte: new Date(ukMidnight(6)) } },
+    select: { path: true, isLocal: true, productSlug: true, createdAt: true },
   });
   const human = ev.filter((e) => e.type !== "bot_crawl"), crawl = ev.filter((e) => e.type === "bot_crawl");
   const t = (e: Ev) => e.createdAt.getTime();
@@ -96,9 +101,17 @@ export async function liveSnapshot(db: any) {
     topProducts: topSlugs.map(([slug, views]) => ({ ...(bySlug.get(slug) || { title: slug, brand: "", priceNow: null, mainImage: "" }), slug, views })),
     sources: tally(todayEv.filter((e) => e.type === "page_view" && e.landing).map(sourceOf)).slice(0, 6).map(([name, visits]) => ({ name, visits })),
     feed: feed.map((e) => ({
-      type: e.type, at: e.createdAt.toISOString(), path: e.path, from: e.landing ? sourceOf(e) : "",
+      type: e.type, at: e.createdAt.toISOString(), path: e.path, from: e.landing ? sourceOf(e) : "", found: e.isLocal,
       product: e.productSlug ? bySlug.get(e.productSlug)?.title || e.productSlug : "",
     })),
+    searches: {
+      today: searches.filter((e) => e.createdAt.getTime() >= today).length,
+      week: searches.length,
+      top: tally(searches.map((e) => e.path)).slice(0, 10).map(([term, times]) => ({
+        term, times, picked: searches.filter((e) => e.path === term && e.productSlug).length,
+      })),
+      nothingFound: tally(searches.filter((e) => e.isLocal === false).map((e) => e.path)).slice(0, 10).map(([term, times]) => ({ term, times })),
+    },
     crawl: {
       last24h: crawl.length,
       verified: crawl.filter((e) => e.landing).length,

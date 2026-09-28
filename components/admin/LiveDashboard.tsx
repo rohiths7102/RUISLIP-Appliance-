@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Bot, ChevronRight, Eye, MapPin, Phone, ShieldCheck, ShoppingBag, Users } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Bot, ChevronRight, Eye, MapPin, Phone, Search, ShieldCheck, ShoppingBag, Users } from "lucide-react";
 import type { LiveSnapshot } from "@/lib/marketing/live";
 
 /**
@@ -139,6 +139,34 @@ export default function LiveDashboard({ salesHref }: { salesHref: string }) {
         ) : <Empty>No product pages viewed yet today.</Empty>}
       </Glass>
 
+      {/* ---------- Site search ---------- */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Glass className="p-5">
+          <Head title="What people searched on this site" right={<span className="text-xs text-muted/80">{n(d.searches.today)} today · {n(d.searches.week)} in 7 days</span>} />
+          {d.searches.top.length ? (
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted/80"><th className="pb-2 font-medium">Search</th><th className="pb-2 text-right font-medium">Times</th><th className="pb-2 text-right font-medium">Opened a product</th></tr></thead>
+              <tbody>{d.searches.top.map((q) => (
+                <tr key={q.term} className="border-t border-line/70"><td className="py-2 pr-2 text-ink">{q.term}</td><td className="text-right text-muted">{n(q.times)}</td><td className="text-right text-muted">{n(q.picked)}</td></tr>
+              ))}</tbody>
+            </table>
+          ) : <Empty>Searches appear here as people use the search box.</Empty>}
+        </Glass>
+        <Glass className="p-5">
+          <Head title="Searched, found nothing" right={<span className="text-xs text-muted/80">7 days · products to add?</span>} />
+          {d.searches.nothingFound.length ? (
+            <ul className="space-y-2">
+              {d.searches.nothingFound.map((q) => (
+                <li key={q.term} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="flex min-w-0 items-center gap-2 text-ink"><Search size={13} className="shrink-0 text-warning" /><span className="truncate">{q.term}</span></span>
+                  <span className="shrink-0 text-muted">{n(q.times)}×</span>
+                </li>
+              ))}
+            </ul>
+          ) : <Empty>No empty searches in the last 7 days.</Empty>}
+        </Glass>
+      </div>
+
       {/* ---------- Activity + sources ---------- */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Glass className="p-5 lg:col-span-2">
@@ -146,12 +174,14 @@ export default function LiveDashboard({ salesHref }: { salesHref: string }) {
           <ul className="max-h-[380px] divide-y divide-line/70 overflow-y-auto pr-1">
             {d.feed.map((e, i) => (
               <li key={i} className="flex items-start gap-3 py-2.5">
-                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${e.type === "call_click" ? "bg-success-soft text-success" : e.type === "postcode_check" ? "bg-warning-soft text-warning" : "bg-info-soft text-blue"}`}>
-                  {e.type === "call_click" ? <Phone size={13} /> : e.type === "postcode_check" ? <MapPin size={13} /> : <Eye size={13} />}
+                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${e.type === "call_click" ? "bg-success-soft text-success" : e.type === "postcode_check" || (e.type === "search" && e.found === false) ? "bg-warning-soft text-warning" : "bg-info-soft text-blue"}`}>
+                  {e.type === "call_click" ? <Phone size={13} /> : e.type === "postcode_check" ? <MapPin size={13} /> : e.type === "search" ? <Search size={13} /> : <Eye size={13} />}
                 </span>
                 <span className="min-w-0 flex-1 text-sm">
-                  <span className="font-medium text-ink">{e.type === "call_click" ? "Tapped Call" : e.type === "postcode_check" ? "Checked delivery postcode" : e.from ? "Arrived on" : "Viewed"}</span>{" "}
-                  <span className="text-muted">{e.product || e.path || "/"}</span>
+                  <span className="font-medium text-ink">{e.type === "call_click" ? "Tapped Call" : e.type === "postcode_check" ? "Checked delivery postcode" : e.type === "search" ? "Searched" : e.from ? "Arrived on" : "Viewed"}</span>{" "}
+                  {e.type === "search"
+                    ? <span className="text-muted">“{e.path}”{e.found === false ? " · nothing found" : e.product ? ` → ${e.product}` : ""}</span>
+                    : <span className="text-muted">{e.product || e.path || "/"}</span>}
                   {e.from && <div className="mt-0.5 text-xs text-blue">from {e.from}</div>}
                 </span>
                 <span className="shrink-0 text-xs text-muted/80">{ago(e.at, now)}</span>

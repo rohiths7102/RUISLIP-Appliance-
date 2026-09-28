@@ -9,12 +9,22 @@ export const dynamic = "force-dynamic";
  *   page_view       — a page was shown (with, on arrival, the referring host)
  *   call_click      — someone pressed a "Call" button (with the page / product)
  *   postcode_check  — someone entered their postcode in the prompt
+ *   search          — a search-box term (in `path`), whether anything matched
+ *                     (in `isLocal`), and the product picked (in `productSlug`)
  *
  * Deliberately anonymous: no cookies, no IP stored, no user agent. Analytics
  * must NEVER break the customer experience, so every path out of here is a
  * quiet 204 — including when the database is down.
  */
-const TYPES = new Set(["call_click", "postcode_check", "page_view"]);
+const TYPES = new Set(["call_click", "postcode_check", "page_view", "search"]);
+
+/** A search term as stored: lower case, one line, short — and never a phone
+ *  number or email address someone typed into the box by mistake. */
+const searchTerm = (raw: unknown): string => {
+  const s = String(raw || "").toLowerCase().replace(/\s+/g, " ").trim().slice(0, 80);
+  if (s.length < 2 || s.includes("@") || /\d{10,}/.test(s.replace(/[\s()+.-]/g, ""))) return "";
+  return s;
+};
 
 /**
  * Traffic tags the site itself stamps (lib/ad-source): the literal "google-ads"
@@ -39,16 +49,18 @@ export async function POST(req: Request) {
 
   const b = await req.json().catch(() => null);
   if (!b || !TYPES.has(b.type) || isBackOffice(String(b.path || ""))) return new NextResponse(null, { status: 204 });
+  const term = b.type === "search" ? searchTerm(b.query) : "";
+  if (b.type === "search" && !term) return new NextResponse(null, { status: 204 });
 
   try {
     const db = await getPrisma();
     await db.trackedEvent.create({
       data: {
         type: b.type,
-        path: String(b.path || "").slice(0, 200),
+        path: b.type === "search" ? term : String(b.path || "").slice(0, 200),
         productSlug: String(b.productSlug || "").slice(0, 120),
         postcode: String(b.postcode || "").toUpperCase().slice(0, 10),
-        isLocal: typeof b.isLocal === "boolean" ? b.isLocal : null,
+        isLocal: b.type === "search" ? (typeof b.found === "boolean" ? b.found : null) : typeof b.isLocal === "boolean" ? b.isLocal : null,
         source: normaliseSource(b.source),
         referrer: /^[a-z0-9.-]{1,100}$/i.test(String(b.referrer || "")) ? String(b.referrer).toLowerCase() : "",
         landing: b.type === "page_view" && b.landing === true,
