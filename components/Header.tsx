@@ -37,7 +37,7 @@ const UTILITY = [
 function ContactButtons({ phone, className = "" }: { phone: string; className?: string }) {
   return (
     <span className={`flex items-center gap-1.5 ${className}`}>
-      <a href={telHref(phone)} className="flex min-h-11 items-center gap-2 rounded-sm bg-cta px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-cta-deep">
+      <a href={telHref(phone)} aria-label={`Call ${phone}`} className="flex min-h-11 items-center gap-2 rounded-sm bg-cta px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-cta-deep">
         <Phone size={15} strokeWidth={2.2} />
         <span className="hidden lg:inline">{phone}</span>
       </a>

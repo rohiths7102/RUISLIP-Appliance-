@@ -40,8 +40,10 @@ const nextConfig = {
       seen.add(source); out.push({ source, destination, permanent: true });
     };
     // The old site's live URLs, from the crawl (scripts/migration). First, so
-    // it wins: the seed below predates the old site's current paths.
-    for (const r of readJson("old-site-redirects.json")) add(r.source, r.destination);
+    // it wins: the seed below predates the old site's current paths. Old
+    // product pages (…/p-N) are left to app/[...old] (lib/old-urls.ts), which
+    // checks the product is still on the site before sending anyone there.
+    for (const r of readJson("old-site-redirects.json")) if (!/\/p-\d+$/.test(r.source)) add(r.source, r.destination);
     // Duplicate listings merged and clipped model codes corrected (24 Sept 2026):
     // the hidden copy's / old address -> the listing that stays.
     for (const r of readJson("product-redirects.json")) add(r.source, r.destination);

@@ -59,7 +59,7 @@ export default function ConsentAnalytics() {
             <p id="ga-consent-copy" className="min-w-[240px] flex-1 text-[12.5px] leading-snug text-ink/80">
               Google cookies help us see which pages customers use and whether an ad brought you here.
               <span className="hidden sm:inline"> We never use them to advertise to you elsewhere.</span>{" "}
-              <a href="/privacy" className="font-semibold text-blue-deep underline underline-offset-2">More</a>
+              <a href="/privacy" className="font-semibold text-blue-deep underline underline-offset-2">Privacy policy</a>
             </p>
             {/* The right margin keeps the buttons clear of the "Ask us" chat pill (bottom-5 right-5, 150px wide). */}
             <div className="ml-auto mr-[178px] flex shrink-0 items-center gap-2">

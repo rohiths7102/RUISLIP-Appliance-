@@ -30,11 +30,13 @@ export default function ProductGallery({
           shots.map((src, i) =>
             visited.includes(i) ? (
               // The paper gradient behind shows until onLoad flips data-loaded → fade in.
-              <Image key={i} src={src} alt={title} fill priority={i === 0}
+              // Not the first shot while it's showing: hidden until the page's
+              // script ran, it painted 2.4s late (Lighthouse, 28 Sept 2026).
+              <Image key={i} src={src} alt={title} fill priority={i === 0} fetchPriority={i === 0 ? "high" : undefined}
                 sizes="(max-width: 1024px) 100vw, 560px"
                 onLoad={(e) => { e.currentTarget.dataset.loaded = "true"; }}
-                className={`shot object-contain p-14 opacity-0 transition-opacity duration-500 ease-[cubic-bezier(.2,.8,.2,1)] ${
-                  i === active ? "data-[loaded]:opacity-100" : ""
+                className={`shot object-contain p-14 transition-opacity duration-500 ease-[cubic-bezier(.2,.8,.2,1)] ${
+                  i === 0 && active === 0 ? "" : "opacity-0"} ${i === active ? "data-[loaded]:opacity-100" : ""
                 }`} />
             ) : null
           )

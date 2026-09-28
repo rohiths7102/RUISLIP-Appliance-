@@ -12,6 +12,7 @@ import { parsePriceList } from "../lib/price-list.js";
 import { NoSearchConsoleAccess, searchConsoleSite } from "../lib/search-console.js";
 import { INDEXNOW_KEY, indexNow } from "../lib/indexnow.js";
 import { classify, euronicsDepartment } from "../scripts/catalog/taxonomy.mjs";
+import { oldAddressTarget } from "../lib/old-urls.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
 
@@ -180,5 +181,21 @@ ok(euronicsDepartment("https://www.euronics.co.uk/catalogue/cooking/cookware-and
   && euronicsDepartment("https://www.euronics.co.uk/p/HOTSA2540HWH") === ""
   && euronicsDepartment("https://www.euronics.co.uk/catalogue/small-appliances/air-fryers/x/p/NINAF160UK") === "",
   "Euronics department: no verdict for cookware, a bare /p/ link or small appliances");
+
+// ---- old-site addresses Google still sends people to
+const oldCat = {
+  products: [{ productCode: "KGN392LDFG", brand: "Bosch", newSlug: "/products/bosch-kgn392ldfg" }, { productCode: "Z5102X1", brand: "Neff", newSlug: "/products/neff-z5102x1" }],
+  categories: ["washing-machines", "cooker-hoods", "vacuum-cleaners", "dishwashers", "integrated-dishwashers", "tv-audio"].map((id) => ({ id })),
+  brands: [{ slug: "indesit" }],
+};
+ok(oldAddressTarget("/bosch-kgn392ldfg-60cm-7030-fridge-freezer---inox/p-7261", oldCat) === "/products/bosch-kgn392ldfg", "old address: the model code in it finds the product");
+ok(oldAddressTarget("/indesit-7kg-1200-spin-washing-machine---white---a-energy-rated/p-4710", oldCat) === "/categories/washing-machines", "old address: no code, so the product type's department");
+ok(oldAddressTarget("/cooking/cooker-hoods", oldCat) === "/categories/cooker-hoods" && oldAddressTarget("/dishwashing", oldCat) === "/categories/dishwashers",
+  "old address: old department pages, plurals and renamed departments included");
+ok(oldAddressTarget("/indesit-something-unnamed/p-99999", oldCat) === "/brands/indesit", "old address: only a brand left, so the brand page");
+ok(oldAddressTarget("/zenith-integrated-dishwasher---a-energy-rated/p-4561", oldCat) === "/categories/integrated-dishwashers",
+  "old address: a known mapping to a product no longer on the site falls through instead of sending anyone to a 404");
+ok(oldAddressTarget("/wp-login.php", oldCat) === null && oldAddressTarget("/random-page", oldCat) === null && oldAddressTarget("/_shops/c/currys_28.htm", oldCat) === null,
+  "old address: anything that names nothing stays a 404");
 
 console.log(`\n${n} unit assertions passed`);

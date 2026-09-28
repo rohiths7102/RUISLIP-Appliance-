@@ -23,8 +23,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // Without it every dead product URL was a soft 404 — which matters most at
   // the domain cutover, when old URLs start arriving.
   if (!p) notFound();
+  // Shoppers search model numbers, and without one 577 pages shared a title
+  // with another (20 different "Bosch Standard Odor Filter"s): add the code
+  // after the brand when the title doesn't carry it.
+  const named = p.seoTitle || p.title;
+  const squash = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const title = !p.productCode || squash(named).includes(squash(p.productCode)) ? named
+    : named.toLowerCase().startsWith(`${p.brand.toLowerCase()} `) ? `${p.brand} ${p.productCode}${named.slice(p.brand.length)}`
+    : `${p.brand} ${p.productCode} ${named}`;
   return {
-    title: p.seoTitle || p.title,
+    title,
     description: p.seoDescription || p.shortDescription,
     alternates: { canonical: `/products/${slug}` },
     openGraph: { title: p.title, description: p.seoDescription, images: p.image ? [p.image] : [] },

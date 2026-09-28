@@ -50,6 +50,10 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
   const paused = useRef(false);
   const n = slides.length;
   const go = (k: number) => setI(((k % n) + n) % n);
+  // Photos only for slides shown so far and the next one: all of them at once
+  // was 6.5 MB on a phone before the first slide appeared (28 Sept 2026).
+  const [seen, setSeen] = useState(() => new Set([0, 1]));
+  useEffect(() => { setSeen((s) => (s.has(i) && s.has((i + 1) % n) ? s : new Set([...s, i, (i + 1) % n]))); }, [i, n]);
 
   useEffect(() => {
     if (n < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -90,7 +94,7 @@ export default function HeroSlides({ slides }: { slides: HeroSlide[] }) {
                     below, so the band keeps its full height. */}
                 <div className="absolute inset-x-[8%] top-[9%] bottom-[16%] flex items-end justify-center lg:top-[27%]">
                   <div aria-hidden className="pointer-events-none absolute -bottom-2 left-1/2 h-[22px] w-[70%] -translate-x-1/2 rounded-[100%] bg-[#1b3d7d]/[.14] blur-[14px]" />
-                  {s.images.map((im, j) => {
+                  {seen.has(k) && s.images.map((im, j) => {
                     const step = (s.wide ? STEP_WIDE : STEP)[j];
                     return (
                       <div key={j} className="relative shrink-0"
