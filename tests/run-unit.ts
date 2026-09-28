@@ -11,6 +11,7 @@ import { changeBudget } from "../lib/price-watch/auto-apply.js";
 import { parsePriceList } from "../lib/price-list.js";
 import { NoSearchConsoleAccess, searchConsoleSite } from "../lib/search-console.js";
 import { INDEXNOW_KEY, indexNow } from "../lib/indexnow.js";
+import { classify, euronicsDepartment } from "../scripts/catalog/taxonomy.mjs";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
 
@@ -165,5 +166,19 @@ ok(nSent === 10_000 && sent.urlList.length === 10_000 && sent.host === "www.kitc
   "IndexNow: www host, key file on the same host, at most 10,000 pages a call");
 ok(readFileSync(`public/${INDEXNOW_KEY}.txt`, "utf8").trim() === INDEXNOW_KEY, "IndexNow: the key file in public/ holds the key");
 globalThis.fetch = realFetch;
+
+// ---- catalogue classifier: where a new Euronics import is filed
+const leafOf = (title: string) => classify({ name: title, description: title, source: "euronics", key: "t" }).leaf;
+ok(leafOf("Sharp YC-MA262AE-B Classic Microwave Oven, 26L, Combi with Air Fryer - Black") === "microwaves"
+  && leafOf("Russell Hobbs RHMAF2508B 25 Litres Combination Air Fryer Microwave - Black") === "microwaves",
+  "classifier: a combination microwave with an air fryer is a microwave");
+ok(leafOf("Ninja AF160UK Air Fryer Max - Grey") === "air-fryers-multi-cookers", "classifier: a plain air fryer is still an air fryer");
+ok(euronicsDepartment("https://www.euronics.co.uk/catalogue/cooking/hobs/gas-hobs/hoover-hvg6k3b-60cm-gas-hob-black/p/HVRHVG6K3B") === "Cooking"
+  && euronicsDepartment("https://www.euronics.co.uk/catalogue/refrigeration/larder-fridges/x/p/LBHURPD365I") === "Refrigeration",
+  "Euronics department: read from the page URL");
+ok(euronicsDepartment("https://www.euronics.co.uk/catalogue/cooking/cookware-and-bakeware/x/p/NINC10024UK") === ""
+  && euronicsDepartment("https://www.euronics.co.uk/p/HOTSA2540HWH") === ""
+  && euronicsDepartment("https://www.euronics.co.uk/catalogue/small-appliances/air-fryers/x/p/NINAF160UK") === "",
+  "Euronics department: no verdict for cookware, a bare /p/ link or small appliances");
 
 console.log(`\n${n} unit assertions passed`);

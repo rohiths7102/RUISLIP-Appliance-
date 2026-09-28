@@ -30,7 +30,7 @@
  * skipped, never guessed at.
  */
 import { createRequire } from "module";
-import { classify, LEAF } from "./taxonomy.mjs";
+import { classify, LEAF, euronicsDepartment } from "./taxonomy.mjs";
 const require = createRequire(import.meta.url);
 const { PrismaClient } = require(process.env.PRISMA_CLIENT_DIR || "@prisma/client");
 
@@ -237,6 +237,17 @@ for (const e of work) {
     } catch { /* try the description, then give up below */ }
   }
   if (!category) { unclassified++; problems.push(`${e.sku}: unclassifiable — ${d.title.slice(0, 46)}`); await sleep(DELAY_MS); continue; }
+  // For big appliances Euronics' own department (in the page URL) outranks the
+  // keyword rules. The Aug 2026 import read incidental words ("dishwasher-safe
+  // pan supports", "suitable for all cookware") and filed 65 appliances in the
+  // wrong department: hobs and range cookers under Cookware, larder fridges under
+  // Dishwashers, a chest freezer under Floorcare. A disagreement is reported,
+  // never created in the wrong place.
+  const euroDept = euronicsDepartment(e.url);
+  if (euroDept && category !== euroDept && category !== "Accessories & Spare Parts") {
+    unclassified++; problems.push(`${e.sku}: rules say ${category} › ${subcategory}, Euronics lists it under ${euroDept} — ${d.title.slice(0, 40)}`);
+    await sleep(DELAY_MS); continue;
+  }
   const poa = poaNames.has(category) || poaNames.has(subcategory);
   if (poa && !SKUS.length) { poaSkipped++; await sleep(DELAY_MS); continue; }
   if (poa) poaCreated++;

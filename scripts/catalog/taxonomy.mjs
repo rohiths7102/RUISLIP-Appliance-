@@ -217,6 +217,10 @@ export const TEXT_RULES = [
   [/kettle/i, "kettles"],
   // A SLUSHi frozen-drink maker chills and churns; it neither air-fries nor cooks.
   [/blender|nutribullet|slushi|frozen drink/i, "blenders"],
+  // A combination microwave "with Air Fryer" is a microwave: Euronics files the
+  // Sharp and Russell Hobbs combis under cooking/microwaves, and the air-fryer
+  // rule below claimed both.
+  [/\bmicrowave\b/i, "microwaves"],
   // "Air fryer" the noun is a worktop machine; "AirFry" the FEATURE appears on
   // built-in Miele/Hotpoint ovens — matching bare "air fry" files a £1,399 oven
   // under Small Appliances. Require the noun.
@@ -359,6 +363,18 @@ export function normaliseText(s) {
     .replace(/[^A-Za-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Euronics' own department for one of its product pages
+ * (/catalogue/<dept>/<section>/…), as our department name — only for the big
+ * appliance departments, where Euronics never mis-files. "" when the URL
+ * doesn't say (a /p/<sku> link, cookware, small appliances, TV).
+ */
+export function euronicsDepartment(url) {
+  const [dept, section] = (String(url).split("/catalogue/")[1] || "").split("/");
+  if (section === "cookware-and-bakeware") return "";
+  return { cooking: "Cooking", refrigeration: "Refrigeration", laundry: "Laundry", dishwashers: "Dishwashers" }[dept] || "";
 }
 
 /** "<cat>/<subcat>" from a bosch/neff product URL. */
