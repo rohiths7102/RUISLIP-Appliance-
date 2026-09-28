@@ -96,6 +96,7 @@ export default async function AdminPriceWatch() {
   let rows: PriceWatchRow[] = [];
   let sources: PriceWatchSource[] = [];
   let report: AgentReport | null = null;
+  let summaries: { at: string; text: string; whatsapp: string }[] = [];
   let dbUp = true;
 
   try {
@@ -125,6 +126,10 @@ export default async function AdminPriceWatch() {
     // could drift from reality. agentReport adds the part the old flat list
     // could not express: whether each source actually RAN.
     report = await agentReport(db, { now: nowDate });
+
+    // The morning messages sent to the owner (lib/price-watch/daily-summary.ts).
+    summaries = ((await db.adminAuditLog.findMany({ where: { action: "notify:daily-summary" }, orderBy: { createdAt: "desc" }, take: 7 })) as any[])
+      .map((a) => ({ at: seenLabel(new Date(a.createdAt), now).replace(/^seen /, ""), text: String(a.newValue?.text || ""), whatsapp: String(a.newValue?.whatsapp || "") }));
 
     rows = queryRows.map((r) => {
       const observations: PriceWatchObservation[] = r.observations.map((o) => ({
@@ -167,7 +172,7 @@ export default async function AdminPriceWatch() {
 
   return (
     <AdminShell active="/admin/price-watch" email={admin.email}>
-      <PriceWatchAdmin rows={rows} sources={sources} report={report} dbUp={dbUp} />
+      <PriceWatchAdmin rows={rows} sources={sources} report={report} summaries={summaries} dbUp={dbUp} />
     </AdminShell>
   );
 }

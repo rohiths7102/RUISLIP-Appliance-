@@ -164,11 +164,13 @@ export default function PriceWatchAdmin({
   rows,
   sources,
   report,
+  summaries = [],
   dbUp,
 }: {
   rows: PriceWatchRow[];
   sources: PriceWatchSource[];
   report: AgentReport | null;
+  summaries?: { at: string; text: string; whatsapp: string }[];
   dbUp: boolean;
 }) {
   const router = useRouter();
@@ -474,6 +476,22 @@ export default function PriceWatchAdmin({
                 Showing the 20 most recent of {report.changes.length}.
               </p>
             )}
+          </div>
+        )}
+
+        {summaries.length > 0 && (
+          <div className="mt-4 border-t border-line pt-3">
+            <p className="text-[12px] font-semibold text-ink">Morning messages to your WhatsApp</p>
+            <ul className="mt-2 grid gap-1.5">
+              {summaries.map((m, i) => (
+                <li key={i} className="text-[12.5px] text-ink/80">
+                  <span className="text-muted">{m.at}</span> · {m.text}{" "}
+                  <span className={m.whatsapp === "sent" ? "text-[11px] text-muted" : "text-[11px] text-danger"}>
+                    ({m.whatsapp === "sent" ? "sent to WhatsApp" : m.whatsapp})
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
