@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, MapPin, Phone, Recycle, Truck, Wrench } from "lucide-react";
 import { loadCatalog, getBusiness } from "@/lib/repo";
 import { topCategories, toCardItem, poaNamesFrom } from "@/lib/select";
-import { TOWNS, townBySlug, milesFromShop, nearestTowns } from "@/lib/areas";
+import { TOWNS, LOCAL_DEPARTMENTS, townBySlug, milesFromShop, nearestTowns, townDepartmentHref } from "@/lib/areas";
 import { getHomepage, toHomepage } from "@/lib/homepage";
 import { getPrisma } from "@/lib/prisma";
 import { telHref } from "@/lib/format";
@@ -108,7 +108,7 @@ export default async function AreaPage({ params }: { params: Promise<{ slug: str
             <h2 className="mb-5 font-display text-[30px]">Shop by department</h2>
             <div className="flex flex-wrap gap-2.5">
               {departments.map((c) => (
-                <Link key={c.id} href={`/categories/${c.id}`} className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-white px-4 py-2 text-[13.5px] font-medium transition-colors hover:border-blue hover:text-blue-deep">
+                <Link key={c.id} href={LOCAL_DEPARTMENTS.some((d) => d.id === c.id) ? townDepartmentHref(t.slug, c.id) : `/categories/${c.id}`} className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-white px-4 py-2 text-[13.5px] font-medium transition-colors hover:border-blue hover:text-blue-deep">
                   {c.name} <span className="text-muted">{c.productCount}</span>
                 </Link>
               ))}

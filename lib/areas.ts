@@ -56,6 +56,32 @@ export const TOWNS: Town[] = [
 
 export const AREA_GROUPS = ["HA", "UB", "W3–W6", "WD3–WD24", "SL"];
 
+/**
+ * Departments that get a page per town (/areas/[town]/[department]) — the ones
+ * people search with a place name ("dishwasher harrow", "fridge freezer
+ * delivered watford"). `words` are what those searches contain, used to match
+ * a Google Ads search term to its town-department page.
+ */
+export const LOCAL_DEPARTMENTS: { id: string; words: string[] }[] = [
+  { id: "laundry", words: ["washing machine", "washer", "tumble dryer", "dryer", "laundry"] },
+  { id: "dishwashers", words: ["dishwasher"] },
+  { id: "refrigeration", words: ["fridge", "freezer", "refrigerat"] },
+  { id: "cooking", words: ["cooker", "oven", "hob", "range", "microwave", "hood"] },
+  { id: "tv-audio", words: ["tv", "television", "soundbar"] },
+  { id: "small-appliances", words: ["kettle", "toaster", "air fryer", "blender", "food processor"] },
+  { id: "floorcare", words: ["vacuum", "hoover", "cordless"] },
+];
+export const townDepartmentHref = (townSlug: string, deptId: string) => `/areas/${townSlug}/${deptId}`;
+
+/** The town-department page a search term is asking for, if it names a town. */
+export function localPageFor(term: string): { town: Town; dept?: string } | null {
+  const s = ` ${term.toLowerCase()} `;
+  const town = TOWNS.filter((t) => s.includes(` ${t.name.toLowerCase()} `)).sort((a, b) => b.name.length - a.name.length)[0];
+  if (!town) return null;
+  const dept = LOCAL_DEPARTMENTS.find((d) => d.words.some((w) => new RegExp(`\\b${w}`).test(s)))?.id;
+  return { town, dept };
+}
+
 /** Straight-line miles from the shop, rounded — "about N miles". */
 export function milesFromShop(t: { lat: number; lng: number }): number {
   const rad = (d: number) => (d * Math.PI) / 180;

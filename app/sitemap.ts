@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { loadCatalog } from "@/lib/repo";
 import { slugOf } from "@/lib/select";
-import { TOWNS } from "@/lib/areas";
+import { TOWNS, LOCAL_DEPARTMENTS } from "@/lib/areas";
 // Crawlers hit this constantly and each hit pulled the full catalogue.
 // An hour of staleness in lastmod hints is nothing; the egress was not.
 export const revalidate = 3600;
@@ -16,5 +16,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categories.map((c) => ({ url: `${base}/categories/${c.id}`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.6 })),
     ...brands.map((b) => ({ url: `${base}/brands/${b.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.5 })),
     ...TOWNS.map((t) => ({ url: `${base}/areas/${t.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.6 })),
+    ...TOWNS.flatMap((t) => LOCAL_DEPARTMENTS.filter((d) => categories.some((c) => c.id === d.id)).map((d) => ({ url: `${base}/areas/${t.slug}/${d.id}`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.6 }))),
   ];
 }

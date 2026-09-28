@@ -12,7 +12,7 @@ import type { MarketingSettings } from "@/lib/marketing/settings";
  * /api/admin/marketing — both audited server-side.
  */
 const TONE: Record<Action["area"], "danger" | "warning" | "info" | "success" | "neutral"> = {
-  "Google Ads": "info", Leads: "danger", Prices: "warning", "Shopping feed": "neutral", SEO: "neutral", Chatbot: "neutral", Catalogue: "success",
+  "Google Ads": "info", Leads: "danger", Prices: "warning", "Shopping feed": "neutral", SEO: "neutral", Chatbot: "neutral", Catalogue: "success", Local: "info",
 };
 
 async function post(url: string, body: unknown) {

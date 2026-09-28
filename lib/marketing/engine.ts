@@ -3,6 +3,7 @@ import { searchAnalytics, type GscRow } from "@/lib/search-console";
 import { isNegated } from "@/lib/ads-reports";
 import { adminHref } from "@/lib/admin-config";
 import { FEED_AVAILABILITY } from "@/lib/merchant-feed";
+import { localPageFor, townDepartmentHref } from "@/lib/areas";
 
 /**
  * The marketing engine: every data source the site holds — Google Ads
@@ -58,7 +59,7 @@ export async function kpis(db: any): Promise<{ from: string; to: string; items: 
 
 export type Action = {
   key: string;                // stable id, for dismissing
-  area: "Google Ads" | "Leads" | "Prices" | "Shopping feed" | "SEO" | "Chatbot" | "Catalogue";
+  area: "Google Ads" | "Leads" | "Prices" | "Shopping feed" | "SEO" | "Chatbot" | "Catalogue" | "Local";
   title: string;
   why: string;                // the rule that raised it, with the numbers
   score: number;              // ranking: roughly £ at stake per month
@@ -142,6 +143,22 @@ export async function actions(db: any, opts: { gsc?: boolean } = {}): Promise<{ 
       why: `Google rates its wording “poor”: it wins fewer auctions and pays more per click (${r.clicks} clicks, ${gbp(r.cost)} in 30 days).`,
       score: Math.max(5, r.cost * 0.3),
       cta: { kind: "link", label: "Open in Google Ads", href: "https://ads.google.com/aw/ads", external: true },
+    });
+  }
+
+  // --- Local: paid searches that name a delivery town. The site has a page for
+  // that town (and department); sending the click there, not the homepage,
+  // is what makes a local search convert — and the same page is what Google
+  // ranks for the free version of the search.
+  for (const r of rep("searchTerms")) {
+    const local = localPageFor(r.label);
+    // A search for the shop itself belongs on the homepage, not a town page.
+    if (!local || r.clicks < 2 || isBrandSearch(r.label)) continue;
+    const href = local.dept ? townDepartmentHref(local.town.slug, local.dept) : `/areas/${local.town.slug}`;
+    out.push({
+      key: `local:ads:${r.label}`, area: "Local", title: `Send “${r.label}” ad clicks to ${href}`,
+      why: `${r.clicks} clicks (${gbp(r.cost)}) in 30 days for a search naming ${local.town.name}. Your ${local.town.name} page answers it — delivery, fitting, the models — so use it as that ad's final URL.`,
+      score: 15 + r.clicks * 2 + r.cost * 0.5, cta: { kind: "link", label: "Open the page", href },
     });
   }
 
