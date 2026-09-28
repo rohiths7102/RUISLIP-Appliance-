@@ -1,5 +1,5 @@
 export type AvailabilityNormalised =
-  | "in_stock" | "limited" | "awaiting_stock" | "call_to_confirm" | "unavailable" | "unknown";
+  | "in_stock" | "limited" | "to_order" | "awaiting_stock" | "call_to_confirm" | "unavailable" | "unknown";
 
 export interface Product {
   id: string; sourceUrl: string; oldUrl: string; newSlug: string;

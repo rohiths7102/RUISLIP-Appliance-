@@ -26,6 +26,7 @@ export const availabilityLabel = (a: AvailabilityNormalised): string => {
   switch (a) {
     case "in_stock": return "In stock — call to confirm";
     case "limited": return "Limited availability — call to confirm";
+    case "to_order": return "Available to order — usually a few days";
     case "awaiting_stock": return "Awaiting stock — call to confirm";
     case "unavailable": return "Currently unavailable — call the store";
     default: return "Call to confirm availability";
@@ -36,6 +37,7 @@ export const availabilityDot = (a: AvailabilityNormalised): string => {
   switch (a) {
     case "in_stock": return "#3f8f5b";
     case "limited": return "#b5651d";
+    case "to_order": return "#2f6fb5";
     case "awaiting_stock": return "#c98a2e";
     case "unavailable": return "#9a3b1d";
     default: return "#9a8252";

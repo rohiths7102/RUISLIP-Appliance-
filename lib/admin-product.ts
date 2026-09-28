@@ -18,7 +18,7 @@ export const SCRAPE_OWNED = new Set<string>([
 const NUM = new Set(["priceNow", "priceWas", "saving"]);
 const BOOL = new Set(["isVisible", "featured"]);
 
-export const AVAILABILITY = ["in_stock", "limited", "awaiting_stock", "call_to_confirm", "unavailable", "unknown"];
+export const AVAILABILITY = ["in_stock", "limited", "to_order", "awaiting_stock", "call_to_confirm", "unavailable", "unknown"];
 
 export class ValidationError extends Error {}
 

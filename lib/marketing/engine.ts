@@ -2,6 +2,7 @@ import { poaNamesFromDb } from "@/lib/poa";
 import { searchAnalytics, type GscRow } from "@/lib/search-console";
 import { isNegated } from "@/lib/ads-reports";
 import { adminHref } from "@/lib/admin-config";
+import { FEED_AVAILABILITY } from "@/lib/merchant-feed";
 
 /**
  * The marketing engine: every data source the site holds — Google Ads
@@ -57,7 +58,7 @@ export async function kpis(db: any): Promise<{ from: string; to: string; items: 
 
 export type Action = {
   key: string;                // stable id, for dismissing
-  area: "Google Ads" | "Leads" | "Prices" | "Shopping feed" | "SEO" | "Chatbot";
+  area: "Google Ads" | "Leads" | "Prices" | "Shopping feed" | "SEO" | "Chatbot" | "Catalogue";
   title: string;
   why: string;                // the rule that raised it, with the numbers
   score: number;              // ranking: roughly £ at stake per month
@@ -78,6 +79,8 @@ export const RULES = {
   seoLiftMin: 4, seoLiftMax: 15, seoLiftImpressions: 30,   // page 1 bottom / page 2 → worth a better title
   lowCtrImpressions: 100, lowCtr: 0.01,                     // seen a lot, rarely clicked → rewrite the snippet
   paidButRankFree: 3,        // organic position ≤ this while paying for the same search
+  wantedViews: 5,            // product page views in 14 days that make a product "wanted"
+  emptySearches: 2,          // the same search with no results this many times in 7 days → add it
 };
 
 /**
@@ -173,13 +176,53 @@ export async function actions(db: any, opts: { gsc?: boolean } = {}): Promise<{ 
 
   // --- Shopping feed: products Google can't advertise
   const poa = await poaNamesFromDb(db).catch(() => new Set<string>());
-  const vis = await db.product.findMany({ where: { isVisible: true }, select: { category: true, subcategory: true, brand: true, mainImage: true, priceNow: true } }).catch(() => []);
+  const vis = await db.product.findMany({ where: { isVisible: true }, select: { slug: true, productCode: true, title: true, category: true, subcategory: true, brand: true, mainImage: true, priceNow: true, availabilityNormalised: true } }).catch(() => []);
   const sellable = vis.filter((p: any) => !poa.has(p.category) && !poa.has(p.subcategory) && !poa.has(p.brand));
   const noPhoto = sellable.filter((p: any) => !p.mainImage).length;
   if (noPhoto) out.push({
     key: `feed:no-photo:${noPhoto}`, area: "Shopping feed", title: `${noPhoto} products have no photo`,
     why: "Google Shopping rejects products without an image, so these can never appear in Shopping ads or free listings.",
     score: 20 + noPhoto / 5, cta: { kind: "link", label: "See feed health", href: adminHref("ads") },
+  });
+  // Priced and photographed, but "call to confirm", so Google never lists them.
+  // Free listings are the cheapest reach the shop has (Sept 2026: ~210 of ~5,000
+  // products reached Google); "available to order" lists them as backorder.
+  const notListed = sellable.filter((p: any) => p.priceNow != null && p.mainImage && !FEED_AVAILABILITY.includes(p.availabilityNormalised));
+  if (notListed.length >= 20) out.push({
+    key: `feed:not-listed:${Math.round(notListed.length / 50)}`, area: "Shopping feed",
+    title: `${notListed.length} priced products aren't in Google's free listings`,
+    why: `They have a price and a photo but are marked “call to confirm”, so Google Shopping never shows them. Mark the ranges you can get within a few days as “Available to order” (Products → select → set stock) and they list for free — no ad spend.`,
+    score: 40 + notListed.length / 20, cta: { kind: "link", label: "Open Products", href: adminHref("products") },
+  });
+
+  // --- Catalogue: what visitors are asking for, from the site's own anonymous
+  // events. A product people open but can't buy, and a search that found
+  // nothing, are the closest thing to a customer saying what to stock.
+  const views: { productSlug: string }[] = await db.trackedEvent.findMany({
+    where: { type: "page_view", productSlug: { not: "" }, createdAt: { gte: new Date(Date.now() - 14 * DAY) } }, select: { productSlug: true },
+  }).catch(() => []);
+  const viewsBySlug = new Map<string, number>();
+  for (const v of views) viewsBySlug.set(v.productSlug, (viewsBySlug.get(v.productSlug) || 0) + 1);
+  const wanted = sellable.map((p: any) => ({ ...p, views: viewsBySlug.get(p.slug) || 0 })).filter((p: any) => p.views >= RULES.wantedViews).sort((a: any, b: any) => b.views - a.views);
+  for (const p of wanted.filter((p: any) => p.priceNow == null).slice(0, 3)) out.push({
+    key: `catalogue:price:${p.slug}`, area: "Catalogue", title: `Put a price on ${p.title.slice(0, 60)}`,
+    why: `Opened ${p.views} times in 14 days but shows “call for best pricing”; a visible price is what turns a look into a call, and lets Google list it.`,
+    score: 50 + p.views * 3, cta: { kind: "link", label: "Edit product", href: `${adminHref("products")}?q=${encodeURIComponent(p.productCode)}` },
+  });
+  for (const p of wanted.filter((p: any) => p.priceNow != null && p.mainImage && !FEED_AVAILABILITY.includes(p.availabilityNormalised)).slice(0, 3)) out.push({
+    key: `catalogue:stock:${p.slug}`, area: "Catalogue", title: `Mark ${p.title.slice(0, 60)} in stock or available to order`,
+    why: `Opened ${p.views} times in 14 days, priced and photographed, but “call to confirm” keeps it out of Google Shopping's free listings.`,
+    score: 30 + p.views * 2, cta: { kind: "link", label: "Edit product", href: `${adminHref("products")}?q=${encodeURIComponent(p.productCode)}` },
+  });
+  const empties: { path: string }[] = await db.trackedEvent.findMany({
+    where: { type: "search", isLocal: false, createdAt: { gte: new Date(Date.now() - 7 * DAY) } }, select: { path: true },
+  }).catch(() => []);
+  const byTerm = new Map<string, number>();
+  for (const e of empties) byTerm.set(e.path, (byTerm.get(e.path) || 0) + 1);
+  for (const [term, times] of [...byTerm].filter(([, n]) => n >= RULES.emptySearches).sort((a, b) => b[1] - a[1]).slice(0, 3)) out.push({
+    key: `catalogue:search:${term}`, area: "Catalogue", title: `Stock or list “${term}” — people searched for it and found nothing`,
+    why: `Searched ${times} times on the site this week with no result. If you can get it, add it (Quick add) so the next search — and Google — finds it.`,
+    score: 25 + times * 5, cta: { kind: "link", label: "Quick add", href: adminHref("products") },
   });
 
   // --- Chat assistant: down (customers only got the phone number), or asked

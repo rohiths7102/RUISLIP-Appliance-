@@ -4,6 +4,7 @@
  * stopped job is seen the same morning, not weeks later.
  */
 import { poaNamesFromDb } from "@/lib/poa";
+import { FEED_AVAILABILITY } from "@/lib/merchant-feed";
 import { adminHref } from "@/lib/admin-config";
 import { groqConfigured } from "@/lib/chat/groq";
 import { NoSearchConsoleAccess, searchConsoleSite } from "@/lib/search-console";
@@ -31,7 +32,7 @@ export async function health(db: any): Promise<Health[]> {
     db.enquiry.count({ where: { status: { in: ["won", "closed"] }, gclid: { not: "" } } }).catch(() => 0),
     // The merchant feed's own gate (app/merchant-feed.xml): what Google can actually advertise.
     db.product.count({ where: {
-      isVisible: true, priceNow: { not: null }, mainImage: { not: "" }, availabilityNormalised: { in: ["in_stock", "limited"] },
+      isVisible: true, priceNow: { not: null }, mainImage: { not: "" }, availabilityNormalised: { in: FEED_AVAILABILITY },
       ...(poa.length && { NOT: [{ category: { in: poa } }, { subcategory: { in: poa } }, { brand: { in: poa } }] }),
     } }).catch(() => 0),
     // Customers' questions this week (the owner's own tests aside), and answers the AI never wrote.

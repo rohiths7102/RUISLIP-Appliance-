@@ -1,5 +1,8 @@
 import { poaNamesFrom } from "@/lib/select";
 
+/** Stock states the shop will stand behind on the phone, so Google may list them. */
+export const FEED_AVAILABILITY = ["in_stock", "limited", "to_order"];
+
 export type FeedRow = {
   productCode: string; title: string; brand: string; slug: string; priceNow: number;
   mainImage: string; shortDescription: string; descriptionText: string; gtin: string;
@@ -7,8 +10,8 @@ export type FeedRow = {
 };
 
 /**
- * The products Google gets: visible, priced, photographed and in stock, never
- * call-for-price. Shared by merchant-feed.xml and local-inventory-feed.xml, whose
+ * The products Google gets: visible, priced, photographed and in stock or
+ * available to order (Google's "backorder"), never call-for-price. Shared by merchant-feed.xml and local-inventory-feed.xml, whose
  * ids (the slug) must match item for item or Merchant Center flags the gap.
  */
 export async function feedRows(db: any): Promise<FeedRow[]> {
@@ -27,7 +30,7 @@ export async function feedRows(db: any): Promise<FeedRow[]> {
       isVisible: true,
       priceNow: { not: null },
       mainImage: { not: "" },
-      availabilityNormalised: { in: ["in_stock", "limited"] },
+      availabilityNormalised: { in: FEED_AVAILABILITY },
       ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }, { brand: { in: poaNames } }] }),
     },
     select: {

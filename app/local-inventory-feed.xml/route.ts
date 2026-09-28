@@ -24,7 +24,7 @@ export async function GET() {
       "    <item>",
       `      <g:store_code>${esc(store)}</g:store_code>`,
       `      <g:id>${esc(p.slug)}</g:id>`,
-      `      <g:availability>${p.availabilityNormalised === "limited" ? "limited_availability" : "in_stock"}</g:availability>`,
+      `      <g:availability>${p.availabilityNormalised === "limited" ? "limited_availability" : p.availabilityNormalised === "to_order" ? "on_display_to_order" : "in_stock"}</g:availability>`,
       `      <g:price>${p.priceNow.toFixed(2)} GBP</g:price>`,
       "    </item>",
     ].join("\n"));

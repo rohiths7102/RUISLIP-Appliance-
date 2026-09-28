@@ -132,6 +132,7 @@ export default function ProductBrowser({
           <select value={avail} onChange={(e) => setAvail(e.target.value)} aria-label="Availability" className={select}>
             <option value="all">Any availability</option>
             <option value="in_stock">In stock</option>
+            <option value="to_order">Available to order</option>
             <option value="limited">Limited availability</option>
             <option value="call_to_confirm">Call to confirm</option>
           </select>

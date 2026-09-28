@@ -9,7 +9,8 @@ function esc(s: string): string {
 
 /**
  * Google Merchant Center feed (RSS 2.0) for free Shopping listings.
- * Only products with a price, an image and a promisable stock status are listed —
+ * Only products with a price, an image and a promisable stock status are listed
+ * ("available to order" goes as backorder: Google shows it, with no stock claim) —
  * the ~474 "call_to_confirm" products are EXCLUDED deliberately: we never claim
  * availability we can't promise, so Google only sees stock we'd stand behind on the phone.
  */
@@ -34,7 +35,7 @@ export async function GET() {
         `      <link>${esc(`${base}/products/${p.slug}`)}</link>`,
         `      <g:image_link>${esc(image)}</g:image_link>`,
         `      <g:price>${p.priceNow.toFixed(2)} GBP</g:price>`,
-        "      <g:availability>in_stock</g:availability>",
+        `      <g:availability>${p.availabilityNormalised === "to_order" ? "backorder" : "in_stock"}</g:availability>`,
         "      <g:condition>new</g:condition>",
         `      <g:brand>${esc(p.brand)}</g:brand>`,
         `      <g:mpn>${esc(p.productCode)}</g:mpn>`,

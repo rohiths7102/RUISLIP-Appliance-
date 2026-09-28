@@ -25,6 +25,7 @@ type Row = {
 const AVAIL = [
   ["in_stock", "In stock"],
   ["limited", "Limited availability"],
+  ["to_order", "Available to order"],
   ["awaiting_stock", "Awaiting stock"],
   ["call_to_confirm", "Call to confirm"],
   ["unavailable", "Unavailable"],
@@ -237,6 +238,7 @@ export default function ProductsAdmin({
             className="rounded-lg border border-white/20 bg-navy-2 px-2 py-1.5 text-xs text-paper outline-none">
             <option value="in_stock">In stock</option>
             <option value="limited">Limited availability</option>
+            <option value="to_order">Available to order</option>
             <option value="awaiting_stock">Awaiting stock</option>
             <option value="call_to_confirm">Call to confirm</option>
             <option value="unavailable">Unavailable</option>

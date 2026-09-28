@@ -206,6 +206,7 @@ export default function QuickAdd({ brands, departments }: { brands: string[]; de
               className="mt-1.5 w-full rounded-xl border border-line bg-white px-3 py-2.5 outline-none focus:border-blue">
               <option value="in_stock">In stock</option>
               <option value="limited">Limited stock</option>
+              <option value="to_order">Available to order</option>
               <option value="awaiting_stock">Awaiting stock</option>
               <option value="call_to_confirm">Call to confirm</option>
             </select>

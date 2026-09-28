@@ -56,6 +56,7 @@ function show(v: unknown): string {
 const AVAILABILITY_WORDS: Record<string, string> = {
   in_stock: "In stock",
   limited: "Only a few left",
+  to_order: "Available to order",
   awaiting_stock: "Coming soon",
   call_to_confirm: "Ring to check",
   unavailable: "Not available",

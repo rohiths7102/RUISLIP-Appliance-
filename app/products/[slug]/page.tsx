@@ -66,7 +66,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     offers: {
       "@type": "Offer", url: `${SITE()}/products/${slug}`, priceCurrency: "GBP", price: p.priceNow,
       itemCondition: "https://schema.org/NewCondition",
-      availability: "https://schema.org/InStoreOnly",
+      availability: p.availabilityNormalised === "to_order" ? "https://schema.org/BackOrder" : "https://schema.org/InStoreOnly",
       seller: { "@type": "Store", name: business.businessName, telephone: business.phone },
     },
   } : null;
