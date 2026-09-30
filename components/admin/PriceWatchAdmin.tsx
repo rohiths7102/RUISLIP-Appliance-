@@ -174,10 +174,13 @@ export default function PriceWatchAdmin({
   dbUp: boolean;
 }) {
   const router = useRouter();
-  // Default to the first authorised source: the only kind the guards will ever
-  // let us copy a price from, so it is the useful view on arrival.
+  // Default to the authorised source on automatic (Euronics.co.uk): the one
+  // keeping the site's prices current. The first authorised source alone was
+  // the emailed price list, days old between uploads, so the page opened on
+  // "94 prices differ" that were all already right (30 Sept 2026).
   const [sourceId, setSourceId] = useState<string>(
-    () => sources.find((s) => s.kind === "authorised" && s.enabled)?.id ?? sources[0]?.id ?? "",
+    () => (sources.find((s) => s.kind === "authorised" && s.enabled && s.allowAutoApply)
+      ?? sources.find((s) => s.kind === "authorised" && s.enabled))?.id ?? sources[0]?.id ?? "",
   );
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState<string[] | null>(null);
