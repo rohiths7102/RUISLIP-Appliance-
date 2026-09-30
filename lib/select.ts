@@ -1,5 +1,6 @@
 import type { Product, Category, Brand } from "./types";
 import { energyClassOf } from "./energy";
+import { isBestSeller } from "./best-sellers";
 export const slugOf = (p: Product) => p.newSlug.replace(/^\/products\//, "");
 /**
  * Card-only DTO for grid routes — descriptionHtml/specs/features are ~90% of the
@@ -22,6 +23,7 @@ export const toCardItem = (p: Product, poaNames?: Set<string>) => {
     warranty: p.warranty,
     energyClass: energyClassOf(p.specifications),
     poa,
+    bestSeller: isBestSeller(p.productCode),
   };
 };
 

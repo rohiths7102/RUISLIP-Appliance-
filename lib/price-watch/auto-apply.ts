@@ -2,6 +2,7 @@ import { evaluateGuards, DEFAULT_GUARD_CONFIG } from "@/lib/price-watch/guards";
 import { isPoaProduct, poaNamesFromDb } from "@/lib/poa";
 import { reconcileSaving } from "@/lib/admin-product";
 import { writeAudit } from "@/lib/audit";
+import { isBestSeller } from "@/lib/best-sellers";
 
 /**
  * UNATTENDED price application — the machine path.
@@ -115,13 +116,20 @@ export async function autoApplySource(
   type Candidate = { p: any; obs: any; proposedPrice: number | null };
   const candidates: Candidate[] = [];
 
-  for (const p of products) {
+  // Bosch's and Neff's own prices apply to Sachin's best sellers only (30 Sept
+  // 2026); every other Bosch and Neff line is call for price, and a maker read
+  // of one must never put a price back on it.
+  const makerPrice = sourceId === "manufacturer-rrp";
+  for (const p of makerPrice ? products.filter((x: any) => isBestSeller(x.productCode || "")) : products) {
     out.considered++;
     const obs = latest.get(p.id);
     const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
 
     if (obs.status === "no_offer") {
       if (p.priceNow === null) { out.unchanged++; continue; }
+      // The maker's shop not selling a best seller online is not Sachin not
+      // selling it: keep his price and leave the row for a person.
+      if (makerPrice) { refuse("maker_not_selling"); continue; }
       if (isPoa) { refuse("poa_category"); continue; }
       if (listPrice.has(p.id)) { refuse("price_list_differs"); continue; }
       const prev = history.get(p.id)![1];
@@ -179,7 +187,9 @@ export async function autoApplySource(
           category: p.category,
           subcategory: p.subcategory,
           isPoa,
-          mandated: p.agencyStock === true,
+          // A best seller's price IS the maker's (Sachin's decision), so like
+          // agency stock it needs no cost floor; the other guards still hold.
+          mandated: p.agencyStock === true || (makerPrice && isBestSeller(p.productCode || "")),
         },
         poaNames,
         config: CFG,

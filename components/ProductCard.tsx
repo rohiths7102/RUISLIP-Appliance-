@@ -20,6 +20,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
   // Owner-flagged category (accessories at cost price, coffee machines): no price
   // on the card at all — "call for price" replaces it, and no save badge either.
   const poa = (p as { poa?: boolean }).poa === true;
+  const best = (p as { bestSeller?: boolean }).bestSeller === true;
   const priceMatch = PRICE_MATCH_BRANDS.test(p.brand) && (poa || p.priceNow === null);
   const save = !poa && p.saving !== null && p.priceWas !== null && p.priceNow !== null && p.priceWas > p.priceNow
     ? Math.round(p.saving) : 0;
@@ -39,10 +40,15 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-sky">{p.subcategory}</span>
             </div>
           )}
-          {save > 0 ? (
-            <span className="absolute left-3 top-3 rounded-sm bg-danger-soft px-2.5 py-1 text-[11px] font-bold text-danger">
-              Save £{save.toLocaleString("en-GB")}
-            </span>
+          {best || save > 0 ? (
+            <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
+              {best && <span className="rounded-sm bg-navy px-2.5 py-1 text-[11px] font-bold text-white">Best seller</span>}
+              {save > 0 && (
+                <span className="rounded-sm bg-danger-soft px-2.5 py-1 text-[11px] font-bold text-danger">
+                  Save £{save.toLocaleString("en-GB")}
+                </span>
+              )}
+            </div>
           ) : null}
           {energy ? (
             // EU-label indicator arrow: rounded rect with a left-pointing tip.

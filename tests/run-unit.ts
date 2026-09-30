@@ -13,6 +13,8 @@ import { NoSearchConsoleAccess, searchConsoleSite } from "../lib/search-console.
 import { INDEXNOW_KEY, indexNow } from "../lib/indexnow.js";
 import { classify, euronicsDepartment } from "../scripts/catalog/taxonomy.mjs";
 import { oldAddressTarget } from "../lib/old-urls.js";
+import { isBestSeller } from "../lib/best-sellers.js";
+import { autoApplySource } from "../lib/price-watch/auto-apply.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
 
@@ -197,5 +199,36 @@ ok(oldAddressTarget("/zenith-integrated-dishwasher---a-energy-rated/p-4561", old
   "old address: a known mapping to a product no longer on the site falls through instead of sending anyone to a 404");
 ok(oldAddressTarget("/wp-login.php", oldCat) === null && oldAddressTarget("/random-page", oldCat) === null && oldAddressTarget("/_shops/c/currys_28.htm", oldCat) === null,
   "old address: anything that names nothing stays a 404");
+
+// ---- maker prices (manufacturer-rrp) reach Sachin's best sellers only
+ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KIN96NSEOG") && !isBestSeller("KGN39VLEBG"),
+  "best sellers: listed codes only, case-insensitive, typos not accepted");
+{
+  const daysAgo = (d: number) => new Date(Date.now() - d * 86400_000);
+  // Reads newest first, as the query orders them.
+  const read = (productId: string, price: number | null, d = 0) => ({ id: `o-${productId}-${d}`, productId, sourceId: "manufacturer-rrp", price, deliveryCost: null, inStock: price !== null, includesVat: true, sourceUrl: "https://www.bosch-home.co.uk/x", matchConfidence: 1, status: price === null ? "no_offer" : "ok", observedAt: daysAgo(d) });
+  const product = (id: string, productCode: string, priceNow: number | null) => ({ id, productCode, title: productCode, brand: "Bosch", category: "Laundry", subcategory: "Washing Machines", priceNow, priceWas: null, saving: null, costPrice: null, floorPrice: null, agencyStock: false, adminOverrideFields: ["priceNow"] });
+  const run = async (products: any[], reads: any[]) => {
+    const writes: { id: string; data: any }[] = [];
+    const fake: any = {
+      priceSource: { findUnique: async () => ({ id: "manufacturer-rrp", label: "Manufacturer RRP", kind: "authorised", enabled: true, allowAutoApply: true, priceIncludesVat: true }), update: async () => ({}) },
+      priceObservation: { findMany: async ({ where }: any) => (where.sourceId === "cih" ? [] : reads) },
+      product: { findMany: async () => products, update: async ({ where, data }: any) => { writes.push({ id: where.id, data }); return {}; } },
+      category: { findMany: async () => [] }, brand: { findMany: async () => [] },
+      adminAuditLog: { create: async () => ({}) },
+    };
+    return { outcome: await autoApplySource(fake, { sourceId: "manufacturer-rrp" }), writes };
+  };
+  const a = await run([product("best", "WAN28259GB", 479), product("other", "WGG254Z1XX", null)], [read("best", 499), read("other", 649)]);
+  ok(a.outcome.considered === 1 && a.writes.length === 1 && a.writes[0].id === "best" && a.writes[0].data.priceNow === 499,
+    "maker price: a best seller follows it with no cost on file; a call-for-price Bosch line is never repriced");
+  const b = await run([product("best", "WAN28259GB", 479)], [read("best", null), read("best", null, 1)]);
+  ok(!b.writes.length && b.outcome.refused.maker_not_selling === 1,
+    "maker price: the maker's shop not selling a best seller keeps Sachin's price and holds the row");
+  const c = await run([product("best", "KIN96NSE0G", null)], [read("best", 899), read("best", 889, 1)]);
+  const d = await run([product("best", "KIN96NSE0G", null)], [read("best", 899)]);
+  ok(c.writes.length === 1 && c.writes[0].data.priceNow === 899 && !d.writes.length && d.outcome.refused.no_current_price === 1,
+    "maker price: a best seller with no price gets one after two maker reads agree, never from a single read");
+}
 
 console.log(`\n${n} unit assertions passed`);

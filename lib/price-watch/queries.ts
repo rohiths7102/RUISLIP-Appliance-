@@ -1,4 +1,5 @@
 import { poaNamesFromDb, isPoaProduct } from "@/lib/poa";
+import { isBestSeller } from "@/lib/best-sellers";
 import {
   DEFAULT_GUARD_CONFIG,
   effectiveFloor,
@@ -498,6 +499,9 @@ export async function worklistProducts(db: any, opts: { limit: number; sourceId:
   // run burned its entire budget on Bosch part numbers and correctly returned
   // "not found" for every one.
   due.sort((a, b) => {
+    // Sachin's best sellers first, every night: their price follows the maker's.
+    const bs = Number(isBestSeller(b.productCode)) - Number(isBestSeller(a.productCode));
+    if (bs) return bs;
     const at = a.lastObservedAt ? a.lastObservedAt.getTime() : Number.NEGATIVE_INFINITY;
     const bt = b.lastObservedAt ? b.lastObservedAt.getTime() : Number.NEGATIVE_INFINITY;
     if (at !== bt) return at - bt;

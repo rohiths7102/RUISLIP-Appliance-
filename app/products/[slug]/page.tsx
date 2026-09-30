@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Phone, MessageCircle, Check } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { getProduct, relatedFor, toCardItem, poaNamesFrom } from "@/lib/select";
+import { isBestSeller } from "@/lib/best-sellers";
 import { gbp, formatPrice, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, PRICE_MATCH_LINE, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import ProductCard from "@/components/ProductCard";
@@ -117,6 +118,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               {availabilityLabel(p.availabilityNormalised)}
             </span>
             {p.warranty && <><span className="text-ink/70">·</span><span className="text-[12.5px] font-semibold text-blue-deep">{p.warranty}</span></>}
+            {isBestSeller(p.productCode) && <span className="rounded-sm bg-navy px-2.5 py-1 text-[11px] font-bold text-white">Best seller</span>}
           </div>
 
           <div className="my-4 flex flex-wrap items-end gap-3.5">

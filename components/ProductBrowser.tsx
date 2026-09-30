@@ -14,7 +14,7 @@ import ProductCard from "./ProductCard";
 export type ProductCardItem = Pick<Product,
   "id" | "newSlug" | "title" | "brand" | "productCode" | "category" | "subcategory" |
   "image" | "priceNow" | "priceWas" | "saving" | "availability" | "availabilityNormalised" | "warranty"> &
-  { energyClass?: EnergyClass | null; poa?: boolean };
+  { energyClass?: EnergyClass | null; poa?: boolean; bestSeller?: boolean };
 
 const PER_PAGE = 24;
 
@@ -81,8 +81,8 @@ export default function ProductBrowser({
     if (sort === "price-asc") list = [...list].sort((a, b) => (a.priceNow ?? 1e9) - (b.priceNow ?? 1e9));
     else if (sort === "price-desc") list = [...list].sort((a, b) => (b.priceNow ?? -1) - (a.priceNow ?? -1));
     else if (sort === "brand") list = [...list].sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
-    // Featured = best-merchandised first: photographed, priced, energy-labelled.
-    else list = [...list].sort((a, b) => Number(!!b.image) - Number(!!a.image) || Number(b.poa || b.priceNow !== null) - Number(a.poa || a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
+    // Featured = Sachin's best sellers, then best-merchandised: photographed, priced, energy-labelled.
+    else list = [...list].sort((a, b) => Number(!!b.bestSeller) - Number(!!a.bestSeller) || Number(!!b.image) - Number(!!a.image) || Number(b.poa || b.priceNow !== null) - Number(a.poa || a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
     return list;
   }, [items, q, brand, cat, avail, energy, max, sort]);
 
