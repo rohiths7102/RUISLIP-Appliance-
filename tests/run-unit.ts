@@ -15,6 +15,8 @@ import { classify, euronicsDepartment } from "../scripts/catalog/taxonomy.mjs";
 import { oldAddressTarget } from "../lib/old-urls.js";
 import { isBestSeller } from "../lib/best-sellers.js";
 import { autoApplySource } from "../lib/price-watch/auto-apply.js";
+import { readMakerPrice } from "../lib/maker-price.js";
+import { readMakerPrices } from "../lib/price-watch/maker-read.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
 
@@ -229,6 +231,53 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   const d = await run([product("best", "KIN96NSE0G", null)], [read("best", 899)]);
   ok(c.writes.length === 1 && c.writes[0].data.priceNow === 899 && !d.writes.length && d.outcome.refused.no_current_price === 1,
     "maker price: a best seller with no price gets one after two maker reads agree, never from a single read");
+}
+
+// ---- the makers' own pages: the three shapes Bosch and Neff print (30 Sept 2026)
+{
+  const ld = (offers: unknown, mpn = "KIN96NSE0G") => `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org/", "@type": "Product", name: "Series 6 Built-in fridge-freezer", mpn, offers })}</script>`;
+  const retailers = { "@type": "AggregateOffer", offerCount: 2, offers: [{ "@type": "Offer", seller: { name: "Currys" }, price: 749 }, { "@type": "Offer", seller: { name: "AO" } }] };
+  const bsh = (price: number) => ({ "@type": "Offer", seller: { "@type": "Organization", name: "BSH" }, price, priceCurrency: "GBP", availability: "https://schema.org/InStock" });
+  const main = (p: string) => `<style data-emotion="css t6">.css-t6{font-weight:bold}</style><div data-testid="price-main-price" class="css-t6">£${p} </div><div data-testid="product-price-info">VAT included</div>`;
+  const sale = (now: string, was: string) => `<div data-testid="price-reduced-price" class="c"><style>.x{}</style><div style="width:max-content">£${now}</div><div data-testid="price-standard-discount-section"><span>Old price £${was}</span><div data-testid="price-strikethrough-price">£${was}</div></div></div>`;
+  const inShop = readMakerPrice(ld([bsh(449), retailers]) + main("449.00") + main("449.00"), "KIN96NSE0G");
+  ok(inShop.price === 449 && inShop.price !== null && inShop.inStock && inShop.from === "offer", "maker page: on sale in their shop, the BSH offer is the price");
+  const unavailable = readMakerPrice(ld(retailers) + main("899.00") + main("899.00"), "KIN96NSE0G");
+  ok(unavailable.price === 899 && unavailable.price !== null && !unavailable.inStock && unavailable.from === "screen",
+    "maker page: 'currently unavailable' has no BSH offer, so the on-screen price is read — never a retailer's (Currys' £749)");
+  ok(readMakerPrice(ld(retailers) + sale("399.00", "449.00") + sale("399.00", "449.00"), "KIN96NSE0G").price === 399, "maker page: on promotion the reduced price is read, never the struck-through 'Old price'");
+  const gone = readMakerPrice(ld(retailers) + "<p>Product is no longer available</p>", "KIN96NSE0G");
+  ok(gone.price === null && gone.reason === "discontinued", "maker page: a dropped model gives no price (and says why)");
+  const clash = readMakerPrice(ld([bsh(449)]) + main("499.00"), "KIN96NSE0G");
+  const twoBoxes = readMakerPrice(ld(retailers) + main("899.00") + main("949.00"), "KIN96NSE0G");
+  ok(clash.price === null && clash.reason === "prices_disagree" && twoBoxes.price === null, "maker page: two different prices on one page means the page is not understood, and nothing is read");
+  const other = readMakerPrice(ld([bsh(529)], "S153HKX06G") + main("529.00"), "S153HKX03G");
+  ok(other.price === null && other.reason === "other_model", "maker page: a page about another model (e.g. a successor) is never read as this one");
+
+  const obsWritten: any[] = [];
+  const pages: Record<string, string> = {
+    "https://www.bosch-home.co.uk/en/product/x/KIN96NSE0G": ld(retailers) + main("899.00"),
+    "https://www.bosch-home.co.uk/en/product/x/WAN28259GB": ld(retailers, "WAN28259GB") + "Product is no longer available",
+  };
+  const fakeDb: any = {
+    product: { findMany: async () => [
+      { id: "a", productCode: "KIN96NSE0G", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/KIN96NSE0G" },
+      { id: "b", productCode: "WAN28259GB", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/WAN28259GB" },
+      { id: "c", productCode: "KIN86NSE0G", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/KIN86NSE0G" }, // the page fails to load
+      { id: "d", productCode: "KGN39VLEBG", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/KGN39VLEBG" }, // not a best seller
+      { id: "e", productCode: "U1ACE2AG3B", sourceUrl: "https://www.ruislipappliances.com/products/U1ACE2AG3B.htm" }, // not a maker page
+    ] },
+    priceObservation: { createMany: async ({ data }: any) => { obsWritten.push(...data); return { count: data.length }; } },
+  };
+  const fetcher = async (url: string) => { if (!pages[url]) throw new Error("That page took too long to answer"); return { html: pages[url] }; };
+  const t = await readMakerPrices(fakeDb, { fetcher });
+  const byId = new Map(obsWritten.map((o) => [o.productId, o]));
+  ok(t.pages === 3 && t.priced === 1 && t.discontinued === 1 && t.unread === 1 && obsWritten.length === 3
+    && byId.get("a")?.status === "ok" && byId.get("a")?.price === 899 && byId.get("a")?.sourceId === "manufacturer-rrp"
+    && byId.get("b")?.status === "parse_failed" && byId.get("c")?.status === "parse_failed" && !byId.has("d") && !byId.has("e"),
+    "daily maker read: best sellers with a maker page only; every page saved, read or not");
+  const late = await readMakerPrices(fakeDb, { fetcher, deadlineMs: -1 });
+  ok(late.notReached === 3 && late.priced === 0, "daily maker read: pages not started by the deadline are counted, not silently skipped");
 }
 
 console.log(`\n${n} unit assertions passed`);
