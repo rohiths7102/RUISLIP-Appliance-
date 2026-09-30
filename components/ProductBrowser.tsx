@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { energyLetter, type EnergyClass } from "@/lib/energy";
@@ -24,6 +24,15 @@ const PER_PAGE = 24;
  */
 /** Budget steps for the "max price" filter — same set the homepage finder offers. */
 export const BUDGETS = [250, 500, 750, 1000, 1500, 2000] as const;
+
+/**
+ * Featured order: big appliances, then small appliances, then accessories and
+ * spare parts last. Within each, the usual merchandising order. Without it the
+ * Bosch page turned into filters, bags and oven trays from page 3 (Sachin, 30
+ * Sept 2026): they carry a price, and most Bosch appliances are call for price.
+ */
+const groupOf = (p: ProductCardItem) =>
+  /accessor|spare/i.test(p.category) ? 2 : /small appliance|floorcare|coffee/i.test(p.category) ? 1 : 0;
 
 export default function ProductBrowser({
   items,
@@ -81,8 +90,8 @@ export default function ProductBrowser({
     if (sort === "price-asc") list = [...list].sort((a, b) => (a.priceNow ?? 1e9) - (b.priceNow ?? 1e9));
     else if (sort === "price-desc") list = [...list].sort((a, b) => (b.priceNow ?? -1) - (a.priceNow ?? -1));
     else if (sort === "brand") list = [...list].sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
-    // Featured = Sachin's best sellers, then best-merchandised: photographed, priced, energy-labelled.
-    else list = [...list].sort((a, b) => Number(!!b.bestSeller) - Number(!!a.bestSeller) || Number(!!b.image) - Number(!!a.image) || Number(b.poa || b.priceNow !== null) - Number(a.poa || a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
+    // Featured = appliances before accessories, Sachin's best sellers, then best-merchandised: photographed, priced, energy-labelled.
+    else list = [...list].sort((a, b) => groupOf(a) - groupOf(b) || Number(!!b.bestSeller) - Number(!!a.bestSeller) || Number(!!b.image) - Number(!!a.image) || Number(b.poa || b.priceNow !== null) - Number(a.poa || a.priceNow !== null) || Number(!!b.energyClass) - Number(!!a.energyClass));
     return list;
   }, [items, q, brand, cat, avail, energy, max, sort]);
 
@@ -91,6 +100,17 @@ export default function ProductBrowser({
 
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const current = Math.min(page, pages);
+  // A new page swaps the grid while the reader is down at the page buttons, so
+  // page 2 opened on the footer and looked empty (Sachin, 30 Sept 2026): go
+  // back to the top of the results, just below the sticky header.
+  const resultsTop = useRef<HTMLParagraphElement>(null);
+  const goTo = (n: number) => {
+    setPage(n);
+    const el = resultsTop.current;
+    if (!el) return;
+    const header = document.querySelector<HTMLElement>("[data-site-chrome]")?.offsetHeight ?? 0;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - header - 12 });
+  };
   const shown = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
   const dirty = q !== "" || brand !== initialBrand || cat !== initialCategory || avail !== "all" || energy !== "all" || max !== initialMax;
 
@@ -167,7 +187,7 @@ export default function ProductBrowser({
         </div>
       </div>
 
-      <p className="mt-5 text-[13.5px] text-muted">
+      <p ref={resultsTop} className="mt-5 text-[13.5px] text-muted">
         <strong className="text-ink">{filtered.length.toLocaleString("en-GB")}</strong>{" "}
         {filtered.length === 1 ? "appliance" : "appliances"}
         {pages > 1 && <span className="text-ink/70"> · page {current} of {pages}</span>}
@@ -188,7 +208,7 @@ export default function ProductBrowser({
       {pages > 1 && (
         <nav className="mt-12 flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
           <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => goTo(Math.max(1, current - 1))}
             disabled={current === 1}
             className="min-h-11 rounded-sm border border-ink/15 bg-white px-4 text-[12.5px] font-semibold disabled:opacity-40"
           >
@@ -200,7 +220,7 @@ export default function ProductBrowser({
             ) : (
               <button
                 key={n}
-                onClick={() => setPage(n as number)}
+                onClick={() => goTo(n as number)}
                 aria-current={n === current ? "page" : undefined}
                 className={`min-h-11 min-w-11 rounded-sm px-3 font-mono text-[12.5px] font-bold ${
                   n === current ? "bg-navy text-sky" : "border border-ink/15 bg-white hover:border-blue"
@@ -211,7 +231,7 @@ export default function ProductBrowser({
             )
           )}
           <button
-            onClick={() => setPage((p) => Math.min(pages, p + 1))}
+            onClick={() => goTo(Math.min(pages, current + 1))}
             disabled={current === pages}
             className="min-h-11 rounded-sm border border-ink/15 bg-white px-4 text-[12.5px] font-semibold disabled:opacity-40"
           >
