@@ -9,6 +9,7 @@ import { telHref } from "@/lib/format";
 import { breadcrumbJsonLd, faqJsonLd, jsonLdScript, SITE } from "@/lib/seo";
 import PageHead from "@/components/PageHead";
 import ProductCard from "@/components/ProductCard";
+import ServicePrices from "@/components/ServicePrices";
 export const revalidate = 3600;
 
 /**
@@ -92,6 +93,14 @@ export default async function TownDepartmentPage({ params }: { params: Promise<{
           {items.length > 12 && (
             <Link href={`/categories/${cat.id}`} className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-deep hover:text-blue">See all {items.length} {name} <ArrowRight size={14} /></Link>
           )}
+        </section>
+
+        <section className="mt-14">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <h2 className="font-display text-[30px]">{cat.name} delivery and fitting prices</h2>
+            <Link href="/delivery-services#prices" className="hidden text-sm font-semibold text-blue-deep hover:text-blue sm:block">All prices →</Link>
+          </div>
+          <ServicePrices dept={cat.id} />
         </section>
 
         <section className="mt-14 grid gap-10 lg:grid-cols-[1.4fr_1fr]">

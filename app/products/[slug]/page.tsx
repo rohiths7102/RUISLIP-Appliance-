@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Phone, MessageCircle, Check } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { getProduct, relatedFor, toCardItem, poaNamesFrom } from "@/lib/select";
-import { gbp, formatPrice, PRICE_ON_APPLICATION, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
+import { gbp, formatPrice, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, PRICE_MATCH_LINE, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
@@ -48,6 +48,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   // Owner-flagged "call for price" category or brand — no price anywhere on this page.
   const poaSet = poaNamesFrom(categories, brands);
   const poa = poaSet.has(p.category) || poaSet.has(p.subcategory) || poaSet.has(p.brand);
+  const priceMatch = PRICE_MATCH_BRANDS.test(p.brand) && (poa || p.priceNow === null);
   const related = relatedFor(products, p);
   const enquiryHref = `/contact?product=${encodeURIComponent(p.title)}&code=${encodeURIComponent(p.productCode)}`;
   // DB rows carry meta: {} — resolve the category page from the catalogue by
@@ -123,9 +124,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <span className="font-display text-display-2 font-semibold leading-none tabular-nums">{formatPrice(p.priceNow)}</span>
             ) : (
               <span className="inline-flex items-center gap-2 text-lg font-semibold text-blue-deep">
-                <Phone size={16} strokeWidth={2.4} /> {PRICE_ON_APPLICATION}
+                <Phone size={16} strokeWidth={2.4} /> {priceMatch ? "Call for best price" : PRICE_ON_APPLICATION}
               </span>
             )}
+            {priceMatch && <p className="w-full text-[14px] text-muted">{PRICE_MATCH_LINE}</p>}
             {!poa && p.priceWas ? <span className="mb-1.5 text-lg text-muted line-through tabular-nums">{formatPrice(p.priceWas)}</span> : null}
             {!poa && p.saving ? (
               <span className="mb-1.5 rounded-sm bg-success-soft px-2.5 py-1.5 text-xs font-bold text-success tabular-nums">Save {formatPrice(p.saving)}</span>
@@ -203,8 +205,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <ul className="grid gap-3 sm:grid-cols-3">
           {[
             ["Connection & installation", "Fitted and tested by our team"],
-            ["Disposal & recycling", "We take your old appliance away"],
-            ["Upstairs delivery", "Where access allows — tell us when you call"],
+            ["Disposal & recycling", "£30 (fridges and freezers £35), packaging taken away too"],
+            ["Upstairs delivery", "£30, up to 2 flights of stairs"],
           ].map(([name, note]) => (
             <li key={name} className="rounded-[4px] border border-ink/10 bg-card p-5">
               <p className="mb-1 flex items-center gap-2 text-sm font-semibold"><Check size={14} className="text-blue" /> {name}</p>
@@ -212,6 +214,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </li>
           ))}
         </ul>
+        <Link href="/delivery-services#prices" className="mt-4 inline-block text-sm font-semibold text-blue-deep hover:text-blue">Delivery, fitting and disposal prices →</Link>
       </section>
 
       {related.length > 0 && (
@@ -235,7 +238,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-paper">{p.title}</p>
             <p className="text-[12px] text-sky">
-              {p.productCode} · {poa || p.priceNow === null ? PRICE_ON_APPLICATION : gbp(p.priceNow)}
+              {p.productCode} · {priceMatch ? "Call for best price" : poa || p.priceNow === null ? PRICE_ON_APPLICATION : gbp(p.priceNow)}
             </p>
           </div>
           <a href={telHref(business.phone)}

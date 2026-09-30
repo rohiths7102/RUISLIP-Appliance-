@@ -13,6 +13,9 @@ export const formatPrice = (n: number) =>
 // phrased as an invitation rather than a gap: an unpriced line should read as a
 // reason to ring the shop, which is where he wins the sale.
 export const PRICE_ON_APPLICATION = "Call for best pricing";
+// Sachin, 30 Sept 2026: on Bosch and Neff, an unpriced line says why to ring.
+export const PRICE_MATCH_BRANDS = /^(bosch|neff)$/i;
+export const PRICE_MATCH_LINE = "We beat or price match all major retailers";
 
 export const gbp = (n: number | null) =>
   n === null || Number.isNaN(n) ? PRICE_ON_APPLICATION : formatPrice(n);

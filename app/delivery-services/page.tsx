@@ -3,6 +3,7 @@ import { Phone, Truck, Wrench, ShieldCheck, Package, Users, Boxes } from "lucide
 import { getBusiness } from "@/lib/repo";
 import { telHref } from "@/lib/format";
 import PageHead from "@/components/PageHead";
+import ServicePrices from "@/components/ServicePrices";
 import { faqJsonLd, jsonLdScript } from "@/lib/seo";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
@@ -30,6 +31,7 @@ export default async function DeliveryPage() {
         { q: "Do you deliver?", a: `Delivery is local, within ${business.delivery.radius || "our local area"}, and is confirmed with the store. Same-day delivery is subject to stock and location.` },
         { q: "How is payment taken?", a: "Payment is arranged directly with the store, by phone or in person — there is no online checkout." },
         { q: "Do you install appliances?", a: "Yes — installation and fitting are available, along with removal and recycling of your old appliance. Ask in store for details." },
+        { q: "How much do delivery and installation cost?", a: "Ground-floor installation of a freestanding washing machine or dishwasher is £40, with free local delivery up to 3 miles from HA4 0QP (£20 beyond). Tumble dryer set-up £25, fridge or freezer set-up £35, integrated appliances £120, built-in ovens from £95, electric hobs £115, gas appliances from £150. Disposal of the old appliance £30 (fridges and freezers £35)." },
       ]))} />
 
       <PageHead
@@ -49,6 +51,12 @@ export default async function DeliveryPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div id="prices" className="mt-12 scroll-mt-28">
+          <h2 className="mb-2 font-display text-[30px]">Delivery, fitting and disposal prices</h2>
+          <p className="mb-6 text-[14.5px] text-muted">From our shop at {business.address.postcode}. Call {business.phone} to book a day.</p>
+          <ServicePrices />
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-6 rounded-[4px] border border-blue/40 bg-blue/[.07] px-8 py-9">

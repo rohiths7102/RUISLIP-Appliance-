@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Phone } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
-import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION } from "@/lib/format";
+import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, PRICE_MATCH_LINE } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import WarrantyBadge from "@/components/WarrantyBadge";
 import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
@@ -20,6 +20,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
   // Owner-flagged category (accessories at cost price, coffee machines): no price
   // on the card at all — "call for price" replaces it, and no save badge either.
   const poa = (p as { poa?: boolean }).poa === true;
+  const priceMatch = PRICE_MATCH_BRANDS.test(p.brand) && (poa || p.priceNow === null);
   const save = !poa && p.saving !== null && p.priceWas !== null && p.priceNow !== null && p.priceWas > p.priceNow
     ? Math.round(p.saving) : 0;
   return (
@@ -79,10 +80,13 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
           <p className="mb-3.5 text-[14px] text-muted">
             Code <span className="font-bold text-ink">{p.productCode}</span>
           </p>
-          {poa ? (
-            <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue">
-              <Phone size={13} strokeWidth={2.4} /> {PRICE_ON_APPLICATION}
-            </span>
+          {poa || priceMatch ? (
+            <div>
+              <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue">
+                <Phone size={13} strokeWidth={2.4} /> {priceMatch ? "Call for best price" : PRICE_ON_APPLICATION}
+              </span>
+              {priceMatch && <p className="mt-1 text-[12px] leading-snug text-muted">{PRICE_MATCH_LINE}</p>}
+            </div>
           ) : (
             <div className="flex items-baseline gap-2.5">
               <span className="text-[21px] font-bold tracking-tight text-ink">{gbp(p.priceNow)}</span>

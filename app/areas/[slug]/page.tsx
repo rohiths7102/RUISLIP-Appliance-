@@ -11,6 +11,7 @@ import { telHref } from "@/lib/format";
 import { breadcrumbJsonLd, faqJsonLd, jsonLdScript, SITE } from "@/lib/seo";
 import PageHead from "@/components/PageHead";
 import ProductCard from "@/components/ProductCard";
+import ServicePrices from "@/components/ServicePrices";
 export const revalidate = 3600;
 
 /**
@@ -102,6 +103,14 @@ export default async function AreaPage({ params }: { params: Promise<{ slug: str
             </div>
           ))}
         </div>
+
+        <section className="mt-14">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <h2 className="font-display text-[30px]">Delivery, fitting and recycling prices</h2>
+            <Link href="/delivery-services#prices" className="hidden text-sm font-semibold text-blue-deep hover:text-blue sm:block">All services →</Link>
+          </div>
+          <ServicePrices />
+        </section>
 
         {departments.length > 0 && (
           <section className="mt-14">
