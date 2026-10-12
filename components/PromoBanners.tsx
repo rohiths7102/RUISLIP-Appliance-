@@ -44,7 +44,7 @@ export default function PromoBanners({ promos }: { promos: Promo[] }) {
       className="relative aspect-[386/150] w-full overflow-hidden sm:aspect-[2220/416]"
     >
       {promos.map((p, k) => (
-        <Link key={p.href} href={p.href} aria-hidden={k !== i} tabIndex={k === i ? 0 : -1}
+        <Link key={`${k}-${p.href}`} href={p.href} aria-hidden={k !== i} tabIndex={k === i ? 0 : -1}
           style={{ backgroundColor: p.bg }}
           className={`absolute inset-0 transition-opacity duration-700 [transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${k === i ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
@@ -60,7 +60,7 @@ export default function PromoBanners({ promos }: { promos: Promo[] }) {
       {n > 1 && (
         <div className="absolute bottom-3 right-4 flex gap-2 sm:bottom-5 sm:right-8" role="tablist" aria-label="Choose promotion">
           {promos.map((p, k) => (
-            <button key={p.href} type="button" role="tab" aria-selected={k === i} aria-label={p.alt}
+            <button key={`${k}-${p.href}`} type="button" role="tab" aria-selected={k === i} aria-label={p.alt}
               onClick={() => setI(k)} className="group/pd flex h-6 items-center">
               <span className={`block h-[3px] transition-all duration-500 ${k === i ? "w-8 bg-white" : "w-4 bg-white/45 group-hover/pd:bg-white/75"}`} />
             </button>

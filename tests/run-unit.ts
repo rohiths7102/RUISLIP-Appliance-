@@ -17,6 +17,8 @@ import { isBestSeller } from "../lib/best-sellers.js";
 import { autoApplySource } from "../lib/price-watch/auto-apply.js";
 import { readMakerPrice } from "../lib/maker-price.js";
 import { readMakerPrices } from "../lib/price-watch/maker-read.js";
+import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/homepage.js";
+import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
 
@@ -278,6 +280,22 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
     "daily maker read: best sellers with a maker page only; every page saved, read or not");
   const late = await readMakerPrices(fakeDb, { fetcher, deadlineMs: -1 });
   ok(late.notReached === 3 && late.priced === 0, "daily maker read: pages not started by the deadline are counted, not silently skipped");
+}
+
+// ---- homepage offers (Admin → Homepage → Offers)
+{
+  const o = (p: object) => ({ id: "x", enabled: true, href: "/brands/liebherr", alt: "Liebherr offer", wide: "/promo/a.png", mobile: "", bg: "#003058", start: "", end: "", ...p });
+  ok(toHomepage(null).offers.length === DEFAULT_OFFERS.length && toHomepage({ offers: [] }).offers.length === 0,
+    "offers: never saved = the strip as it was; saved empty = no strip");
+  const live = liveOffers(toHomepage({ offers: [o({ id: "a" }), o({ id: "b", end: "2026-10-11" }), o({ id: "c", start: "2026-10-13" }), o({ id: "d", enabled: false })] }).offers, "2026-10-12");
+  ok(live.map((x) => x.id).join() === "a", "offers: an ended, a not-yet-started and a hidden offer stay off the homepage");
+  const refused = (raw: object) => { try { toHomepage({ offers: [o(raw)] }, true); return false; } catch (e) { return e instanceof HomepageError; } };
+  ok(refused({ wide: "" }) && refused({ href: "javascript:alert(1)" }) && refused({ href: "//evil.example" }) && refused({ alt: " " }) && refused({ start: "2026-11-02", end: "2026-11-01" }),
+    "offers: a save without a picture, a page or a description, or with a page that isn't ours/https, or ending before it starts is refused");
+  const pages = [{ href: "/products", label: "All appliances" }, { href: "/brands/schonhaus", label: "Schönhaus" }, { href: "/brands/liebherr", label: "Liebherr" }, { href: "/categories/fridge-freezers", label: "Fridge Freezers" }];
+  ok(pickPage("/brands/liebherr", "", pages) === "/brands/liebherr" && pickPage("/brands/made-up", "SCHONHAUS beautifully at home", pages) === "/brands/schonhaus"
+    && pickPage("", "half price fridge freezers this week", pages) === "/categories/fridge-freezers" && pickPage("", "black friday", pages) === "/products",
+    "offer AI: only our own pages — an invented page falls back to a brand/department named in the banner, else the whole range");
 }
 
 console.log(`\n${n} unit assertions passed`);

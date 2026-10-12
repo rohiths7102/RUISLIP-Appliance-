@@ -72,6 +72,24 @@ export async function callGemini(messages: ChatMsg[], timeoutMs: number): Promis
   } finally { clearTimeout(timer); }
 }
 
+/** Gemini reading one picture (Groq's models are text-only). Used by Admin → Offers. */
+export async function callGeminiImage(prompt: string, image: { mime: string; b64: string }, timeoutMs: number): Promise<string> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY not set");
+  const model = process.env.GEMINI_MODEL || GEMINI_MODEL;
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST", signal: AbortSignal.timeout(timeoutMs),
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ inline_data: { mime_type: image.mime, data: image.b64 } }, { text: prompt }] }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 400 },
+    }),
+  });
+  if (!r.ok) throw new Error(`Gemini ${r.status}`);
+  const j: any = await r.json();
+  return (j?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") || "").trim();
+}
+
 /**
  * Ask Groq; fall back to Gemini.
  *

@@ -25,7 +25,19 @@ export type HomeSlide = {
   codes: string[];
 };
 export type HomeFeatured = { code: string; bestSeller: boolean };
-export type Homepage = { slides: HomeSlide[]; featured: HomeFeatured[] };
+/**
+ * One banner in the offer strip under the slideshow (components/PromoBanners).
+ * `start`/`end` are optional YYYY-MM-DD dates, inclusive; outside them it hides.
+ */
+export type HomeOffer = {
+  id: string; enabled: boolean;
+  href: string; alt: string;
+  wide: string;   // artwork from 640px up
+  mobile: string; // narrow cut; "" = use the wide artwork
+  bg: string;     // the artwork's edge colour, padding the slot
+  start: string; end: string;
+};
+export type Homepage = { slides: HomeSlide[]; featured: HomeFeatured[]; offers: HomeOffer[] };
 
 /** How many featured products the homepage row shows. */
 export const FEATURED_SHOWN = 12;
@@ -51,6 +63,22 @@ export const DEFAULT_SLIDES: HomeSlide[] = [
   { id: "hisense", enabled: true, brand: "Hisense", codes: ["RF749N4SWSE", "RF815N4SESE", "RQ5P470SYFD"], line: "The Hisense range",
     sub: "Big-screen televisions and American fridge freezers, delivered locally." },
 ];
+
+/** The strip as it was hard-coded in app/page.tsx before it became editable
+ *  (Euronics' Liebherr campaign ends 31.10.26). */
+export const DEFAULT_OFFERS: HomeOffer[] = [
+  { id: "black-friday", enabled: true, href: "/products", alt: "Black Friday sale — offers coming soon on washing, cooking and refrigeration",
+    wide: "/promo/black-friday-wide.jpg", mobile: "/promo/black-friday-mobile.jpg", bg: "#050505", start: "", end: "" },
+  { id: "liebherr", enabled: true, href: "/brands/liebherr", alt: "Liebherr — 10-year guarantee on all household appliances",
+    wide: "/promo/liebherr-wide.png", mobile: "/promo/liebherr-mobile.png", bg: "#003058", start: "", end: "2026-10-31" },
+  { id: "schonhaus", enabled: true, href: "/brands/schonhaus", alt: "Schonhaus — beautifully at home, 5-year guarantee",
+    wide: "/promo/schonhaus-wide.png", mobile: "/promo/schonhaus-mobile.png", bg: "#101920", start: "", end: "" },
+];
+const MAX_OFFERS = 12;
+
+/** Offers showing on `today` (YYYY-MM-DD, London): switched on and inside their dates. */
+export const liveOffers = (offers: HomeOffer[], today: string) =>
+  offers.filter((o) => o.enabled && (!o.start || o.start <= today) && (!o.end || today <= o.end));
 
 const DEFAULT_FEATURED: HomeFeatured[] = featuredSync.items.map((i: { code: string; bestSeller?: boolean }) => ({ code: i.code, bestSeller: !!i.bestSeller }));
 
@@ -82,7 +110,24 @@ export function toHomepage(raw: any, strict = false): Homepage {
     featured = raw.featured.slice(0, MAX_FEATURED).map((f: any) => ({ code: str(f?.code, 40), bestSeller: !!f?.bestSeller }))
       .filter((f: HomeFeatured) => f.code && !seen.has(f.code.toUpperCase()) && seen.add(f.code.toUpperCase()));
   }
-  return { slides, featured };
+  let offers = DEFAULT_OFFERS;
+  if (Array.isArray(raw?.offers)) {
+    if (raw.offers.length > MAX_OFFERS) fail(`At most ${MAX_OFFERS} offers.`);
+    // Our own page ("/brands/x") or an https link; images our own path or https.
+    const link = (v: unknown) => { const s = str(v, 300); return /^\/(?!\/)|^https:\/\//.test(s) ? s : ""; };
+    const day = (v: unknown) => { const s = str(v, 10); return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ""; };
+    offers = raw.offers.slice(0, MAX_OFFERS).map((o: any, i: number) => {
+      const wide = link(o?.wide), href = link(o?.href), alt = str(o?.alt, 160);
+      if (!wide) fail(`Offer ${i + 1} needs its banner picture.`);
+      if (!href) fail(`Offer ${i + 1} needs the page it opens.`);
+      if (!alt) fail(`Offer ${i + 1} needs a short description.`);
+      const start = day(o?.start), end = day(o?.end);
+      if (start && end && end < start) fail(`Offer ${i + 1} ends before it starts.`);
+      return { id: str(o?.id, 40) || `offer-${i + 1}`, enabled: o?.enabled !== false, href, alt, wide, mobile: link(o?.mobile),
+        bg: /^#[0-9a-f]{6}$/i.test(str(o?.bg, 7)) ? str(o.bg, 7) : "#101920", start, end };
+    }).filter((o: HomeOffer) => o.wide && o.href && o.alt);
+  }
+  return { slides, featured, offers };
 }
 
 /** The homepage settings. Never throws: a missing column or row means defaults. */
@@ -102,7 +147,8 @@ export async function saveHomepage(db: any, raw: unknown, changedBy: string): Pr
   await writeAudit(db, {
     entityType: "homepage", entityId: "business", action: "homepage:save", changedFields: ["homepage"],
     previousValue: { slides: before.slides.length, featured: before.featured.map((f) => f.code) },
-    newValue: { slides: next.slides.map((s) => `${s.enabled ? "" : "(off) "}${s.brand || "shop"}`), featured: codes },
+    newValue: { slides: next.slides.map((s) => `${s.enabled ? "" : "(off) "}${s.brand || "shop"}`), featured: codes,
+      offers: next.offers.map((o) => `${o.enabled ? "" : "(off) "}${o.alt}`) },
     changedBy,
   });
   return next;

@@ -4,6 +4,7 @@ import {
   ArrowDown, ArrowUp, Eye, EyeOff, ExternalLink, ImageOff, Plus, RotateCcw, Search, Sparkles, Star, Trash2, X,
 } from "lucide-react";
 import { Badge, Button, Card, Notice } from "@/components/admin/ui";
+import OffersEditor, { type Offer } from "@/components/admin/OffersEditor";
 
 /**
  * Admin → Homepage. The two moving parts of the front page, in the order a
@@ -17,7 +18,7 @@ import { Badge, Button, Card, Notice } from "@/components/admin/ui";
 type Slide = { id: string; enabled: boolean; brand: string; line: string; sub: string; codes: string[] };
 type Featured = { code: string; bestSeller: boolean };
 type Prod = { id: string; productCode: string; title: string; brand: string; subcategory: string; mainImage: string; priceNow: number | null; isVisible: boolean; slug: string };
-type State = { slides: Slide[]; featured: Featured[] };
+type State = { slides: Slide[]; featured: Featured[]; offers: Offer[] };
 
 const gbp = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 const key = (c: string) => c.toUpperCase();
@@ -48,7 +49,7 @@ export default function HomepageAdmin() {
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
   const [picker, setPicker] = useState<null | { title: string; onPick: (p: Prod) => void }>(null);
-  const [tab, setTab] = useState<"slides" | "featured">("slides");
+  const [tab, setTab] = useState<"slides" | "featured" | "offers">("slides");
 
   const remember = useCallback((list: Prod[]) => {
     setProducts((m) => { const n = new Map(m); for (const p of list) n.set(key(p.productCode), p); return n; });
@@ -57,7 +58,7 @@ export default function HomepageAdmin() {
   useEffect(() => {
     fetch("/api/admin/homepage").then((r) => r.json()).then((j) => {
       if (j.error) { setErr(j.error); return; }
-      const s = { slides: j.slides, featured: j.featured };
+      const s = { slides: j.slides, featured: j.featured, offers: j.offers };
       setSaved(s); setDraft(s); remember(j.products); setBrands(j.brands || []);
       setDefaults(j.defaults || []); setShown(j.featuredShown || 12);
     }).catch(() => setErr("Could not load the homepage settings. Is the database running?"));
@@ -107,7 +108,7 @@ export default function HomepageAdmin() {
     const j = r ? await r.json().catch(() => ({})) : {};
     setSaving(false);
     if (!r || !r.ok) { setErr(j.error || "Could not save. Try again."); return; }
-    const s = { slides: j.slides, featured: j.featured };
+    const s = { slides: j.slides, featured: j.featured, offers: j.offers };
     setSaved(s); setDraft(s);
     setMsg("Saved — the homepage is updated. Open it to have a look.");
   }
@@ -135,7 +136,7 @@ export default function HomepageAdmin() {
           the row of products under it. Change anything, then press <b>Save</b> — nothing goes live until you do.
         </p>
         <div className="mt-4 flex flex-wrap gap-2" role="tablist">
-          {([["slides", `Slideshow at the top · ${liveSlides} showing`], ["featured", `Featured products · ${Math.min(live, shown)} showing`]] as const).map(([t, label]) => (
+          {([["slides", `Slideshow at the top · ${liveSlides} showing`], ["offers", `Offers strip · ${draft.offers.length}`], ["featured", `Featured products · ${Math.min(live, shown)} showing`]] as const).map(([t, label]) => (
             <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
               className={`rounded-full px-4 py-2 text-sm font-medium ${tab === t ? "bg-navy text-paper" : "border border-navy/20 text-ink hover:border-blue"}`}>
               {label}
@@ -298,6 +299,8 @@ export default function HomepageAdmin() {
           </ol>
         </section>
       )}
+
+      {tab === "offers" && <OffersEditor offers={draft.offers} onChange={(f) => { setMsg(""); setDraft((d) => d && { ...d, offers: f(d.offers) }); }} />}
 
       {/* ------------------------------------------------------- save bar */}
       <div className={`fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 px-4 py-3 backdrop-blur transition-transform md:left-[236px] ${dirty || saving ? "translate-y-0" : "translate-y-full"}`}>

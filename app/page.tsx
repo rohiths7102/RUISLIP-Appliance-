@@ -13,26 +13,11 @@ import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
-import { getHomepage, toHomepage, FEATURED_SHOWN } from "@/lib/homepage";
+import { getHomepage, toHomepage, liveOffers, FEATURED_SHOWN } from "@/lib/homepage";
 import { getPrisma } from "@/lib/prisma";
 import { AREA_GROUPS, TOWNS } from "@/lib/areas";
 import categoryHeroes from "@/data/category-heroes.json";
 export const revalidate = 300;
-
-/** The current Euronics agent-sales campaigns, as run on the shop's own
- *  storefront. Liebherr ends 31.10.26; swap the artwork and the link when
- *  Euronics issues the next one. */
-const PROMOS = [
-  // bg is each banner's own flat edge colour: the Euronics artwork is a 6.25:1
-  // letterbox and the owner's campaign poster a 3.3:1, so on a wide screen the
-  // shorter two sit on their own ground rather than being stretched or cropped.
-  { href: "/products", alt: "Black Friday sale — offers coming soon on washing, cooking and refrigeration",
-    wide: "/promo/black-friday-wide.jpg", mobile: "/promo/black-friday-mobile.jpg", bg: "#050505" },
-  { href: "/brands/liebherr", alt: "Liebherr — 10-year guarantee on all household appliances",
-    wide: "/promo/liebherr-wide.png", mobile: "/promo/liebherr-mobile.png", bg: "#003058" },
-  { href: "/brands/schonhaus", alt: "Schonhaus — beautifully at home, 5-year guarantee",
-    wide: "/promo/schonhaus-wide.png", mobile: "/promo/schonhaus-mobile.png", bg: "#101920" },
-];
 
 const STEPS = [
   ["01", "Choose your appliance", "Browse the range and find the model that fits your kitchen."],
@@ -213,7 +198,7 @@ export default async function Home() {
                  where the guarantee is the first thing after the range. The
                  artwork is Euronics', sized by them; refresh it from
                  kitchen-appliances.co.uk when a campaign ends. ------- */}
-      <PromoBanners promos={PROMOS} />
+      <PromoBanners promos={liveOffers(home.offers, new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" })).map((o) => ({ ...o, mobile: o.mobile || o.wide }))} />
 
       {/* ------- FINDER — the "help me find it" the owner chose, full width under the hero ------- */}
       <section className="border-y border-line bg-card">

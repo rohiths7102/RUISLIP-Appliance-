@@ -3,6 +3,8 @@ import { adminHref } from "@/lib/admin-config";
 import { requireAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { poaNamesFromDb } from "@/lib/poa";
+import { FEED_AVAILABILITY } from "@/lib/merchant-feed";
+import { isBestSeller } from "@/lib/best-sellers";
 import AdminShell from "@/components/admin/AdminShell";
 import CopyField from "@/components/admin/CopyField";
 import { adsSyncScript } from "@/lib/ads-sync-script";
@@ -60,7 +62,7 @@ async function adsData() {
     else if (poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand)) buckets.poa.push(p);
     else if (p.priceNow === null) buckets.noPrice.push(p);
     else if (!p.mainImage) buckets.noImage.push(p);
-    else if (!["in_stock", "limited"].includes(p.availabilityNormalised)) buckets.availability.push(p);
+    else if (!FEED_AVAILABILITY.includes(p.availabilityNormalised)) buckets.availability.push(p);
     else buckets.eligible.push(p);
   }
 
@@ -88,7 +90,12 @@ async function adsData() {
   const reports: Record<string, any[]> = Object.fromEntries(snapshots.map((s: any) => [s.report, s.rows]));
   const zone = Object.fromEntries((reports.postcodes || []).map((r: any) => [r.label, inDeliveryZone(r.label)]));
 
+  // Sachin's best sellers (lib/best-sellers.ts): which reach Google and Meta, and why not the rest.
+  const why = (p: Row) => Object.entries(buckets).find(([, l]) => l.includes(p))?.[0] || "eligible";
+  const bestSellers = products.filter((p: Row) => isBestSeller(p.productCode)).map((p: Row) => ({ p, why: why(p) }));
+
   return {
+    bestSellers,
     account,
     reports,
     zone,
@@ -105,7 +112,7 @@ async function adsData() {
 }
 
 const EXCLUSIONS: [key: string, label: string, fix: string][] = [
-  ["availability", "Awaiting stock / call to confirm", "Set availability to In stock or Limited on the product"],
+  ["availability", "Awaiting stock / call to confirm", "Set availability to In stock, Limited or Available to order on the product"],
   ["noImage", "No photo", "Add a photo — image-less products can't run in Shopping"],
   ["noPrice", "No price", "Give it a price, or accept it stays out (Google requires one)"],
   ["poa", "Call-for-price category", "Correct by design — withheld prices must not reach Google"],
@@ -224,6 +231,8 @@ export default async function AdminAds({ searchParams }: { searchParams: Promise
           </Card>
         </div>
       </div>
+
+      <BestSellersCard rows={d.bestSellers} feed={`${base}/merchant-feed.xml`} />
 
       {/* ---- what the spend produces ---- */}
       <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-blue-deep">What your ads produced · last 30 days</h2>
@@ -370,6 +379,39 @@ function ConnectionCard({ google, status }: { google: { email: string; updatedAt
         {oauthConfigured() && <a href="/api/admin/google/connect" className="rounded-full border border-navy/20 px-4 py-2 text-xs font-medium hover:border-blue">{google ? "Reconnect Google" : "Connect Google"}</a>}
         {live && <SyncNowButton />}
       </div>
+    </Card>
+  );
+}
+
+const WHY: Record<string, string> = {
+  availability: "marked call to confirm", noImage: "no photo", noPrice: "no price (discontinued by the maker)",
+  poa: "call-for-price category", hidden: "hidden from the shop",
+};
+
+/** Sachin's Bosch/Neff best sellers in the feed, tagged so a Google or Meta campaign can sell just them. */
+function BestSellersCard({ rows, feed }: { rows: { p: { productCode: string; title: string; priceNow: number | null }; why: string }[]; feed: string }) {
+  const inFeed = rows.filter((r) => r.why === "eligible");
+  const out = rows.filter((r) => r.why !== "eligible");
+  return (
+    <Card className="mt-6 p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Best sellers · Google & Meta</h2>
+        <span className="font-mono text-[11px] text-ink/70">{inFeed.length} of {rows.length} in the feed, at Bosch&apos;s/Neff&apos;s price of the day</span>
+      </div>
+      <p className="mt-2 text-[13px] leading-relaxed text-muted">
+        Every best seller in the feed carries <code className="text-ink">custom_label_0 = Best seller</code>, and its price follows the maker&apos;s
+        website every morning. Both platforms read the same feed:
+      </p>
+      <div className="mt-3"><CopyField value={feed} /></div>
+      <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[13px] leading-relaxed text-ink/80">
+        <li><strong>Google:</strong> Merchant Center fetches the feed daily. In a Shopping or Performance Max campaign, make a listing group of <em>Custom label 0 = Best seller</em>.</li>
+        <li><strong>Meta:</strong> Commerce Manager → Catalogue → Data sources → Data feed → scheduled URL (the feed above, daily). Then a product set <em>Custom label 0 is Best seller</em>, used by an Advantage+ catalogue ad.</li>
+      </ol>
+      {out.length > 0 && (
+        <p className="mt-3 text-[12.5px] text-muted">
+          Not in the feed: {out.map((r, i) => <span key={r.p.productCode}>{i > 0 && "; "}<Link href={`${adminHref("products")}?q=${encodeURIComponent(r.p.productCode)}`} className="font-mono hover:text-blue-deep hover:underline">{r.p.productCode}</Link> ({WHY[r.why] || r.why})</span>)}
+        </p>
+      )}
     </Card>
   );
 }

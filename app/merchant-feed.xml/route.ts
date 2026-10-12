@@ -1,5 +1,6 @@
 import { getPrisma } from "@/lib/prisma";
 import { feedRows } from "@/lib/merchant-feed";
+import { isBestSeller } from "@/lib/best-sellers";
 export const dynamic = "force-dynamic";
 
 /** Escape the five XML special characters for safe element content. */
@@ -44,6 +45,9 @@ export async function GET() {
         // Emitted only when present (from the CIH feed's EAN column); an empty
         // or invalid g:gtin is worse than none and gets the item disapproved.
         ...(p.gtin && /^\d{8,14}$/.test(p.gtin) ? [`      <g:gtin>${esc(p.gtin)}</g:gtin>`] : []),
+        // Sachin's best sellers: a Google listing group or a Meta product set
+        // filters on this to advertise exactly them (Admin → Google Ads).
+        ...(isBestSeller(p.productCode) ? ["      <g:custom_label_0>Best seller</g:custom_label_0>"] : []),
         "    </item>",
       ].join("\n");
     });
