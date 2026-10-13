@@ -20,6 +20,12 @@ const ago = (d: Date | null) => {
 
 export async function health(db: any): Promise<Health[]> {
   const poa = [...(await poaNamesFromDb(db).catch(() => new Set<string>()))];
+  const week = (from: number, to: number, type: string) => db.trackedEvent.count({ where: { type,
+    createdAt: { gte: new Date(Date.now() - from * DAY), lt: new Date(Date.now() - to * DAY) } } }).catch(() => 0);
+  const [makerRun, callsNow, callsBefore] = await Promise.all([
+    db.adminAuditLog.findFirst({ where: { action: "price-watch:maker-read" }, orderBy: { createdAt: "desc" }, select: { createdAt: true, newValue: true } }).catch(() => null),
+    week(7, 0, "call_click"), week(14, 7, "call_click"),
+  ]);
   const [lastPrice, priced24h, lastAds, google, cron, gclidLeads, reported, sales, inFeed, chats, chatDown] = await Promise.all([
     db.priceObservation.findFirst({ where: { sourceId: "euronics" }, orderBy: { observedAt: "desc" }, select: { observedAt: true } }).catch(() => null),
     db.priceObservation.count({ where: { sourceId: "euronics", observedAt: { gte: new Date(Date.now() - DAY) } } }).catch(() => 0),
@@ -49,7 +55,15 @@ export async function health(db: any): Promise<Health[]> {
     return null;
   }) : null;
   const priceAt = lastPrice?.observedAt ?? null, adsAt = lastAds?.syncedAt ?? null, cronAt = cron?.createdAt ?? null;
+  // Calls falling 40%+ week on week, once there is enough to compare, is worth a look the same morning.
+  // (Visits aren't alerted on: a crawler spike makes any week-on-week visit change meaningless.)
+  const drop = (now: number, before: number, min: number) => before >= min && now <= before * 0.6;
+  const trend = (label: string, now: number, before: number) => `${label} ${now} this week vs ${before} the week before${before ? ` (${now >= before ? "+" : ""}${Math.round(((now - before) / before) * 100)}%)` : ""}`;
+  const maker: any = makerRun?.newValue || {};
   return [
+    { name: "Bosch/Neff best-seller prices", status: fresh(makerRun?.createdAt ?? null, 30) && !/held:/.test(String(maker.applied || "")) ? "ok" : "warn", href: adminHref("price-watch"),
+      detail: makerRun ? `checked ${ago(makerRun.createdAt)} · ${maker.read?.priced ?? "?"} priced from Bosch/Neff · ${maker.applied ?? ""}` : "never checked — needs the CRON_SECRET setting in Vercel" },
+    { name: "Calls from the website", status: drop(callsNow, callsBefore, 5) ? "warn" : "ok", href: adminHref("telemetry"), detail: trend("call taps", callsNow, callsBefore) },
     { name: "Euronics prices", status: fresh(priceAt, 30) ? "ok" : "warn", href: adminHref("price-watch"),
       detail: `${priced24h.toLocaleString("en-GB")} lines checked in the last 24h · last ${ago(priceAt)}` },
     // Data can arrive from the direct connection or the nightly Ads Script — either keeps it fresh.

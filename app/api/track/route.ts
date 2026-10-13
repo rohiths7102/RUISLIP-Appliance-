@@ -43,9 +43,14 @@ const normaliseSource = (raw: unknown): string => {
 /** The owner's own back-office pages aren't traffic, whatever the admin's public path. */
 const isBackOffice = (p: string) => ["/admin", `/${ADMIN_PATH}`].some((a) => p === a || p.startsWith(`${a}/`));
 
+/** Crawlers, headless browsers and scripts: not visitors, so never counted. */
+const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|python|curl|wget|playwright|puppeteer|phantom|selenium|httpclient|axios|node-fetch|go-http|java\/|scrapy|preview/i;
+
 export async function POST(req: Request) {
   // Analytics never surfaces errors — over-limit is a silent 204, not a 429.
   if (!rateLimit("track", clientIp(req), 60, 60_000).ok) return new NextResponse(null, { status: 204 });
+  const ua = req.headers.get("user-agent") || "";
+  if (!ua || BOT_UA.test(ua)) return new NextResponse(null, { status: 204 });
 
   const b = await req.json().catch(() => null);
   if (!b || !TYPES.has(b.type) || isBackOffice(String(b.path || ""))) return new NextResponse(null, { status: 204 });

@@ -95,11 +95,12 @@ async function dashboard() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthIso = monthStart.toISOString().slice(0, 10);
-  const [k, sync, todo, settings, monthAds, monthEnq, monthSales] = await Promise.all([
+  const [k, sync, todo, settings, monthAds, monthEnq, monthSales, weekNote] = await Promise.all([
     kpis(db), health(db), actions(db), getSettings(db),
     db.adsCampaignDay.aggregate({ _sum: { cost: true, conversions: true }, where: { date: { gte: monthIso } } }).catch(() => ({ _sum: {} })),
     db.enquiry.count({ where: { createdAt: { gte: monthStart } } }).catch(() => 0),
     db.enquiry.count({ where: { createdAt: { gte: monthStart }, status: { in: ["won", "closed"] } } }).catch(() => 0),
+    db.adminAuditLog.findFirst({ where: { action: "telemetry:summary" }, orderBy: { createdAt: "desc" }, select: { createdAt: true, newValue: true } }).catch(() => null),
   ]);
   const month = {
     label: now.toLocaleDateString("en-GB", { month: "long", year: "numeric" }),
@@ -109,6 +110,7 @@ async function dashboard() {
   };
 
   return {
+    weekNote: weekNote ? { at: weekNote.createdAt as Date, text: String((weekNote.newValue as any)?.text || "") } : null,
     k, sync, todo: todo.list.slice(0, 4), todoCount: todo.list.length, targets: settings.targets, month,
     d14, callSeries, pcSeries, enqSeries, newEnquiries, latestEnquiries, topCalled, topAreas, localShare,
     totals: { calls14: calls.length, pcs14: pcs.length, enq14: enquiries14.length },
@@ -167,6 +169,28 @@ export default async function AdminOverview() {
           </Link>
         </div>
       </div>
+
+      {/* ---- the week in plain English, and anything that needs a look ---- */}
+      <Card className="mt-6 p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">This week, in plain English</h2>
+          <span className="flex items-center gap-2 text-xs text-muted">
+            {d.sync.filter((h) => h.status === "warn").length > 0
+              ? <Badge tone="warning">{d.sync.filter((h) => h.status === "warn").length} need a look</Badge> : <Badge tone="success">all clear</Badge>}
+            {d.weekNote && <>AI summary · {new Date(d.weekNote.at).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" })}</>}
+          </span>
+        </div>
+        <p className="mt-2 text-[14px] leading-relaxed text-ink/85">
+          {d.weekNote?.text || "The first summary is written by tomorrow morning's 7am run."}
+        </p>
+        {d.sync.some((h) => h.status === "warn") && (
+          <ul className="mt-3 space-y-1 text-[13px]">
+            {d.sync.filter((h) => h.status === "warn").map((h) => (
+              <li key={h.name}><Link href={h.href} className="font-semibold text-warning hover:underline">{h.name}</Link> <span className="text-muted">— {h.detail}</span></li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {/* ---- what to do next, and is everything in sync ---- */}
       <div className="mt-6 grid gap-4 xl:grid-cols-2">

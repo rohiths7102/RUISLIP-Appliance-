@@ -1,6 +1,7 @@
 import { searchAnalytics } from "@/lib/search-console";
 import { TOWNS } from "@/lib/areas";
 import { CHANNELS, channelOf, type Channel } from "@/lib/marketing/channels";
+import { isBestSeller } from "@/lib/best-sellers";
 
 /**
  * Admin → Telemetry: every step from being seen on Google to a sale, for one
@@ -79,6 +80,33 @@ export async function telemetry(db: any, days: number) {
   const salesBySlug = new Map<string, number>();
   for (const code of wonCodes) { const slug = codeToSlug.get(code); if (slug) salesBySlug.set(slug, (salesBySlug.get(slug) || 0) + 1); }
   const products = viewed.slice(0, 12).map(([slug, v]) => ({ slug, views: v, calls: calledFor.get(slug) || 0, sales: salesBySlug.get(slug) || 0 }));
+  // ---- product funnel: per brand, best sellers vs the rest, and what gets looked at but never rings
+  const enquiredCodes = count(enquiries.filter((q: any) => q.productCode).map((q: any) => q.productCode));
+  const slugs = [...new Set([...viewed.map(([s]) => s), ...calledFor.keys()])];
+  const info: any[] = slugs.length || enquiredCodes.length
+    ? await db.product.findMany({ where: { OR: [{ slug: { in: slugs } }, { productCode: { in: enquiredCodes.map(([c]) => c) } }] }, select: { slug: true, productCode: true, brand: true, priceNow: true } }).catch(() => [])
+    : [];
+  const bySlugInfo = new Map(info.map((p) => [p.slug, p]));
+  const codeInfo = new Map(info.map((p) => [p.productCode, p]));
+  type F = { views: number; calls: number; enquiries: number; sales: number };
+  const f0 = (): F => ({ views: 0, calls: 0, enquiries: 0, sales: 0 });
+  const brands = new Map<string, F>(); const split = { best: f0(), rest: f0() };
+  const add = (p: any, k: keyof F, n: number) => {
+    if (!p) return;
+    const b = brands.get(p.brand) || f0(); b[k] += n; brands.set(p.brand, b);
+    split[isBestSeller(p.productCode) ? "best" : "rest"][k] += n;
+  };
+  for (const [slug, v] of viewed) add(bySlugInfo.get(slug), "views", v);
+  for (const [slug, c] of calledFor) add(bySlugInfo.get(slug), "calls", c);
+  for (const [code, c] of enquiredCodes) add(codeInfo.get(code), "enquiries", c);
+  for (const [slug, c] of salesBySlug) add(bySlugInfo.get(slug), "sales", c);
+  const enquiredSlugs = new Set(enquiredCodes.map(([c]) => codeInfo.get(c)?.slug).filter(Boolean));
+  const neverCalled = viewed.filter(([slug, v]) => v >= 5 && !calledFor.get(slug) && !enquiredSlugs.has(slug)).slice(0, 10)
+    .map(([slug, v]) => ({ slug, views: v, code: bySlugInfo.get(slug)?.productCode || "", price: bySlugInfo.get(slug)?.priceNow ?? null }));
+  const funnel = {
+    brands: [...brands.entries()].map(([brand, r]) => ({ brand, ...r })).sort((a, b) => b.views - a.views).slice(0, 15),
+    split, neverCalled,
+  };
   const aiHosts = count(events.filter((e: any) => e.type === "page_view" && e.landing && channelOf(e.source, e.referrer) === "AI assistants").map((e: any) => e.referrer));
 
   // ---- towns: town-page visits + postcode checks mapped to the town's district
@@ -100,7 +128,7 @@ export async function telemetry(db: any, days: number) {
   return {
     days, siteSince, partial: siteSince > since, total, byChannel: [...byChannel.entries()].map(([channel, r]) => ({ channel, ...r })),
     ads, organic, series: dayKeys.map((k) => ({ date: k, ...series.get(k)! })),
-    landings, products, aiHosts,
+    landings, products, aiHosts, funnel,
     towns: [...towns.entries()].map(([name, t]) => ({ name, ...t })).sort((a, b) => b.pageVisits + b.postcodeChecks - (a.pageVisits + a.postcodeChecks)).slice(0, 15),
     hours, liveNow,
   };

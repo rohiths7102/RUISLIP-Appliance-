@@ -21,6 +21,9 @@ let firstView = true;
 const inBackOffice = () => !!document.querySelector("[data-admin-shell]");
 
 export const beacon = (payload: string) => {
+  // Automated browsers (Puppeteer, Playwright, Selenium) say so; they are not
+  // visitors. 30 Sept–6 Oct 2026 one turned ~50 visits a day into 1,300–4,500.
+  if (navigator.webdriver) return;
   try {
     if (!navigator.sendBeacon?.("/api/track", new Blob([payload], { type: "application/json" }))) {
       fetch("/api/track", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: payload });

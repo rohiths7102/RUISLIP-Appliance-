@@ -157,6 +157,40 @@ export default async function TelemetryPage({ searchParams }: { searchParams: Pr
             </Card>
           </div>
 
+          {/* ---- product funnel ---- */}
+          <div className="mt-5 grid gap-5 lg:grid-cols-3">
+            <Card className="p-5 lg:col-span-2">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Brand funnel — views to calls to sales</h2>
+              {t.funnel.brands.length ? (
+                <table className="mt-3 w-full text-sm">
+                  <thead className="text-left text-xs text-muted"><tr><th className="py-2">Brand</th><th className="py-2 text-right">Product views</th><th className="py-2 text-right">Call taps</th><th className="py-2 text-right">Call rate</th><th className="py-2 text-right">Enquiries</th><th className="py-2 text-right">Sales</th></tr></thead>
+                  <tbody className="divide-y divide-line">{t.funnel.brands.map((b) => (
+                    <tr key={b.brand}><td className="py-2">{b.brand}</td><td className="py-2 text-right tabular-nums">{n(b.views)}</td><td className="py-2 text-right tabular-nums">{n(b.calls)}</td>
+                      <td className="py-2 text-right tabular-nums">{pct(b.calls, b.views)}</td><td className="py-2 text-right tabular-nums">{n(b.enquiries)}</td><td className="py-2 text-right tabular-nums">{b.sales || "—"}</td></tr>
+                  ))}</tbody>
+                </table>
+              ) : <p className="mt-3 text-sm text-muted">Fills in as visitors browse.</p>}
+            </Card>
+            <Card className="p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Best sellers vs the rest</h2>
+              <table className="mt-3 w-full text-sm">
+                <thead className="text-left text-xs text-muted"><tr><th className="py-2" /><th className="py-2 text-right">Best sellers</th><th className="py-2 text-right">Everything else</th></tr></thead>
+                <tbody className="divide-y divide-line">
+                  {(["views", "calls", "enquiries", "sales"] as const).map((k) => (
+                    <tr key={k}><td className="py-2 capitalize">{k === "calls" ? "Call taps" : k}</td><td className="py-2 text-right tabular-nums">{n(t!.funnel.split.best[k])}</td><td className="py-2 text-right tabular-nums">{n(t!.funnel.split.rest[k])}</td></tr>
+                  ))}
+                  <tr><td className="py-2 font-semibold">Call rate</td><td className="py-2 text-right font-semibold tabular-nums">{pct(t.funnel.split.best.calls, t.funnel.split.best.views)}</td><td className="py-2 text-right font-semibold tabular-nums">{pct(t.funnel.split.rest.calls, t.funnel.split.rest.views)}</td></tr>
+                </tbody>
+              </table>
+              <h2 className="mt-6 text-sm font-bold uppercase tracking-wide text-blue-deep">Viewed a lot, never called</h2>
+              <p className="mt-1 text-[12px] text-muted">5+ views, no call tap or enquiry — check the price and the page.</p>
+              {t.funnel.neverCalled.length ? <ul className="mt-2 space-y-1.5 text-sm">{t.funnel.neverCalled.map((p) => (
+                <li key={p.slug} className="flex justify-between gap-3"><a href={`/products/${p.slug}`} target="_blank" rel="noreferrer" className="truncate hover:text-blue-deep">{p.code || p.slug}</a>
+                  <span className="shrink-0 tabular-nums text-muted">{p.views} views · {p.price != null ? money(p.price) : "call for price"}</span></li>
+              ))}</ul> : <p className="mt-2 text-[13px] text-muted">None — everything well viewed is getting calls.</p>}
+            </Card>
+          </div>
+
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             {/* ---- towns ---- */}
             <Card className="p-5">
