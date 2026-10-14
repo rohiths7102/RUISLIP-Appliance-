@@ -47,7 +47,7 @@ export default function ShowroomFloor({ bays, total }: { bays: Bay[]; total: num
       </div>
 
       {/* the floor: a snap-scrolling row of bays, padded to the container's edge */}
-      <div ref={floor} className="showroom-floor relative mt-6 flex snap-x snap-mandatory overflow-x-auto pb-10 pl-[max(1.5rem,calc((100vw-1760px)/2+3.5rem))] pr-6 lg:mt-8 lg:pb-14">
+      <div ref={floor} className="showroom-floor relative mt-6 flex gap-5 snap-x snap-mandatory overflow-x-auto pb-10 pl-[max(1.5rem,calc((100vw-1760px)/2+3.5rem))] pr-6 lg:mt-8 lg:pb-14">
         {bays.map((b, i) => (
           <Link key={b.id} href={`/categories/${b.id}`} data-bay
             style={{ animationDelay: `${160 + i * 110}ms` }}
