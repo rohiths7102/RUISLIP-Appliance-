@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
-import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
+import { topCategories, childCategories, toCardItem, poaNamesFrom, slugOf } from "@/lib/select";
 import { telHref, waHref } from "@/lib/format";
 import Reveal from "@/components/Reveal";
 import CountUp from "@/components/CountUp";
 import DiscoverPanel from "@/components/DiscoverPanel";
 import PromoBanners from "@/components/PromoBanners";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
-import HeroSlides from "@/components/HeroSlides";
+import HeroShowroom from "@/components/HeroShowroom";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
@@ -115,6 +115,18 @@ export default async function Home() {
               images: found.map((p) => ({ src: p!.image, alt: p!.title })) }];
   });
 
+  // EXPERIMENT: the stage shows the shop slide's own cutouts (Admin → Homepage),
+  // priced ones first.
+  const stageCodes = home.slides.find((s) => !s.brand)?.codes ?? home.slides[0]?.codes ?? [];
+  const stageProducts = [...stageCodes, "KIN96NSE0G", "WGG254Z1GB", "SMV6ZCX10G"]
+    .map((c) => products.find((p) => p.productCode === c && p.image && p.availabilityNormalised !== "unavailable"))
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .sort((a, b) => Number(b.priceNow !== null) - Number(a.priceNow !== null))
+    .slice(0, 3)
+    .map((p) => ({ slug: slugOf(p), title: p.title, brand: p.brand, image: p.image, price: poaSet.has(p.category) || poaSet.has(p.subcategory) || poaSet.has(p.brand) ? null : p.priceNow }));
+  const checkedAt = await getPrisma().then((db) => db.priceSource.findUnique({ where: { id: "euronics" }, select: { lastRunAt: true } }))
+    .then((s: any) => (s?.lastRunAt ? new Date(s.lastRunAt).toLocaleString("en-GB", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" }) : null)).catch(() => null);
+
   return (
     <>
       {/* ------- HERO — the showroom window, lit like one. Dark ground so the
@@ -161,31 +173,8 @@ export default async function Home() {
 
       <section className="relative overflow-hidden bg-[#1b3d7d]">
         <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
-        <HeroSlides slides={slides} />
+        <HeroShowroom products={stageProducts} phone={business.phone} productCount={products.length} pricesCheckedAt={checkedAt} />
 
-        {/* Euronics' price-check promise, as it is on the card in the shop. It
-            does not belong to any one slide, so it is pinned over the studio and
-            stays put while the slideshow runs behind it. In normal flow on a
-            phone, where the studio has no room to spare. */}
-        <div className="container-x wide pb-8 lg:pointer-events-none lg:absolute lg:inset-0 lg:z-20 lg:p-0">
-          <div className="border border-white/25 bg-[#1b3d7d]/95 p-5 shadow-[0_18px_40px_rgba(0,0,0,.28)] lg:pointer-events-auto lg:absolute lg:right-[clamp(24px,3.5vw,64px)] lg:top-[clamp(14px,2.2vw,30px)] lg:w-[272px]">
-            {/* The coins sit beside the heading, not above it: stacked, the card
-                grew to 238px and covered the two appliances behind it. */}
-            <p className="flex items-center gap-2.5 font-display text-[19px] font-bold leading-[1.1] text-[#ffcc00]">
-              <svg viewBox="0 0 64 40" width="30" height="19" aria-hidden className="shrink-0" fill="none" stroke="currentColor" strokeWidth="3">
-                <ellipse cx="32" cy="9" rx="20" ry="6.5" /><path d="M12 9v7c0 3.6 9 6.5 20 6.5s20-2.9 20-6.5V9" />
-                <path d="M12 19v7c0 3.6 9 6.5 20 6.5s20-2.9 20-6.5v-7" />
-              </svg>
-              Price check promise
-            </p>
-            <p className="mt-2 text-[14px] leading-relaxed text-white">
-              We compare prices with <em className="not-italic font-semibold">all big</em> retailers,
-              so we&rsquo;re always on the money.
-            </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/euronics-logo.png" alt="Euronics" width={290} height={74} className="mt-3 h-[22px] w-auto" />
-          </div>
-        </div>
         {/* Delivery reach only. A second Call button here would repeat the one in
             the sticky header, which is on screen at every scroll position. */}
         <div className="container-x wide border-t border-white/15 py-6">
