@@ -8,15 +8,23 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
  * continuous dark showroom, each department an appliance standing in its own
  * pool of light, its name as signage on the wall behind it. You walk along it
  * (scroll, swipe, or the arrows). Once, on load, the lights come up bay by bay
- * and the appliances rise into them. Hovering a bay turns its light up. Still
- * for anyone who prefers reduced motion.
+ * and the appliances rise into them, then one light sweeps along the floor.
+ * Hovering a bay turns its light up and the appliance leans with the cursor.
+ * Still for anyone who prefers reduced motion.
  */
-export type Bay = { id: string; name: string; count: number; shot: string };
+export type Bay = { id: string; name: string; count: number; shot: string; from: number | null };
 
 export default function ShowroomFloor({ bays, total }: { bays: Bay[]; total: number }) {
   const floor = useRef<HTMLDivElement>(null);
   const [still, setStill] = useState(true);
   useEffect(() => { setStill(window.matchMedia("(prefers-reduced-motion: reduce)").matches); }, []);
+  // The lean: the cursor's position across the bay, -1..1, read by the CSS.
+  const lean = (e: React.PointerEvent<HTMLElement>) => {
+    if (still || e.pointerType === "touch") return;
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty("--lx", (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+  };
+  const rest = (e: React.PointerEvent<HTMLElement>) => e.currentTarget.style.setProperty("--lx", "0");
   const walk = (dir: 1 | -1) => {
     const el = floor.current; if (!el) return;
     const bay = el.querySelector<HTMLElement>("[data-bay]");
@@ -49,8 +57,8 @@ export default function ShowroomFloor({ bays, total }: { bays: Bay[]; total: num
       {/* the floor: a snap-scrolling row of bays, padded to the container's edge */}
       <div ref={floor} className="showroom-floor relative mt-6 flex gap-5 snap-x snap-mandatory overflow-x-auto pb-10 pl-[max(1.5rem,calc((100vw-1760px)/2+3.5rem))] pr-6 lg:mt-8 lg:pb-14">
         {bays.map((b, i) => (
-          <Link key={b.id} href={`/categories/${b.id}`} data-bay
-            style={{ animationDelay: `${160 + i * 110}ms` }}
+          <Link key={b.id} href={`/categories/${b.id}`} data-bay onPointerMove={lean} onPointerLeave={rest}
+            style={{ animationDelay: `${200 + i * 130}ms` }}
             className={`showroom-bay group relative block h-[470px] w-[min(74vw,268px)] shrink-0 snap-start sm:w-[300px] lg:h-[520px] lg:w-[clamp(250px,19vw,320px)] ${still ? "" : "showroom-bay-in"}`}>
             {/* signage on the wall behind the bay, clipped to its own bay so the names don't run together */}
             <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[40%] overflow-hidden">
@@ -72,7 +80,7 @@ export default function ShowroomFloor({ bays, total }: { bays: Bay[]; total: num
             <span className="absolute inset-x-0 top-[76%] flex items-start justify-between gap-3 pr-5">
               <span>
                 <span className="block font-display text-[24px] font-medium leading-[1.05] transition-colors duration-300 group-hover:text-[#ffcc00]">{b.name}</span>
-                <span className="mt-1 block text-[13px] text-white/60">{b.count.toLocaleString("en-GB")} models</span>
+                <span className="mt-1 block text-[13px] text-white/60">{b.count.toLocaleString("en-GB")} models{b.from !== null && <> · from <span className="text-white/90">£{b.from.toLocaleString("en-GB")}</span></>}</span>
               </span>
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/30 transition-all duration-300 group-hover:border-[#ffcc00] group-hover:bg-[#ffcc00] group-hover:text-[#0b1d4d]">
                 <ArrowRight size={17} />
@@ -82,6 +90,7 @@ export default function ShowroomFloor({ bays, total }: { bays: Bay[]; total: num
         ))}
         <span aria-hidden className="w-6 shrink-0 lg:w-[max(1.5rem,calc((100vw-1760px)/2+3.5rem))]" />
       </div>
+      {!still && <span aria-hidden className="showroom-sweep pointer-events-none absolute inset-x-0 bottom-0 h-[30%]" />}
     </section>
   );
 }

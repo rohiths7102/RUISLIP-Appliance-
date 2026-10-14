@@ -1,11 +1,12 @@
 {
-  "laundry": "/catalog/bosch/WRB247C9GB/01.webp",
-  "refrigeration": "/catalog/miele/KWTUS7074FOBSW/01.jpg",
+  "laundry": "/catalog/bosch/WGG254Z1GB/01.webp",
+  "refrigeration": "/catalog/ruislip/RF605QNUVX1/01.jpg",
   "dishwashers": "/catalog/miele/G7210SCICLST/01.jpg",
-  "cooking": "/catalog/miele/DA2698/01.jpg",
+  "cooking": "/catalog/neff/B54CR31G0B/01.webp",
   "coffee-machines": "/catalog/bosch/TAS6502GB/01.webp",
-  "small-appliances": "/catalog/bosch/17007157/01.webp",
+  "small-appliances": "/catalog/bosch/MUM59340GB/01.webp",
   "tv-audio": "/catalog/ruislip/K85XR55BP.UKA/01.jpg",
   "accessories-parts": "/catalog/bosch/17004034/01.webp",
-  "floorcare": "/category-heroes/floorcare.png"
+  "floorcare": "/category-heroes/floorcare.png",
+  "sinks-taps": "/category-heroes/sinks-taps.png"
 }

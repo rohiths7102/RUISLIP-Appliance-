@@ -163,6 +163,8 @@ export default async function Home() {
       {/* ---------------- CATEGORIES — the shop floor, at the top in place of the slideshow (Sachin, Oct 2026) ---------------- */}
       <ShowroomFloor total={products.length} bays={cats.map((c) => ({
         id: c.id, name: c.name, count: c.productCount,
+        // the cheapest real price in the department, for the plate; none in a call-for-price department
+        from: poaSet.has(c.name) ? null : products.reduce<number | null>((m, p) => (p.category === c.name && p.priceNow !== null && !poaSet.has(p.subcategory) && !poaSet.has(p.brand) && (m === null || p.priceNow < m) ? p.priceNow : m), null),
         // every department has a cutout (data/category-heroes.json); a catalogue shot on white would show its box on the dark floor
         shot: (categoryHeroes as Record<string, string>)[c.id] || c.image || products.find((p) => p.category === c.name && p.image)?.image || "",
       }))} />

@@ -140,21 +140,28 @@ body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
   html { scroll-behavior: auto; }
 }
 
-/* The showroom floor (components/ShowroomFloor.tsx). */
-.showroom-floor { scrollbar-width: none; scroll-padding-left: max(1.5rem, calc((100vw - 1760px) / 2 + 3.5rem)); }
+/* The showroom floor (components/ShowroomFloor.tsx). --lx: the cursor across
+   a bay, -1..1, set by the component; 0 at rest. One easing throughout: a long
+   expo-out, so everything arrives fast and settles slowly. */
+.showroom-floor { scrollbar-width: none; scroll-behavior: smooth; scroll-padding-left: max(1.5rem, calc((100vw - 1760px) / 2 + 3.5rem)); }
 .showroom-floor::-webkit-scrollbar { display: none; }
+.showroom-bay { --lx: 0; }
 .showroom-bay:focus-visible { outline: 2px solid #ffcc00; outline-offset: -2px; }
-.showroom-cone, .showroom-pool { opacity: .75; transition: opacity .5s ease; }
-.showroom-bay:hover .showroom-cone, .showroom-bay:hover .showroom-pool { opacity: 1.35; }
-.showroom-stand { transition: transform .6s cubic-bezier(.2,.8,.2,1); }
-.showroom-bay:hover .showroom-stand { transform: translateY(-12px) scale(1.04); }
-/* once, on load: the heading wipes in, then the lights come up bay by bay and the appliances rise into them */
-.showroom-wipe { animation: showroomWipe .8s cubic-bezier(.2,.8,.2,1) backwards; }
-@keyframes showroomWipe { from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(8px); } to { opacity: 1; clip-path: inset(0 0 0 0); transform: none; } }
-.showroom-bay-in .showroom-cone, .showroom-bay-in .showroom-pool { animation: showroomLight .9s ease backwards; animation-delay: inherit; }
-@keyframes showroomLight { 0% { opacity: 0; } 60% { opacity: 1.2; } 100% { opacity: .75; } }
-.showroom-bay-in .showroom-stand { animation: showroomRise .9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: inherit; }
-@keyframes showroomRise { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+.showroom-cone, .showroom-pool { opacity: .7; transition: opacity .7s cubic-bezier(.16,1,.3,1); }
+.showroom-bay:hover .showroom-cone, .showroom-bay:hover .showroom-pool { opacity: 1.4; }
+.showroom-stand { transform: translateX(calc(var(--lx) * 7px)); transition: transform .8s cubic-bezier(.16,1,.3,1); will-change: transform; }
+.showroom-bay:hover .showroom-stand { transform: translate(calc(var(--lx) * 7px), -14px) scale(1.045); }
+/* once, on load: the heading wipes in, the lights come up bay by bay and the
+   appliances rise into them, then one light sweeps along the floor */
+.showroom-wipe { animation: showroomWipe 1.1s cubic-bezier(.16,1,.3,1) backwards; }
+@keyframes showroomWipe { from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(10px); } to { opacity: 1; clip-path: inset(0 0 0 0); transform: none; } }
+.showroom-bay-in .showroom-cone, .showroom-bay-in .showroom-pool { animation: showroomLight 1.4s cubic-bezier(.16,1,.3,1) backwards; animation-delay: inherit; }
+@keyframes showroomLight { 0% { opacity: 0; } 55% { opacity: 1.3; } 100% { opacity: .7; } }
+.showroom-bay-in .showroom-stand { animation: showroomRise 1.3s cubic-bezier(.16,1,.3,1) backwards; animation-delay: inherit; }
+@keyframes showroomRise { from { opacity: 0; transform: translateY(44px) scale(.96); } to { opacity: 1; transform: none; } }
+.showroom-sweep { background: linear-gradient(90deg, transparent, rgba(255,255,255,.14) 50%, transparent); width: 40%; animation: showroomSweep 1.8s cubic-bezier(.4,0,.2,1) 1.5s both; }
+@keyframes showroomSweep { from { transform: translateX(-100%); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } to { transform: translateX(350%); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .showroom-bay:hover .showroom-stand { transform: none; }
+  .showroom-floor { scroll-behavior: auto; }
+  .showroom-stand, .showroom-bay:hover .showroom-stand { transform: none; }
 }
