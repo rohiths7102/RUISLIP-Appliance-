@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
-import { topCategories, childCategories, toCardItem, poaNamesFrom, slugOf } from "@/lib/select";
+import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
 import { telHref, waHref } from "@/lib/format";
 import Reveal from "@/components/Reveal";
 import CountUp from "@/components/CountUp";
 import DiscoverPanel from "@/components/DiscoverPanel";
 import PromoBanners from "@/components/PromoBanners";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
-import HeroShowroom from "@/components/HeroShowroom";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
@@ -115,18 +114,6 @@ export default async function Home() {
               images: found.map((p) => ({ src: p!.image, alt: p!.title })) }];
   });
 
-  // EXPERIMENT: the stage shows the shop slide's own cutouts (Admin → Homepage),
-  // priced ones first.
-  const stageCodes = home.slides.find((s) => !s.brand)?.codes ?? home.slides[0]?.codes ?? [];
-  const stageProducts = [...stageCodes, "KIN96NSE0G", "WGG254Z1GB", "SMV6ZCX10G"]
-    .map((c) => products.find((p) => p.productCode === c && p.image && p.availabilityNormalised !== "unavailable"))
-    .filter((p): p is NonNullable<typeof p> => !!p)
-    .sort((a, b) => Number(b.priceNow !== null) - Number(a.priceNow !== null))
-    .slice(0, 3)
-    .map((p) => ({ slug: slugOf(p), title: p.title, brand: p.brand, image: p.image, price: poaSet.has(p.category) || poaSet.has(p.subcategory) || poaSet.has(p.brand) ? null : p.priceNow }));
-  const checkedAt = await getPrisma().then((db) => db.priceSource.findUnique({ where: { id: "euronics" }, select: { lastRunAt: true } }))
-    .then((s: any) => (s?.lastRunAt ? new Date(s.lastRunAt).toLocaleString("en-GB", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" }) : null)).catch(() => null);
-
   return (
     <>
       {/* ------- HERO — the showroom window, lit like one. Dark ground so the
@@ -171,13 +158,60 @@ export default async function Home() {
         </div>
       </div>
 
-      <section className="relative overflow-hidden bg-[#1b3d7d]">
-        <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
-        <HeroShowroom products={stageProducts} phone={business.phone} productCount={products.length} pricesCheckedAt={checkedAt} />
+      <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
+      {/* ---------------- CATEGORIES — at the top, in place of the slideshow (Sachin, Oct 2026) ---------------- */}
+      <section className="container-x pb-12 pt-10 lg:pt-14">
+        <Reveal className="mb-11 flex items-end justify-between gap-4">
+          <div>
+            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Departments</p>
+            <h2 className="font-display text-[44px] font-normal leading-[1.05]">Browse by category</h2>
+          </div>
+          <Link href="/products" className="hidden shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep sm:block">
+            View all appliances →
+          </Link>
+        </Reveal>
+        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
+            Euronics storefront runs its department panels — the appliance stands
+            on the light half, the name sits on the blue. No black anywhere. */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {cats.map((c, i) => {
+            // A cutout can stand on the blue; a catalogue shot on white cannot,
+            // so those departments get the light panel and multiply instead.
+            const cutout = (categoryHeroes as Record<string, string>)[c.id];
+            const shot = cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image;
+            return (
+            <Reveal key={c.id} delay={(i % 3) * 70}>
+              <Link href={`/categories/${c.id}`}
+                className="card-lift group block h-full overflow-hidden rounded-[4px] border border-line bg-white">
+                <div className={`relative aspect-[16/10] ${cutout
+                  ? "bg-[linear-gradient(112deg,#1b3d7d_0%,#1b3d7d_46%,#eef2f9_46.2%,#eef2f9_100%)]"
+                  : "bg-[linear-gradient(112deg,#dde4f3_0%,#dde4f3_46%,#f6f8fc_46.2%,#f6f8fc_100%)]"}`}>
+                  {shot ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={shot} alt="" aria-hidden loading="lazy"
+                      className={`absolute inset-0 h-full w-full object-contain p-7 transition-transform duration-700 group-hover:scale-105 ${cutout ? "drop-shadow-[0_14px_22px_rgba(0,0,0,.4)]" : "shot"}`} />
+                  ) : null}
+                </div>
+                <div className="flex items-center justify-between gap-3 px-[22px] py-5">
+                  <div>
+                    <h3 className="font-display text-[25px] font-medium leading-[1.05] text-ink">{c.name}</h3>
+                    <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-blue-deep">
+                      {c.productCount} models
+                    </p>
+                  </div>
+                  <ArrowRight size={20} className="shrink-0 text-blue transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+              </Link>
+            </Reveal>
+            );
+          })}
+        </div>
+      </section>
 
-        {/* Delivery reach only. A second Call button here would repeat the one in
-            the sticky header, which is on screen at every scroll position. */}
-        <div className="container-x wide border-t border-white/15 py-6">
+      {/* Delivery reach. A second Call button here would repeat the one in the
+          sticky header, which is on screen at every scroll position. */}
+      <section className="bg-[#1b3d7d]">
+        <div className="container-x wide py-6">
           <PostcodeCheck phone={business.phone} />
         </div>
       </section>
@@ -343,55 +377,6 @@ export default async function Home() {
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-
-      {/* ---------------- CATEGORIES ---------------- */}
-      <section className="container-x pb-10 pt-24">
-        <Reveal className="mb-11 flex items-end justify-between gap-4">
-          <div>
-            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Departments</p>
-            <h2 className="font-display text-[44px] font-normal leading-[1.05]">Browse by category</h2>
-          </div>
-          <Link href="/products" className="hidden shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep sm:block">
-            View all appliances →
-          </Link>
-        </Reveal>
-        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
-            Euronics storefront runs its department panels — the appliance stands
-            on the light half, the name sits on the blue. No black anywhere. */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {cats.map((c, i) => {
-            // A cutout can stand on the blue; a catalogue shot on white cannot,
-            // so those departments get the light panel and multiply instead.
-            const cutout = (categoryHeroes as Record<string, string>)[c.id];
-            const shot = cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image;
-            return (
-            <Reveal key={c.id} delay={(i % 3) * 70}>
-              <Link href={`/categories/${c.id}`}
-                className="card-lift group block h-full overflow-hidden rounded-[4px] border border-line bg-white">
-                <div className={`relative aspect-[16/10] ${cutout
-                  ? "bg-[linear-gradient(112deg,#1b3d7d_0%,#1b3d7d_46%,#eef2f9_46.2%,#eef2f9_100%)]"
-                  : "bg-[linear-gradient(112deg,#dde4f3_0%,#dde4f3_46%,#f6f8fc_46.2%,#f6f8fc_100%)]"}`}>
-                  {shot ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={shot} alt="" aria-hidden loading="lazy"
-                      className={`absolute inset-0 h-full w-full object-contain p-7 transition-transform duration-700 group-hover:scale-105 ${cutout ? "drop-shadow-[0_14px_22px_rgba(0,0,0,.4)]" : "shot"}`} />
-                  ) : null}
-                </div>
-                <div className="flex items-center justify-between gap-3 px-[22px] py-5">
-                  <div>
-                    <h3 className="font-display text-[25px] font-medium leading-[1.05] text-ink">{c.name}</h3>
-                    <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-blue-deep">
-                      {c.productCount} models
-                    </p>
-                  </div>
-                  <ArrowRight size={20} className="shrink-0 text-blue transition-transform duration-300 group-hover:translate-x-1" />
-                </div>
-              </Link>
-            </Reveal>
-            );
-          })}
         </div>
       </section>
 
