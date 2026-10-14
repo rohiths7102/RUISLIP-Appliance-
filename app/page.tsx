@@ -9,6 +9,7 @@ import DiscoverPanel from "@/components/DiscoverPanel";
 import PromoBanners from "@/components/PromoBanners";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import PostcodeCheck from "@/components/PostcodeCheck";
+import DepartmentWindows from "@/components/DepartmentWindows";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
@@ -161,51 +162,24 @@ export default async function Home() {
       <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
       {/* ---------------- CATEGORIES — at the top, in place of the slideshow (Sachin, Oct 2026) ---------------- */}
       <section className="container-x pb-12 pt-10 lg:pt-14">
-        <Reveal className="mb-11 flex items-end justify-between gap-4">
+        <div className="mb-9 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div>
-            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Departments</p>
-            <h2 className="font-display text-[44px] font-normal leading-[1.05]">Browse by category</h2>
+            <h2 className="font-display text-[clamp(34px,4vw,48px)] font-normal leading-[1.05]">Browse by category</h2>
+            <p className="mt-2 text-[15.5px] text-muted">{products.length.toLocaleString("en-GB")}+ appliances, delivered in our own van and fitted by our own team.</p>
           </div>
-          <Link href="/products" className="hidden shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep sm:block">
+          <Link href="/products" className="shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep">
             View all appliances →
           </Link>
-        </Reveal>
-        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
-            Euronics storefront runs its department panels — the appliance stands
-            on the light half, the name sits on the blue. No black anywhere. */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {cats.map((c, i) => {
-            // A cutout can stand on the blue; a catalogue shot on white cannot,
-            // so those departments get the light panel and multiply instead.
-            const cutout = (categoryHeroes as Record<string, string>)[c.id];
-            const shot = cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image;
-            return (
-            <Reveal key={c.id} delay={(i % 3) * 70}>
-              <Link href={`/categories/${c.id}`}
-                className="card-lift group block h-full overflow-hidden rounded-[4px] border border-line bg-white">
-                <div className={`relative aspect-[16/10] ${cutout
-                  ? "bg-[linear-gradient(112deg,#1b3d7d_0%,#1b3d7d_46%,#eef2f9_46.2%,#eef2f9_100%)]"
-                  : "bg-[linear-gradient(112deg,#dde4f3_0%,#dde4f3_46%,#f6f8fc_46.2%,#f6f8fc_100%)]"}`}>
-                  {shot ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={shot} alt="" aria-hidden loading="lazy"
-                      className={`absolute inset-0 h-full w-full object-contain p-7 transition-transform duration-700 group-hover:scale-105 ${cutout ? "drop-shadow-[0_14px_22px_rgba(0,0,0,.4)]" : "shot"}`} />
-                  ) : null}
-                </div>
-                <div className="flex items-center justify-between gap-3 px-[22px] py-5">
-                  <div>
-                    <h3 className="font-display text-[25px] font-medium leading-[1.05] text-ink">{c.name}</h3>
-                    <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-blue-deep">
-                      {c.productCount} models
-                    </p>
-                  </div>
-                  <ArrowRight size={20} className="shrink-0 text-blue transition-transform duration-300 group-hover:translate-x-1" />
-                </div>
-              </Link>
-            </Reveal>
-            );
-          })}
         </div>
+        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
+            Euronics storefront runs its department panels: the appliance stands
+            on the light half, the name sits under it. A cutout can stand on the
+            blue; a catalogue shot on white cannot, so those get a light wedge. */}
+        <DepartmentWindows departments={cats.map((c) => {
+          const cutout = (categoryHeroes as Record<string, string>)[c.id];
+          return { id: c.id, name: c.name, count: c.productCount, cutout: !!cutout,
+            shot: cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image || "" };
+        })} />
       </section>
 
       {/* Delivery reach. A second Call button here would repeat the one in the

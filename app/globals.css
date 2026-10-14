@@ -139,3 +139,48 @@ body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
   .card-lift:hover { transform: none; }
   html { scroll-behavior: auto; }
 }
+
+/* Department windows (components/DepartmentWindows.tsx). --lx/--ly: the
+   cursor across the window, -1..1, set by the component; 0 at rest. */
+.dept-window {
+  --lx: 0; --ly: 0;
+  transform: rotateX(calc(var(--ly) * -4deg)) rotateY(calc(var(--lx) * 5deg));
+  transform-style: preserve-3d;
+  transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease, border-color .45s ease;
+  will-change: transform;
+}
+.dept-window:hover, .dept-window:focus-visible {
+  box-shadow: 0 28px 50px -24px rgba(10,39,136,.45);
+  border-color: rgba(27,61,125,.5);
+}
+.dept-wedge {
+  width: 46%;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%);
+  transition: width .6s cubic-bezier(.2,.8,.2,1);
+}
+.dept-window:hover .dept-wedge { width: 58%; }
+.dept-sheen {
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%);
+  transform: translateX(-120%);
+  opacity: 0;
+}
+.dept-window:hover .dept-sheen { animation: deptSheen .9s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes deptSheen { from { transform: translateX(-120%); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+.dept-shot {
+  transform: translate(calc(var(--lx) * 6px), calc(var(--ly) * 4px)) scale(1);
+  transition: transform .5s cubic-bezier(.2,.8,.2,1), filter .5s ease;
+}
+.dept-window:hover .dept-shot { transform: translate(calc(var(--lx) * 6px), calc(var(--ly) * 4px - 10px)) scale(1.05); }
+.dept-shadow { transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .5s ease; }
+.dept-window:hover .dept-shadow { transform: translateX(-50%) scaleX(1.12); opacity: .7; }
+/* once, on load: the wedge sweeps in and the appliance rises onto the shelf */
+.dept-window-in { animation: deptWindowIn .7s cubic-bezier(.2,.8,.2,1) backwards; }
+@keyframes deptWindowIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.dept-window-in .dept-wedge { animation: deptWedgeIn .9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: inherit; }
+@keyframes deptWedgeIn { from { transform: translateX(-100%); } to { transform: none; } }
+.dept-stand-in { animation: deptStandIn .8s cubic-bezier(.2,.8,.2,1) backwards; }
+@keyframes deptStandIn { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .dept-window, .dept-window:hover { transform: none; }
+  .dept-window:hover .dept-shot, .dept-window:hover .dept-wedge, .dept-window:hover .dept-sheen { animation: none; transform: none; width: 46%; }
+}
