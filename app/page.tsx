@@ -9,7 +9,7 @@ import DiscoverPanel from "@/components/DiscoverPanel";
 import PromoBanners from "@/components/PromoBanners";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import PostcodeCheck from "@/components/PostcodeCheck";
-import DepartmentWindows from "@/components/DepartmentWindows";
+import ShowroomFloor from "@/components/ShowroomFloor";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
@@ -160,27 +160,12 @@ export default async function Home() {
       </div>
 
       <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
-      {/* ---------------- CATEGORIES — at the top, in place of the slideshow (Sachin, Oct 2026) ---------------- */}
-      <section className="container-x pb-12 pt-10 lg:pt-14">
-        <div className="mb-9 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div>
-            <h2 className="font-display text-[clamp(34px,4vw,48px)] font-normal leading-[1.05]">Browse by category</h2>
-            <p className="mt-2 text-[15.5px] text-muted">{products.length.toLocaleString("en-GB")}+ appliances, delivered in our own van and fitted by our own team.</p>
-          </div>
-          <Link href="/products" className="shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep">
-            View all appliances →
-          </Link>
-        </div>
-        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
-            Euronics storefront runs its department panels: the appliance stands
-            on the light half, the name sits under it. A cutout can stand on the
-            blue; a catalogue shot on white cannot, so those get a light wedge. */}
-        <DepartmentWindows departments={cats.map((c) => {
-          const cutout = (categoryHeroes as Record<string, string>)[c.id];
-          return { id: c.id, name: c.name, count: c.productCount, cutout: !!cutout,
-            shot: cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image || "" };
-        })} />
-      </section>
+      {/* ---------------- CATEGORIES — the shop floor, at the top in place of the slideshow (Sachin, Oct 2026) ---------------- */}
+      <ShowroomFloor total={products.length} bays={cats.map((c) => ({
+        id: c.id, name: c.name, count: c.productCount,
+        // every department has a cutout (data/category-heroes.json); a catalogue shot on white would show its box on the dark floor
+        shot: (categoryHeroes as Record<string, string>)[c.id] || c.image || products.find((p) => p.category === c.name && p.image)?.image || "",
+      }))} />
 
       {/* Delivery reach. A second Call button here would repeat the one in the
           sticky header, which is on screen at every scroll position. */}
