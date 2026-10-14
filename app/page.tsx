@@ -9,14 +9,13 @@ import DiscoverPanel from "@/components/DiscoverPanel";
 import PromoBanners from "@/components/PromoBanners";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import PostcodeCheck from "@/components/PostcodeCheck";
-import ShowroomFloor from "@/components/ShowroomFloor";
+import HeroShowroom from "@/components/HeroShowroom";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
 import { getHomepage, toHomepage, liveOffers, FEATURED_SHOWN } from "@/lib/homepage";
 import { getPrisma } from "@/lib/prisma";
 import { AREA_GROUPS, TOWNS } from "@/lib/areas";
-import categoryHeroes from "@/data/category-heroes.json";
 export const revalidate = 300;
 
 const STEPS = [
@@ -160,14 +159,8 @@ export default async function Home() {
       </div>
 
       <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
-      {/* ---------------- CATEGORIES — the shop floor, at the top in place of the slideshow (Sachin, Oct 2026) ---------------- */}
-      <ShowroomFloor total={products.length} bays={cats.map((c) => ({
-        id: c.id, name: c.name, count: c.productCount,
-        // the cheapest real price in the department, for the plate; none in a call-for-price department
-        from: poaSet.has(c.name) ? null : products.reduce<number | null>((m, p) => (p.category === c.name && p.priceNow !== null && !poaSet.has(p.subcategory) && !poaSet.has(p.brand) && (m === null || p.priceNow < m) ? p.priceNow : m), null),
-        // every department has a cutout (data/category-heroes.json); a catalogue shot on white would show its box on the dark floor
-        shot: (categoryHeroes as Record<string, string>)[c.id] || c.image || products.find((p) => p.category === c.name && p.image)?.image || "",
-      }))} />
+      {/* ---------------- THE SHOP — a walk along the real showroom floor, the departments under it (Sachin, Oct 2026) ---------------- */}
+      <HeroShowroom total={products.length} departments={cats.map((c) => ({ id: c.id, name: c.name, count: c.productCount }))} />
 
       {/* Delivery reach. A second Call button here would repeat the one in the
           sticky header, which is on screen at every scroll position. */}
@@ -457,7 +450,7 @@ export default async function Home() {
       </section>
 
       {/* ------- SHOWROOM TOUR — the real shop, walkable (proof, not claims) ------- */}
-      <section className="container-x max-w-[1080px] pb-24">
+      <section id="showroom-tour" className="container-x max-w-[1080px] scroll-mt-24 pb-24">
         <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The real shop</p>
         <h2 className="mb-5 font-display text-[44px] font-normal leading-[1.08]">
           Walk around our showroom, from your sofa
