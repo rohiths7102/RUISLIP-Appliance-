@@ -187,3 +187,30 @@ body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
   .hero-rooms-drift { animation: none; }
   .hero-rooms-rise { animation: none; }
 }
+
+/* The stage (components/HeroStage.tsx). --mx/--my: the cursor across the
+   stage, -1..1, set by the component; 0 at rest. When the department changes
+   its name rises letter by letter, the appliance comes up from the rail
+   (small, low, then full size on the stage), the plate a beat later. The
+   appliance tilts with the cursor and a sheen crosses it. The line under the
+   chosen department fills over the dwell. */
+.stage-word { clip-path: inset(-10% -5% -12% -5%); }
+.stage-letter { animation: stageLetter .9s cubic-bezier(.16,1,.3,1) both; }
+@keyframes stageLetter { from { opacity: 0; transform: translateY(.5em); } to { opacity: 1; transform: none; } }
+.stage-prop { animation: stageProp 1.15s cubic-bezier(.16,1,.3,1) both; transform-origin: 50% 100%; }
+@keyframes stageProp { from { opacity: 0; transform: translateY(26%) scale(.3); filter: blur(6px); } 40% { opacity: 1; } to { opacity: 1; transform: none; filter: blur(0); } }
+.stage-shot { transform: perspective(1400px) rotateY(calc(var(--mx) * 7deg)) rotateX(calc(var(--my) * -4deg)); transition: transform .9s cubic-bezier(.16,1,.3,1); filter: drop-shadow(0 30px 30px rgba(8,21,56,.22)); will-change: transform; }
+.stage-sheen { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center bottom; mask-position: center bottom; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.55) 48%, rgba(255,255,255,0) 62%);
+  background-size: 250% 100%; background-position: calc(50% + var(--mx) * -60%) 0;
+  transform: perspective(1400px) rotateY(calc(var(--mx) * 7deg)) rotateX(calc(var(--my) * -4deg)); transition: transform .9s cubic-bezier(.16,1,.3,1), background-position .9s cubic-bezier(.16,1,.3,1); mix-blend-mode: soft-light; }
+.stage-plate { animation: stagePlate .9s cubic-bezier(.16,1,.3,1) .2s both; }
+@keyframes stagePlate { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.stage-line::after { content: ""; display: block; height: 100%; background: #081538; transform-origin: left; animation: stageLine 6s linear both; }
+@keyframes stageLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .stage-letter, .stage-prop, .stage-plate { animation: none; }
+  .stage-shot, .stage-sheen { transform: none; transition: none; }
+  .stage-sheen { display: none; }
+  .stage-line::after { animation: none; transform: none; }
+}

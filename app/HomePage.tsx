@@ -11,6 +11,7 @@ import WhatsAppIcon from "@/components/WhatsAppIcon";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import HeroShowroom from "@/components/HeroShowroom";
 import HeroRooms from "@/components/HeroRooms";
+import HeroStage from "@/components/HeroStage";
 import ShowroomFloor from "@/components/ShowroomFloor";
 import categoryHeroes from "@/data/category-heroes.json";
 import GoogleReviews from "@/components/GoogleReviews";
@@ -33,7 +34,17 @@ const AREAS = AREA_GROUPS.map((g) => [g, TOWNS.filter((t) => t.group === g)] as 
 // Which hero opens the page: Sachin is comparing three on the preview
 // branch — the shop floor of cutouts, the walk through the real shop, and the
 // rooms (app/preview/[hero] shows each; the homepage shows the newest).
-export type HeroVariant = "floor" | "walk" | "rooms";
+export type HeroVariant = "floor" | "walk" | "rooms" | "stage";
+
+// The stage's cast: the flagship that stands for each department, by code, so
+// the title and price under it are the live ones. A department without a
+// named flagship puts up its dearest priced model that has a cutout.
+const STAGE_CAST: Record<string, { code: string; shot?: string }> = {
+  cooking: { code: "B54CR31G0B" }, laundry: { code: "WGG254Z1GB" }, refrigeration: { code: "KGN392LAGG" }, dishwashers: { code: "SMV6ZCX10G" },
+  // Quooker's own shot is on white; the cutout was made once from it (public/hero/stage)
+  "sinks-taps": { code: "3XBLK", shot: "/hero/stage/quooker-3xblk.png" },
+  "coffee-machines": { code: "TAS6502GB" }, "small-appliances": { code: "MUM59340GB" }, "tv-audio": { code: "K85XR55BP.UKA" }, "accessories-parts": { code: "17004034" },
+};
 
 export default async function HomePage({ hero }: { hero: HeroVariant }) {
   const { products, categories, brands, business } = await loadCatalog();
@@ -177,6 +188,15 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       }))} />
       )}
       {hero === "walk" && <HeroShowroom total={products.length} departments={cats.map((c) => ({ id: c.id, name: c.name, count: c.productCount }))} />}
+      {hero === "stage" && <HeroStage total={products.length} items={cats.flatMap((c) => {
+        const cast = STAGE_CAST[c.id];
+        const p = (cast && byCode.get(cast.code)) || products.filter((x) => x.category === c.name && x.image && x.priceNow !== null).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0))[0];
+        if (!p) return [];
+        const shot = cast?.shot || (categoryHeroes as Record<string, string>)[c.id] || p.image;
+        const poa = poaSet.has(c.name);
+        const from = poa ? null : products.reduce<number | null>((m, x) => (x.category === c.name && x.priceNow !== null && !poaSet.has(x.subcategory) && !poaSet.has(x.brand) && (m === null || x.priceNow < m) ? x.priceNow : m), null);
+        return [{ deptId: c.id, dept: c.name, count: c.productCount, from, code: p.productCode, brand: p.brand, title: p.title, price: poa || poaSet.has(p.subcategory) || poaSet.has(p.brand) ? null : p.priceNow, shot }];
+      })} />}
       {hero === "rooms" && <HeroRooms total={products.length} departments={cats.map((c) => ({ id: c.id, name: c.name, count: c.productCount }))} />}
 
       {/* Delivery reach. A second Call button here would repeat the one in the
