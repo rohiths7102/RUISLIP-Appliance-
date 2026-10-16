@@ -12,6 +12,7 @@ import PostcodeCheck from "@/components/PostcodeCheck";
 import HeroShowroom from "@/components/HeroShowroom";
 import HeroRooms from "@/components/HeroRooms";
 import HeroStage from "@/components/HeroStage";
+import HeroClasses from "@/components/HeroClasses";
 import ShowroomFloor from "@/components/ShowroomFloor";
 import categoryHeroes from "@/data/category-heroes.json";
 import GoogleReviews from "@/components/GoogleReviews";
@@ -34,7 +35,7 @@ const AREAS = AREA_GROUPS.map((g) => [g, TOWNS.filter((t) => t.group === g)] as 
 // Which hero opens the page: Sachin is comparing three on the preview
 // branch — the shop floor of cutouts, the walk through the real shop, and the
 // rooms (app/preview/[hero] shows each; the homepage shows the newest).
-export type HeroVariant = "floor" | "walk" | "rooms" | "stage";
+export type HeroVariant = "floor" | "walk" | "rooms" | "stage" | "classes";
 
 // The stage's cast: the flagship that stands for each department, by code, so
 // the title and price under it are the live ones. A department without a
@@ -188,6 +189,14 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       }))} />
       )}
       {hero === "walk" && <HeroShowroom total={products.length} departments={cats.map((c) => ({ id: c.id, name: c.name, count: c.productCount }))} />}
+      {hero === "classes" && <HeroClasses total={products.length} groups={cats.map((c) => ({
+        id: c.id, name: c.name,
+        // every classification with products in it; its own picture, or the dearest photographed model in it
+        tiles: childCategories(categories, c.id).filter((s) => s.productCount > 0).sort((a, b) => b.productCount - a.productCount).flatMap((s) => {
+          const image = s.image || products.filter((p) => p.subcategory === s.name && p.image).sort((a, b) => (b.priceNow ?? 0) - (a.priceNow ?? 0))[0]?.image;
+          return image ? [{ id: s.id, name: s.name, count: s.productCount, image }] : [];
+        }),
+      })).filter((g) => g.tiles.length)} />}
       {hero === "stage" && <HeroStage total={products.length} items={cats.flatMap((c) => {
         const cast = STAGE_CAST[c.id];
         const p = (cast && byCode.get(cast.code)) || products.filter((x) => x.category === c.name && x.image && x.priceNow !== null).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0))[0];
