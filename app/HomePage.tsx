@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
+import { Phone, ArrowRight, Wrench, Recycle, Truck, ShoppingBag, ClipboardCheck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
 import { telHref, waHref } from "@/lib/format";
@@ -28,6 +28,7 @@ const STEPS = [
   ["03", "Call to confirm stock", "Quote the code and we'll check live availability for you."],
   ["04", "Arrange delivery / fitting", "We book in delivery and installation that suits you."],
 ];
+const STEP_ICONS = [ShoppingBag, ClipboardCheck, Phone, Truck];
 
 // The owner's delivery reach, grouped the way he quotes it: by postcode (lib/areas.ts).
 const AREAS = AREA_GROUPS.map((g) => [g, TOWNS.filter((t) => t.group === g)] as const);
@@ -140,7 +141,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
   });
 
   return (
-    <>
+    <div className="home-page">
       {/* ------- HERO — the showroom window, lit like one. Dark ground so the
                  appliance is the only bright thing on the screen; the product
                  bleeds past the grid so it reads as a room, not a thumbnail.
@@ -150,7 +151,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
                  everything: the shop is a stockist and prices the range keenly),
                  then every brand we sell on a running tape, in full colour. It
                  runs the opposite way to the tape lower down; hovering pauses it. ------- */}
-      <div className="border-b border-line bg-paper-2">
+      <div className="home-brand-band border-b border-line bg-paper-2">
         <div className="flex flex-col items-stretch sm:flex-row">
           <Link href="/brands/quooker"
             className="group relative z-10 flex shrink-0 items-center justify-center gap-3.5 border-b border-line bg-paper-2 px-5 py-3 transition-colors hover:bg-[#e2e8f5] sm:justify-start sm:border-b-0 sm:border-r sm:pl-[max(1.25rem,calc((100vw-1280px)/2))] sm:shadow-[12px_0_18px_-10px_rgba(8,21,56,.18)]">
@@ -207,12 +208,28 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
           // catalogue's current photo of this model is a cropped room scene.
           const playerPhoto = s.id === "blu-ray-players" && models.some((p) => p.productCode === "BDPS1700K.CEK")
             ? "https://sony.scene7.com/is/image/sonyglobalsolutions/Product-Intro-Plate_M-1?$productIntroPlatemobile$&fmt=png-alpha" : "";
-          const image = byCode.get(pictureCodes[s.id] ?? "")?.image || playerPhoto || s.image || models.filter((p) => p.image).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0))[0]?.image;
+          // The cast belongs to this exact subcategory. Lead with the known
+          // representative, then the dearest model from each brand, then fill
+          // remaining places by price. Six distinct codes, never repeat stock.
+          const photographed = models.map((p) => ({ ...p,
+            image: p.productCode === "BDPS1700K.CEK" && playerPhoto ? playerPhoto : p.image,
+          })).filter((p) => p.image).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0));
+          const representative = photographed.find((p) => p.productCode === pictureCodes[s.id]);
+          const cast = representative ? [representative] : [];
+          for (const p of photographed) {
+            if (cast.length < 6 && !cast.some((m) => m.brand === p.brand || m.productCode === p.productCode)) cast.push(p);
+          }
+          for (const p of photographed) {
+            if (cast.length < 6 && !cast.some((m) => m.productCode === p.productCode)) cast.push(p);
+          }
+          const image = cast[0]?.image || s.image || "";
           const from = poaSet.has(c.name) || poaSet.has(s.name) ? null : models.reduce<number | null>((lowest, p) => {
             if (p.priceNow === null || !Number.isFinite(p.priceNow) || p.priceNow <= 0 || poaSet.has(p.brand)) return lowest;
             return lowest === null || p.priceNow < lowest ? p.priceNow : lowest;
           }, null);
-          return image ? [{ id: s.id, name: s.name, count: s.productCount, image, from }] : [];
+          return [{ id: s.id, name: s.name, count: s.productCount, image, from,
+            models: cast.map(({ image, brand, productCode }) => ({ image, brand, productCode })),
+          }];
         });
         return tiles.length ? [{ id: c.id, name: c.name, tiles }] : [];
       })} />}
@@ -229,7 +246,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
 
       {/* Delivery reach. A second Call button here would repeat the one in the
           sticky header, which is on screen at every scroll position. */}
-      <section className="bg-[#1b3d7d]">
+      <section className="home-postcode home-dark">
         <div className="container-x wide py-6">
           <PostcodeCheck phone={business.phone} />
         </div>
@@ -240,10 +257,24 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
                  where the guarantee is the first thing after the range. The
                  artwork is Euronics', sized by them; refresh it from
                  kitchen-appliances.co.uk when a campaign ends. ------- */}
-      <PromoBanners promos={liveOffers(home.offers, new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" })).map((o) => ({ ...o, mobile: o.mobile || o.wide }))} />
+      <div className="home-promos">
+        {/* Recolour supplied campaign artwork into the same blue/white range.
+            Source artwork, labels, links, dates and slideshow controls stay intact. */}
+        <svg width="0" height="0" aria-hidden="true" className="absolute">
+          <defs><filter id="home-promo-duotone" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="saturate" values="0" />
+            <feComponentTransfer>
+              <feFuncR type="table" tableValues="0.0392 1" />
+              <feFuncG type="table" tableValues="0.1529 1" />
+              <feFuncB type="table" tableValues="0.5333 1" />
+            </feComponentTransfer>
+          </filter></defs>
+        </svg>
+        <PromoBanners promos={liveOffers(home.offers, new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" })).map((o) => ({ ...o, mobile: o.mobile || o.wide, bg: "#0a2788" }))} />
+      </div>
 
       {/* ------- FINDER — the "help me find it" the owner chose, full width under the hero ------- */}
-      <section className="border-y border-line bg-card">
+      <section className="home-finder border-y border-line bg-paper-2">
         <div className="container-x py-6 lg:py-7">
           <DiscoverPanel departments={departments} />
         </div>
@@ -251,8 +282,8 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
 
       {/* ------- SERVICES — installation, fitting, recycling, front and centre
                  (owner: "make the installation fitting recycling more prominent") ------- */}
-      <section className="border-y border-line bg-card">
-        <div className="container-x grid gap-[18px] py-14 md:grid-cols-3">
+      <section className="home-services home-dark">
+        <div className="container-x grid gap-[18px] py-10 md:grid-cols-3">
           {[
             [Wrench, "Installation & fitting", "Freestanding and built-in appliances installed, tested, and your old one disconnected."],
             [Recycle, "Removal & recycling", "We take the old appliance and every scrap of packaging away with us."],
@@ -275,7 +306,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       </section>
 
       {/* ------- marketing stats band — every number is real, and counts up ------- */}
-      <div className="border-b border-line bg-white">
+      <div className="home-stats border-b border-line bg-paper-2">
         <div className="container-x grid grid-cols-2 gap-y-8 py-11 text-center md:grid-cols-4">
           {([
             [<CountUp key="p" to={products.length} />, "appliances in the catalogue"],
@@ -293,7 +324,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
 
       {/* ------- BEST OFFERS — value first, real was/now savings only ------- */}
       {offers.length >= 4 && (
-        <section className="container-x py-20">
+        <section className="home-offers home-section"><div className="container-x">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Best offers</p>
@@ -312,17 +343,17 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
               </Reveal>
             ))}
           </div>
-        </section>
+        </div></section>
       )}
 
       {/* real Google reviews only — renders nothing until genuine data exists */}
-      <GoogleReviews />
+      <div className="home-reviews"><GoogleReviews /></div>
 
       {/* ------- FEATURED — the same row the owner runs on his Euronics
                  storefront: his products, his order, his best-seller flags,
                  and the offer prices synced from that page. ------- */}
       {featured.length > 0 && (
-        <section className="bg-card py-20">
+        <section className="home-featured home-section home-dark">
           <div className="container-x">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -342,7 +373,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
                   <div key={c.id} className="relative w-[78vw] shrink-0 snap-start sm:w-[320px] lg:w-[calc((100%-42px)/4)]">
                     {bestSellers.has(p.productCode) && (
                       /* The Euronics best-seller stamp, same as his storefront. */
-                      <span className="pointer-events-none absolute right-3 top-3 z-10 flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full bg-blue text-center font-display text-[9px] font-bold uppercase leading-[1.1] tracking-[0.06em] text-white shadow-[0_6px_16px_rgba(10,39,136,.35)]">
+                      <span className="home-bestseller pointer-events-none absolute right-3 top-3 z-10 flex h-[58px] w-[58px] flex-col items-center justify-center bg-blue text-center font-display text-[12px] font-bold leading-[1.1] text-white">
                         Best<br />seller
                       </span>
                     )}
@@ -358,8 +389,8 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       {/* ------- BEST PRICE — the answer to the "Call for best pricing" a
                  customer has just seen on a card. No price-match promise is
                  made here: the shop quotes its own best price on the call. ------- */}
-      <section className="bg-[#1b3d7d]">
-        <div className="container-x wide grid gap-10 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
+      <section className="home-pricing home-dark">
+        <div className="container-x wide grid gap-8 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-14">
           <div>
             <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-white/60">— Our prices</p>
             <h2 className="font-display text-[clamp(30px,3.4vw,44px)] font-semibold leading-[1.06] text-white">
@@ -400,7 +431,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       </section>
 
       {/* ---------------- HERITAGE — the family story, like the reference site ---------------- */}
-      <section className="mt-16 bg-blue px-6 py-24">
+      <section className="home-heritage home-dark bg-blue px-6 py-14">
         <div className="mx-auto max-w-[1000px] text-center">
           <p className="mb-8 font-mono text-[11px] uppercase tracking-[0.24em] text-sky">
             — Family run since 1977
@@ -417,25 +448,28 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       </section>
 
       {/* ---------------- HOW IT WORKS ---------------- */}
-      <section className="container-x py-16">
-        <Reveal className="mb-14 text-center">
+      <section className="home-steps home-section"><div className="container-x">
+        <Reveal className="mb-8">
           <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Simple &amp; clear</p>
           <h2 className="font-display text-[44px] font-normal">How it works</h2>
         </Reveal>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(([num, title, body], i) => (
-            <Reveal key={num} delay={i * 70} className="px-1">
-              <div className="mb-4 font-mono text-[13px] tracking-[0.1em] text-blue">{num}</div>
-              <div className="mb-5 h-px w-full bg-[linear-gradient(90deg,var(--color-blue),rgba(63,157,240,.1))]" />
-              <h3 className="mb-2.5 font-display text-2xl font-medium">{title}</h3>
-              <p className="text-sm leading-relaxed text-muted">{body}</p>
-            </Reveal>
-          ))}
+          {STEPS.map(([num, title, body], i) => {
+            const Icon = STEP_ICONS[i];
+            return (
+              <Reveal key={num} delay={i * 70} className="home-step">
+                <span className="sr-only">{num}</span>
+                <Icon className="home-step-icon" size={26} aria-hidden="true" />
+                <h3 className="mb-2.5 font-display text-2xl font-medium">{title}</h3>
+                <p className="text-sm leading-relaxed text-muted">{body}</p>
+              </Reveal>
+            );
+          })}
         </div>
-      </section>
+      </div></section>
 
       {/* ---------------- BRAND TAPE — real logos, running like a showroom window ---------------- */}
-      <section className="border-y border-line bg-paper-2 py-16">
+      <section className="home-brands home-section border-y border-line bg-paper-2">
         <div className="container-x">
           <Reveal className="mb-9 text-center">
             <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The brands we stock</p>
@@ -472,8 +506,8 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       </section>
 
       {/* ---------------- LOCAL SERVICE ---------------- */}
-      <section className="container-x py-24">
-        <div className="grid items-center gap-14 lg:grid-cols-2">
+      <section className="home-areas home-section"><div className="container-x">
+        <div className="grid items-start gap-8 lg:grid-cols-[1.3fr_0.7fr]">
           <div>
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Serving the local area</p>
             <h2 className="mb-5 font-display text-[44px] font-normal leading-[1.08]">
@@ -499,7 +533,7 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
               ))}
             </div>
           </div>
-          <div className="rounded-[4px] border border-ink/10 bg-card p-9">
+          <div className="home-coverage home-dark border border-blue bg-blue p-6 lg:sticky lg:top-56 lg:p-8">
             <h3 className="mb-3 font-display text-[28px]">Are we in your area?</h3>
             <p className="mb-6 text-[14.5px] leading-relaxed text-muted">
               We deliver to the HA, UB, W3&ndash;W6, WD3&ndash;WD24 and SL postcodes from {business.address.postcode}.
@@ -512,20 +546,25 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
             </a>
           </div>
         </div>
-      </section>
+      </div></section>
 
       {/* ------- SHOWROOM TOUR — the real shop, walkable (proof, not claims) ------- */}
-      <section id="showroom-tour" className="container-x max-w-[1080px] scroll-mt-24 pb-24">
+      <section id="showroom-tour" className="home-tour home-section home-dark scroll-mt-56"><div className="container-x">
         <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The real shop</p>
         <h2 className="mb-5 font-display text-[44px] font-normal leading-[1.08]">
           Walk around our showroom, from your sofa
         </h2>
-        <ShowroomTour />
-      </section>
+        <div className="home-tour-stage">
+          {/* Existing photograph of the real shop; the heavy tour still loads on tap. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/hero/showroom-walk.jpg" alt="" loading="lazy" decoding="async" width={1280} height={720} className="home-tour-photo" />
+          <ShowroomTour className="home-tour-viewer" />
+        </div>
+      </div></section>
 
       {/* ---------------- CONTACT CTA ---------------- */}
-      <section className="bg-navy">
-        <div className="container-x mx-auto max-w-[900px] py-24 text-center">
+      <section className="home-contact home-dark bg-blue">
+        <div className="container-x mx-auto max-w-[900px] py-14 text-center">
           <p className="mb-5 font-mono text-[11px] uppercase tracking-[0.24em] text-sky">
             — Found something you like?
           </p>
@@ -545,6 +584,6 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
           </a>
         </div>
       </section>
-    </>
+    </div>
   );
 }

@@ -4,13 +4,11 @@ import Image from "next/image";
 import { Phone } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
-import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, PRICE_MATCH_LINE } from "@/lib/format";
+import { gbp, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, PRICE_MATCH_LINE } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import WarrantyBadge from "@/components/WarrantyBadge";
-import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
+import { energyClassOf, type EnergyClass } from "@/lib/energy";
 import { brandLogo } from "@/lib/brand-logo";
-
-const TONE_BG = { success: "bg-success", warning: "bg-warning", danger: "bg-danger" } as const;
 
 export default function ProductCard({ p, energyClass }: { p: Product; energyClass?: EnergyClass | null }) {
   const slug = slugOf(p);
@@ -25,26 +23,25 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
   const save = !poa && p.saving !== null && p.priceWas !== null && p.priceNow !== null && p.priceWas > p.priceNow
     ? Math.round(p.saving) : 0;
   return (
-    <div className="card-lift group flex h-full flex-col overflow-hidden border border-line bg-white">
+    <div className="product-card card-lift group flex h-full flex-col overflow-hidden border border-line bg-white">
       <Link href={`/products/${slug}`} className="block">
-        <div className="relative aspect-square overflow-hidden bg-white">
+        <div className="product-image relative aspect-square overflow-hidden bg-white">
           {p.image ? (
-            // fill + object-contain inside the square wrapper; the wrapper's paper
-            // gradient shows as a quiet tile until onLoad flips data-loaded → fade in.
+            // White supplier photography stays on a deliberate white plinth.
             <Image src={p.image} alt={p.title} fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
               onLoad={(e) => { e.currentTarget.dataset.loaded = "true"; }}
               className="shot object-contain p-[18px] opacity-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(.2,.8,.2,1)] data-[loaded]:opacity-100 group-hover:scale-[1.03]" />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-navy-2 to-navy">
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-sky">{p.subcategory}</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-blue-deep p-3">
+              <span className="text-center text-[13px] font-semibold text-white">{p.subcategory}</span>
             </div>
           )}
           {best || save > 0 ? (
             <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
               {best && <span className="rounded-sm bg-navy px-2.5 py-1 text-[11px] font-bold text-white">Best seller</span>}
               {save > 0 && (
-                <span className="rounded-sm bg-danger-soft px-2.5 py-1 text-[11px] font-bold text-danger">
+                <span className="rounded-sm bg-blue px-2.5 py-1 text-[11px] font-bold text-white">
                   Save £{save.toLocaleString("en-GB")}
                 </span>
               )}
@@ -53,14 +50,14 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
           {energy ? (
             // EU-label indicator arrow: rounded rect with a left-pointing tip.
             <span aria-label={`Energy rating ${energy}`}
-              className={`absolute bottom-3 left-3 rounded-r-sm py-1 pl-3.5 pr-2 text-[11px] font-bold leading-none text-white ${TONE_BG[energyTone(energy)]} [clip-path:polygon(0_50%,9px_0,100%_0,100%_100%,9px_100%)]`}>
+              className="absolute bottom-3 left-3 rounded-r-sm bg-blue-deep py-1 pl-3.5 pr-2 text-[11px] font-bold leading-none text-white [clip-path:polygon(0_50%,9px_0,100%_0,100%_100%,9px_100%)]">
               {energy}
             </span>
           ) : null}
           <WarrantyBadge warranty={p.warranty} />
         </div>
-        <div className="p-[18px] pb-3.5">
-          <div className="mb-2 flex items-center justify-between gap-2.5">
+        <div className="product-copy p-[18px] pb-3.5">
+          <div className="product-brand-row mb-2 flex items-center justify-between gap-2.5">
             {/* The maker's own mark, as it is on the appliance. Twenty-one of
                 the smaller brands have no mark on file yet; those keep the name
                 set in type, so the row reads the same either way. */}
@@ -68,10 +65,10 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={logo} alt={p.brand} loading="lazy" className="h-[19px] w-auto max-w-[104px] shrink-0 object-contain object-left" />
             ) : (
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-blue-deep">{p.brand}</span>
+              <span className="text-[13px] font-semibold text-blue-deep">{p.brand}</span>
             )}
-            <span className="flex shrink-0 items-center gap-1.5 text-[10.5px] font-semibold text-muted">
-              <span className="h-[7px] w-[7px] rounded-full" style={{ background: availabilityDot(p.availabilityNormalised) }} />
+            <span className="product-stock flex items-center gap-1.5 text-[10.5px] font-semibold text-muted">
+              <span className="product-stock-dot h-[7px] w-[7px] shrink-0 rounded-full" />
               {p.availability || "Call to confirm"}
             </span>
           </div>
@@ -83,7 +80,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               however bold they are set — so this is the body sans, now at 14px
               and bold, with the code at full ink against a muted label so the
               number itself is what the eye lands on. */}
-          <p className="mb-3.5 text-[14px] text-muted">
+          <p className="product-code mb-3.5 text-[14px] text-muted">
             Code <span className="font-bold text-ink">{p.productCode}</span>
           </p>
           {poa || priceMatch ? (
@@ -94,7 +91,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               {priceMatch && <p className="mt-1 text-[12px] leading-snug text-muted">{PRICE_MATCH_LINE}</p>}
             </div>
           ) : (
-            <div className="flex items-baseline gap-2.5">
+            <div className="product-price flex items-baseline gap-2.5">
               <span className="text-[21px] font-bold tracking-tight text-ink">{gbp(p.priceNow)}</span>
               {p.priceWas ? <span className="text-sm text-ink/70 line-through">{gbp(p.priceWas)}</span> : null}
             </div>
@@ -102,14 +99,14 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
         </div>
       </Link>
       {/* min-h-11 = 44px tap targets; most of this shop's traffic is on a phone.
-          Green marks the action, phone-first: Call is solid, details is quiet. */}
-      <div className="mt-auto flex gap-2 px-[18px] pb-[18px]">
+          Blue marks the action, phone-first: Call is solid, details is outlined. */}
+      <div className="product-actions mt-auto flex gap-2 px-[18px] pb-[18px]">
         <Link href={`/products/${slug}`}
-          className="flex min-h-11 flex-1 items-center justify-center border border-blue/30 px-3 text-center text-[12.5px] font-semibold tracking-[0.02em] text-blue transition-colors hover:border-blue hover:bg-blue hover:text-white">
+          className="product-details flex min-h-11 flex-1 items-center justify-center border border-blue/30 px-3 text-center text-[12.5px] font-semibold text-blue transition-colors hover:border-blue hover:bg-blue hover:text-white">
           View details
         </Link>
         <a href={telHref(STORE_PHONE)} aria-label={`Call to check stock for ${p.productCode}`}
-          className="inline-flex min-h-11 items-center gap-1.5 bg-cta px-3.5 text-[12.5px] font-bold text-white transition-colors hover:bg-cta-deep">
+          className="product-call inline-flex min-h-11 items-center gap-1.5 bg-cta px-3.5 text-[12.5px] font-bold text-white transition-colors hover:bg-cta-deep">
           <Phone size={13} strokeWidth={2.2} /> Call
         </a>
         {/* The message names the appliance, so the shop can see which one the

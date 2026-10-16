@@ -6,26 +6,10 @@ export type ClassTile = {
   name: string;
   count: number;
   image: string;
+  models: { image: string; brand: string; productCode: string }[];
   from: number | null;
 };
 export type ClassGroup = { id: string; name: string; tiles: ClassTile[] };
-
-// Art direction, not measurements: recognisable at phone sizes, with varied
-// silhouettes forming one continuous skyline rather than identical cards.
-const SILHOUETTES: Record<string, [height: number, width: number]> = {
-  "washing-machines": [.78, .76], "washer-dryers": [.78, .76], "tumble-dryers": [.78, .76],
-  "fridge-freezers": [1, .69], "american-fridge-freezers": [.94, .94],
-  fridges: [.94, .66], freezers: [.93, .66], "wine-coolers": [.53, .72],
-  "integrated-dishwashers": [.8, .78], "freestanding-dishwashers": [.8, .78],
-  ovens: [.59, .83], hobs: [.33, .96], cookers: [.83, .78], microwaves: [.43, .9],
-  "cooker-hoods": [.65, .88], "warming-drawers": [.23, .86],
-  "kitchen-sinks": [.35, .9], "kitchen-taps": [.72, .65], "boiling-water-taps": [.77, .65],
-  televisions: [.72, 1], "soundbars-speakers": [.2, 1], "blu-ray-players": [.25, .94],
-  "bean-to-cup": [.65, .76], tassimo: [.56, .65], "filter-coffee": [.66, .6], "coffee-grinders": [.37, .44],
-  "vacuum-cleaners": [.49, .84], "cordless-vacuums": [1, .58], "robot-vacuums": [.48, .83], "floor-cleaners": [.95, .6],
-  kettles: [.49, .6], toasters: [.4, .76], blenders: [.72, .66], "food-prep": [.62, .84],
-  "air-fryers-multi-cookers": [.62, .86], "grills-bbq": [.46, .92], coolers: [.52, .84], cookware: [.29, .87],
-};
 
 // Measured whitespace in these exact supplier photos: x, y, visible width and
 // height, original width and height (in proportional units). CSS crops only
@@ -71,8 +55,8 @@ const price = (amount: number) => new Intl.NumberFormat("en-GB", {
 }).format(amount);
 
 /**
- * Open, connected showroom floors. The complete catalogue navigation is
- * server-rendered; native anchors and CSS interaction need no component JS.
+ * Stocked showroom floors, with up to six distinct real models per type.
+ * Every type is server-rendered; native anchors need no component JavaScript.
  */
 export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; total: number }) {
   const typeCount = groups.reduce((n, group) => n + group.tiles.length, 0);
@@ -86,8 +70,8 @@ export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; t
 
   return (
     <section id="shop-by-type" aria-labelledby="hero-heading" className="skyline">
-      <div className="container-x wide skyline-wrap">
-        <header className="skyline-heading">
+      <div className="skyline-masthead">
+        <header className="container-x wide skyline-heading">
           <div>
             <p className="skyline-intro">Your local appliance shop, since 1977</p>
             <h2 id="hero-heading">Shop by type<span className="skyline-full-stop">.</span></h2>
@@ -99,7 +83,9 @@ export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; t
           </div>
         </header>
 
+      </div>
         <nav className="skyline-directory" aria-label="Jump to an appliance department">
+          <div className="container-x wide skyline-directory-inner">
           <div className="skyline-desktop-directory">
             <span className="skyline-directory-label">Find your floor <span aria-hidden="true">↘</span></span>
             {directory}
@@ -108,13 +94,14 @@ export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; t
             <summary>Jump to a department <span aria-hidden="true">↘</span></summary>
             {directory}
           </details>
+          </div>
         </nav>
 
         <div className="skyline-floors">
           {groups.map((group) => (
             <section key={group.id} id={`skyline-${group.id}`} aria-labelledby={`skyline-title-${group.id}`} className="skyline-floor">
+              <div className="container-x wide">
               <header className="skyline-department">
-                <span className="skyline-node" aria-hidden="true" />
                 <div>
                   <h3 id={`skyline-title-${group.id}`}><Link href={`/categories/${group.id}`} prefetch={false}>{group.name}</Link></h3>
                   <p>{DEPARTMENT_NOTES[group.id] || "Find your everyday favourite."}</p>
@@ -122,38 +109,45 @@ export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; t
                 <a href="#shop-by-type" className="skyline-back" aria-label="Back to all departments">↑</a>
               </header>
 
-              <ul className="skyline-lineup" data-types={group.tiles.length} style={{
-                "--columns": group.tiles.length > 6 ? Math.ceil(group.tiles.length / 2) : group.tiles.length,
-                "--max-rise": Math.max(...group.tiles.map((tile) => SILHOUETTES[tile.id]?.[0] ?? .72)),
-              } as CSSProperties}>
+              <ul className="skyline-lineup" data-types={group.tiles.length}>
                 {group.tiles.map((tile) => {
-                  const [rise, width] = SILHOUETTES[tile.id] || [.72, .78];
-                  const frame = Object.entries(PHOTO_FRAMES).find(([path]) => tile.image.split("?")[0].endsWith(path))?.[1];
-                  const framing = frame ? {
-                    "--photo-ratio": frame[2] / frame[3],
-                    "--photo-width": `${frame[4] / frame[2] * 100}%`,
-                    "--photo-height": `${frame[5] / frame[3] * 100}%`,
-                    "--photo-left": `${-frame[0] / frame[2] * 100}%`,
-                    "--photo-top": `${-frame[1] / frame[3] * 100}%`,
-                  } as CSSProperties : undefined;
+                  // An empty range keeps its real category photograph and link;
+                  // never duplicate an appliance to make a sparse range look full.
+                  const photos = tile.models.length ? tile.models : tile.image
+                    ? [{ image: tile.image, brand: "", productCode: "" }] : [];
                   return (
-                    <li key={tile.id} style={{ "--rise": rise, "--width": width } as CSSProperties}>
+                    <li key={tile.id}>
                       <Link href={`/categories/${tile.id}`} prefetch={false} className="skyline-type">
-                        <span className="skyline-object">
                           <span className="skyline-flag">
                             <span>{tile.name}</span>
                             <span className="skyline-arrow" aria-hidden="true">↗</span>
                           </span>
-                          <span className={`skyline-photo${frame ? " skyline-photo-framed" : ""}`} style={framing}>
-                            <span className="skyline-cutout">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={tile.image} alt="" loading="lazy" decoding="async" />
-                            </span>
+                          <span className="skyline-stock" aria-hidden="true" data-models={photos.length} style={{ "--stock-columns": Math.min(photos.length, 3) || 1 } as CSSProperties}>
+                            {photos.map((model) => {
+                              const frame = Object.entries(PHOTO_FRAMES).find(([path]) => model.image.split("?")[0].endsWith(path))?.[1];
+                              const framing = frame ? {
+                                "--photo-ratio": frame[2] / frame[3],
+                                "--photo-width": `${frame[4] / frame[2] * 100}%`,
+                                "--photo-height": `${frame[5] / frame[3] * 100}%`,
+                                "--photo-left": `${-frame[0] / frame[2] * 100}%`,
+                                "--photo-top": `${-frame[1] / frame[3] * 100}%`,
+                              } as CSSProperties : undefined;
+                              return (
+                                <span key={model.productCode || model.image} className="skyline-model" title={`${model.brand} ${model.productCode}`.trim()}>
+                                  <span className={`skyline-photo${frame ? " skyline-photo-framed" : ""}`} style={framing}>
+                                    <span className="skyline-cutout">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={model.image} alt="" loading="lazy" decoding="async" width={160} height={160} />
+                                    </span>
+                                  </span>
+                                  {model.productCode && <span className="skyline-model-caption"><b>{model.brand}</b><span>{model.productCode}</span></span>}
+                                </span>
+                              );
+                            })}
                           </span>
-                        </span>
                         <span className="skyline-ground" aria-hidden="true"><span /></span>
                         <span className="skyline-ticket">
-                          <span className="skyline-models">{tile.count > 0 ? `${tile.count.toLocaleString("en-GB")} ${tile.count === 1 ? "model" : "models"}` : "Enquire in store"}</span>
+                          <span className="skyline-models">{tile.count > 0 ? <><strong>{tile.count.toLocaleString("en-GB")}</strong> {tile.count === 1 ? "model" : "models"}</> : "Enquire in store"}</span>
                           <span className="skyline-price">{tile.from !== null ? <>From <strong>{price(tile.from)}</strong></> : tile.count > 0 ? "Explore the range" : "View this type"}</span>
                         </span>
                       </Link>
@@ -161,15 +155,15 @@ export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; t
                   );
                 })}
               </ul>
+              </div>
             </section>
           ))}
         </div>
 
-        <footer className="skyline-end">
+        <footer className="skyline-end"><div className="container-x wide">
           <p>Big on appliances. <em>Personal by nature.</em></p>
           <Link href="/categories/accessories-parts">Accessories &amp; spare parts <span aria-hidden="true">↗</span></Link>
-        </footer>
-      </div>
+        </div></footer>
     </section>
   );
 }
