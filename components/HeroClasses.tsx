@@ -52,13 +52,13 @@ export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; t
                 <Link href={`/categories/${g.id}`} className="font-display text-[22px] leading-none text-navy hover:underline">{g.name}</Link>
                 <span className="text-[13px] text-muted">{g.tiles.reduce((n, t) => n + t.count, 0).toLocaleString("en-GB")} models</span>
               </h3>
-              {/* one ruled sheet: 1px gaps over the line colour */}
-              <ul className="grid grid-cols-2 gap-px border-x border-b border-line bg-line sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {/* one ruled sheet: hairline rules between tiles; a short row simply ends, like a shelf with space left */}
+              <ul className="grid grid-cols-2 border-l border-line sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                 {g.tiles.map((t, i) => (
-                  <li key={t.id} className="bg-white" style={{ ["--d" as string]: `${i * 55}ms` }}>
+                  <li key={t.id} className="border-b border-r border-line bg-white" style={{ ["--d" as string]: `${i * 55}ms` }}>
                     <Link href={`/categories/${t.id}`} className="shelf-tile group grid h-full grid-rows-[auto_1fr_auto] outline-none">
-                      <span className="shelf-ticket relative flex min-h-[44px] items-center bg-blue-deep px-3 py-2 text-[14px] font-semibold leading-tight text-white">
-                        {t.name}
+                      <span className="shelf-ticket relative flex h-[56px] items-center bg-blue-deep px-3 text-[14px] font-semibold leading-tight text-white">
+                        <span className="line-clamp-2">{t.name}</span>
                       </span>
                       <span className="shelf-stage relative block aspect-square px-4 pt-4 lg:aspect-[5/4]">
                         <span aria-hidden className="shelf-shadow pointer-events-none absolute bottom-[2px] left-[22%] h-[10px] w-[56%] bg-[radial-gradient(ellipse_at_center,rgba(8,21,56,.18),transparent_70%)]" />
