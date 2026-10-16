@@ -16,7 +16,10 @@ export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; t
       <div className="container-x wide pb-12 pt-8 lg:pt-10">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
           <h2 id="hero-heading" className="font-display text-[clamp(28px,3vw,40px)] leading-tight text-navy">Shop by type</h2>
-          <p className="text-[14px] text-muted">{total.toLocaleString("en-GB")}+ appliances · delivered and fitted by our own team</p>
+          <p className="text-[14px] text-muted">
+            {total.toLocaleString("en-GB")}+ appliances, delivered and fitted by our own team ·{" "}
+            <Link href="/categories/accessories-parts" className="text-navy underline-offset-2 hover:underline">Accessories &amp; spare parts</Link>
+          </p>
         </div>
 
         <div className="mt-6 space-y-8">

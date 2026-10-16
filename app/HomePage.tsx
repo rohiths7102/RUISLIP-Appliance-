@@ -47,6 +47,12 @@ const STAGE_CAST: Record<string, { code: string; shot?: string }> = {
   "coffee-machines": { code: "TAS6502GB" }, "small-appliances": { code: "MUM59340GB" }, "tv-audio": { code: "K85XR55BP.UKA" }, "accessories-parts": { code: "17004034" },
 };
 
+// Shop by type: departments in the header's order (accessories have their own
+// page and stay out of the grid), and the model whose photo stands for a
+// classification where its own picture is a room shot or the wrong product.
+const CLASS_ORDER = ["laundry", "refrigeration", "dishwashers", "cooking", "sinks-taps", "tv-audio", "coffee-machines", "floorcare", "small-appliances"];
+const CLASS_PICTURE: Record<string, string> = { "vacuum-cleaners": "BGL38BA3GB", "cooker-hoods": "DWK85DK60B", "blu-ray-players": "UBPX700KBCEK" };
+
 export default async function HomePage({ hero }: { hero: HeroVariant }) {
   const { products, categories, brands, business } = await loadCatalog();
   // The owner's choices from Admin → Homepage; defaults (the homepage as it
@@ -189,14 +195,15 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       }))} />
       )}
       {hero === "walk" && <HeroShowroom total={products.length} departments={cats.map((c) => ({ id: c.id, name: c.name, count: c.productCount }))} />}
-      {hero === "classes" && <HeroClasses total={products.length} groups={cats.map((c) => ({
-        id: c.id, name: c.name,
-        // every classification with products in it; its own picture, or the dearest photographed model in it
-        tiles: childCategories(categories, c.id).filter((s) => s.productCount > 0).sort((a, b) => b.productCount - a.productCount).flatMap((s) => {
-          const image = s.image || products.filter((p) => p.subcategory === s.name && p.image).sort((a, b) => (b.priceNow ?? 0) - (a.priceNow ?? 0))[0]?.image;
+      {hero === "classes" && <HeroClasses total={products.length} groups={CLASS_ORDER.flatMap((id) => {
+        const c = cats.find((x) => x.id === id); if (!c) return [];
+        // every classification with products in it; a chosen model's photo, its own picture, or the dearest photographed model in it
+        const tiles = childCategories(categories, c.id).filter((s) => s.productCount > 0).sort((x, y) => y.productCount - x.productCount).flatMap((s) => {
+          const image = byCode.get(CLASS_PICTURE[s.id] ?? "")?.image || s.image || products.filter((p) => p.subcategory === s.name && p.image).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0))[0]?.image;
           return image ? [{ id: s.id, name: s.name, count: s.productCount, image }] : [];
-        }),
-      })).filter((g) => g.tiles.length)} />}
+        });
+        return tiles.length ? [{ id: c.id, name: c.name, tiles }] : [];
+      })} />}
       {hero === "stage" && <HeroStage total={products.length} items={cats.flatMap((c) => {
         const cast = STAGE_CAST[c.id];
         const p = (cast && byCode.get(cast.code)) || products.filter((x) => x.category === c.name && x.image && x.priceNow !== null).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0))[0];
