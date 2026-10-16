@@ -214,3 +214,30 @@ body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
   .stage-sheen { display: none; }
   .stage-line::after { animation: none; transform: none; }
 }
+
+/* Shop by type, "on the shelf" (components/HeroClasses.tsx). The name bars
+   join into a rail with a yellow seam; products stand on a navy shelf line.
+   Once per department (.shelf-in, on first view): seams and shelves draw left
+   to right, then the stock rises onto them. Hover picks a product off the
+   shelf. --d staggers each tile. */
+.shelf-ticket::after { content: ""; position: absolute; inset: auto 0 0; height: 2px; background: #ffcc00; transform-origin: left; }
+.shelf-ticket { transition: background-color .25s ease; }
+.shelf-line { transform-origin: left; }
+.shelf-shot, .shelf-shadow { transition: transform .5s cubic-bezier(.16,1,.3,1), opacity .5s; }
+.shelf-arrow { transition: transform .3s cubic-bezier(.16,1,.3,1); }
+.shelf-armed .shelf-bay:not(.shelf-in) .shelf-shot { opacity: 0; }
+.shelf-in .shelf-ticket::after, .shelf-in .shelf-line { animation: shelfDraw .6s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--d); }
+.shelf-in .shelf-shot { animation: shelfRise .9s cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--d) + 140ms); }
+@keyframes shelfDraw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes shelfRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.shelf-tile:hover .shelf-ticket, .shelf-tile:focus-visible .shelf-ticket { background: #0a2788; }
+.shelf-tile:hover .shelf-shot, .shelf-tile:focus-visible .shelf-shot { transform: translateY(-7px); }
+.shelf-tile:hover .shelf-shadow { transform: scaleX(.75); opacity: .5; }
+.shelf-tile:hover .shelf-arrow { transform: translateX(3px); }
+.shelf-tile:active .shelf-shot { transform: translateY(-2px); transition-duration: .15s; }
+.shelf-tile:focus-visible { outline: 3px solid #ffcc00; outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) {
+  .shelf-armed .shelf-bay:not(.shelf-in) .shelf-shot { opacity: 1; }
+  .shelf-in .shelf-ticket::after, .shelf-in .shelf-line, .shelf-in .shelf-shot { animation: none; }
+  .shelf-tile:hover .shelf-shot, .shelf-tile:focus-visible .shelf-shot, .shelf-tile:hover .shelf-shadow, .shelf-tile:hover .shelf-arrow { transform: none; }
+}
