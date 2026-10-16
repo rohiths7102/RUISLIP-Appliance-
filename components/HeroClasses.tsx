@@ -1,83 +1,174 @@
-"use client";
-import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 
-/**
- * The homepage opens on the classifications (Sachin, 16 Oct 2026, after the
- * Ruislip Appliances home page): every kind of appliance we stock, its name on
- * a navy bar over a clean product photo, one tap to that shelf.
- *
- * "On the shelf" (planned by Fable and Astra, Oct 2026): each department is one
- * run of shop shelving. The navy name bars join into a rail with a Euronics
- * yellow seam; every product stands on a navy shelf line, bottom-aligned with a
- * small contact shadow, so a fridge and a kettle sit at the same floor level.
- * Once, as a department comes into view, the shelves draw left to right and
- * the stock rises onto them; hovering picks a product off the shelf.
- * Server data, real links; reduced motion gets everything standing still.
- */
-export type ClassTile = { id: string; name: string; count: number; image: string };
+export type ClassTile = {
+  id: string;
+  name: string;
+  count: number;
+  image: string;
+  from: number | null;
+};
 export type ClassGroup = { id: string; name: string; tiles: ClassTile[] };
 
+// Art direction, not measurements: recognisable at phone sizes, with varied
+// silhouettes forming one continuous skyline rather than identical cards.
+const SILHOUETTES: Record<string, [height: number, width: number]> = {
+  "washing-machines": [.78, .76], "washer-dryers": [.78, .76], "tumble-dryers": [.78, .76],
+  "fridge-freezers": [1, .69], "american-fridge-freezers": [.94, .94],
+  fridges: [.94, .66], freezers: [.93, .66], "wine-coolers": [.53, .72],
+  "integrated-dishwashers": [.8, .78], "freestanding-dishwashers": [.8, .78],
+  ovens: [.59, .83], hobs: [.33, .96], cookers: [.83, .78], microwaves: [.43, .9],
+  "cooker-hoods": [.65, .88], "warming-drawers": [.23, .86],
+  "kitchen-sinks": [.35, .9], "kitchen-taps": [.72, .65], "boiling-water-taps": [.77, .65],
+  televisions: [.72, 1], "soundbars-speakers": [.2, 1], "blu-ray-players": [.25, .94],
+  "bean-to-cup": [.65, .76], tassimo: [.56, .65], "filter-coffee": [.66, .6], "coffee-grinders": [.37, .44],
+  "vacuum-cleaners": [.49, .84], "cordless-vacuums": [1, .58], "robot-vacuums": [.48, .83], "floor-cleaners": [.95, .6],
+  kettles: [.49, .6], toasters: [.4, .76], blenders: [.72, .66], "food-prep": [.62, .84],
+  "air-fryers-multi-cookers": [.62, .86], "grills-bbq": [.46, .92], coolers: [.52, .84], cookware: [.29, .87],
+};
+
+// Measured whitespace in these exact supplier photos: x, y, visible width and
+// height, original width and height (in proportional units). CSS crops only
+// the empty margin; an owner-selected replacement gets normal contain sizing.
+const PHOTO_FRAMES: Record<string, [number, number, number, number, number, number]> = {
+  "/catalog/ruislip/DV90F09F4SU1/01.jpg": [51, 14, 198, 272, 300, 300],
+  "/catalog/ruislip/DB273TX/01.jpg": [45, 11, 210, 280, 300, 300],
+  "/catalog/ruislip/HDG6GDCWX/01.jpg": [51, 0, 198, 300, 300, 300],
+  "/catalog/ruislip/CR329X/01.jpg": [0, 42, 300, 258, 300, 300],
+  "/catalog/caple/AXL50/01.jpg": [33, 50, 239, 196, 300, 300],
+  "/catalog/caple/ANT4/BN/01.jpg": [27, 56, 187, 191, 249, 300],
+  "/catalog/quooker/3XRVS/01.jpg": [43, 10, 216, 280, 300, 300],
+  "/catalog/ruislip/K98XR55BP.UKA/01.jpg": [49, 20, 207, 161, 300, 200],
+  "/catalog/ruislip/HTA9000.CEK/01.jpg": [15, 80, 270, 29, 300, 188],
+  "/catalog/bosch/TAS6502GB/01.webp": [0, 0, 234, 290, 260, 300],
+  "/catalog/bosch/TKA2M113GB/01.webp": [0, 0, 199, 268, 199, 300],
+  "/catalog/ruislip/WD210UK/01.jpg": [79, 0, 142, 300, 300, 300],
+  "/catalog/bosch/MUMS6ZM00G/01.webp": [0, 0, 300, 132, 300, 151],
+  "/catalog/bosch/17007157/01.webp": [5, 45, 242, 113, 300, 158],
+  "/catalog/ruislip/ST202UK/01.jpg": [15, 76, 267, 148, 300, 300],
+  "/catalog/bosch/TWK7201GB/01.webp": [0, 0, 183, 246, 183, 300],
+  "/catalog/ruislip/SFP700UK/01.jpg": [27, 38, 251, 219, 300, 272],
+  "/catalog/ruislip/FS301UK/01.jpg": [67, 29, 134, 248, 300, 300],
+  "/catalog/ruislip/FB265EUUKGY/01.jpg": [12, 89, 267, 171, 300, 300],
+  "/catalog/ruislip/PG301UK/01.jpg": [50, 73, 195, 159, 300, 300],
+  "/is/image/sonyglobalsolutions/Product-Intro-Plate_M-1": [65, 365, 1405, 347, 1534, 1083],
+};
+
+const DEPARTMENT_NOTES: Record<string, string> = {
+  laundry: "A fresh start, every day.",
+  refrigeration: "Room for the good stuff.",
+  dishwashers: "Let dinner be the hard part.",
+  cooking: "For whatever’s cooking.",
+  "sinks-taps": "The heart of your kitchen.",
+  "tv-audio": "Make a night of it.",
+  "coffee-machines": "Your morning, made.",
+  floorcare: "Life happens. Clean up.",
+  "small-appliances": "Little things. Big difference.",
+};
+
+const price = (amount: number) => new Intl.NumberFormat("en-GB", {
+  style: "currency", currency: "GBP", maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+}).format(amount);
+
+/**
+ * Open, connected showroom floors. The complete catalogue navigation is
+ * server-rendered; native anchors and CSS interaction need no component JS.
+ */
 export default function HeroClasses({ groups, total }: { groups: ClassGroup[]; total: number }) {
-  const root = useRef<HTMLDivElement>(null);
-  // a department joins the moment once, the first time it scrolls into view
-  useEffect(() => {
-    const bays = root.current?.querySelectorAll<HTMLElement>("[data-bay]") ?? [];
-    // stock is only held back once this runs, so without JavaScript it simply stands there
-    root.current?.classList.add("shelf-armed");
-    if (!("IntersectionObserver" in window)) { bays.forEach((b) => b.classList.add("shelf-in")); return; }
-    const io = new IntersectionObserver((es) => es.forEach((e) => {
-      if (e.isIntersecting) { e.target.classList.add("shelf-in"); io.unobserve(e.target); }
-    }), { rootMargin: "0px 0px -10% 0px" });
-    bays.forEach((b) => io.observe(b));
-    return () => io.disconnect();
-  }, []);
+  const typeCount = groups.reduce((n, group) => n + group.tiles.length, 0);
+  const directory = <ul>{groups.map((group) => (
+    <li key={group.id}>
+      <a href={`#skyline-${group.id}`}>
+        {group.name}<span className="skyline-directory-count">{group.tiles.length}<span className="sr-only"> types</span></span>
+      </a>
+    </li>
+  ))}</ul>;
 
   return (
-    <section aria-labelledby="hero-heading" className="bg-paper">
-      <div ref={root} className="container-x wide pb-14 pt-8 lg:pt-10">
-        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
-          <h2 id="hero-heading" className="font-display text-[clamp(28px,3vw,40px)] leading-tight text-navy">Shop by type</h2>
-          <p className="text-[14px] text-muted">
-            {total.toLocaleString("en-GB")}+ appliances, delivered and fitted by our own team ·{" "}
-            <Link href="/categories/accessories-parts" className="text-navy underline-offset-2 hover:underline">Accessories &amp; spare parts</Link>
-          </p>
-        </div>
+    <section id="shop-by-type" aria-labelledby="hero-heading" className="skyline">
+      <div className="container-x wide skyline-wrap">
+        <header className="skyline-heading">
+          <div>
+            <p className="skyline-intro">Your local appliance shop, since 1977</p>
+            <h2 id="hero-heading">Shop by type<span className="skyline-full-stop">.</span></h2>
+            <p className="skyline-invitation">A whole home. <em>All here.</em></p>
+          </div>
+          <div className="skyline-welcome">
+            <span className="skyline-stamp"><strong>{typeCount}</strong><span>types to explore</span></span>
+            <p>{total.toLocaleString("en-GB")}+ appliances.<br />Delivered &amp; fitted by our own team.</p>
+          </div>
+        </header>
 
-        <div className="mt-7 space-y-9">
-          {groups.map((g) => (
-            <div key={g.id} data-bay className="shelf-bay">
-              {/* the bay header: the department, its total, a navy rule */}
-              <h3 className="mb-0 flex items-baseline gap-3 border-b-2 border-navy pb-2">
-                <Link href={`/categories/${g.id}`} className="font-display text-[22px] leading-none text-navy hover:underline">{g.name}</Link>
-                <span className="text-[13px] text-muted">{g.tiles.reduce((n, t) => n + t.count, 0).toLocaleString("en-GB")} models</span>
-              </h3>
-              {/* one ruled sheet: hairline rules between tiles; a short row simply ends, like a shelf with space left */}
-              <ul className="grid grid-cols-2 border-l border-line sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                {g.tiles.map((t, i) => (
-                  <li key={t.id} className="border-b border-r border-line bg-white" style={{ ["--d" as string]: `${i * 55}ms` }}>
-                    <Link href={`/categories/${t.id}`} className="shelf-tile group grid h-full grid-rows-[auto_1fr_auto] outline-none">
-                      <span className="shelf-ticket relative flex h-[56px] items-center bg-blue-deep px-3 text-[14px] font-semibold leading-tight text-white">
-                        <span className="line-clamp-2">{t.name}</span>
-                      </span>
-                      <span className="shelf-stage relative block aspect-square px-4 pt-4 lg:aspect-[5/4]">
-                        <span aria-hidden className="shelf-shadow pointer-events-none absolute bottom-[2px] left-[22%] h-[10px] w-[56%] bg-[radial-gradient(ellipse_at_center,rgba(8,21,56,.18),transparent_70%)]" />
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={t.image} alt="" aria-hidden loading={i < 6 ? "eager" : "lazy"}
-                          className="shelf-shot shot relative h-full w-full object-contain object-bottom" />
-                        <span aria-hidden className="shelf-line pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-navy" />
-                      </span>
-                      <span className="flex items-center justify-between px-3 pb-2.5 pt-2 text-[12px] text-muted">
-                        {t.count.toLocaleString("en-GB")} models
-                        <span aria-hidden className="shelf-arrow text-navy">→</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+        <nav className="skyline-directory" aria-label="Jump to an appliance department">
+          <div className="skyline-desktop-directory">
+            <span className="skyline-directory-label">Find your floor <span aria-hidden="true">↘</span></span>
+            {directory}
+          </div>
+          <details className="skyline-mobile-directory">
+            <summary>Jump to a department <span aria-hidden="true">↘</span></summary>
+            {directory}
+          </details>
+        </nav>
+
+        <div className="skyline-floors">
+          {groups.map((group) => (
+            <section key={group.id} id={`skyline-${group.id}`} aria-labelledby={`skyline-title-${group.id}`} className="skyline-floor">
+              <header className="skyline-department">
+                <span className="skyline-node" aria-hidden="true" />
+                <div>
+                  <h3 id={`skyline-title-${group.id}`}><Link href={`/categories/${group.id}`} prefetch={false}>{group.name}</Link></h3>
+                  <p>{DEPARTMENT_NOTES[group.id] || "Find your everyday favourite."}</p>
+                </div>
+                <a href="#shop-by-type" className="skyline-back" aria-label="Back to all departments">↑</a>
+              </header>
+
+              <ul className="skyline-lineup" data-types={group.tiles.length} style={{
+                "--columns": group.tiles.length > 6 ? Math.ceil(group.tiles.length / 2) : group.tiles.length,
+                "--max-rise": Math.max(...group.tiles.map((tile) => SILHOUETTES[tile.id]?.[0] ?? .72)),
+              } as CSSProperties}>
+                {group.tiles.map((tile) => {
+                  const [rise, width] = SILHOUETTES[tile.id] || [.72, .78];
+                  const frame = Object.entries(PHOTO_FRAMES).find(([path]) => tile.image.split("?")[0].endsWith(path))?.[1];
+                  const framing = frame ? {
+                    "--photo-ratio": frame[2] / frame[3],
+                    "--photo-width": `${frame[4] / frame[2] * 100}%`,
+                    "--photo-height": `${frame[5] / frame[3] * 100}%`,
+                    "--photo-left": `${-frame[0] / frame[2] * 100}%`,
+                    "--photo-top": `${-frame[1] / frame[3] * 100}%`,
+                  } as CSSProperties : undefined;
+                  return (
+                    <li key={tile.id} style={{ "--rise": rise, "--width": width } as CSSProperties}>
+                      <Link href={`/categories/${tile.id}`} prefetch={false} className="skyline-type">
+                        <span className="skyline-object">
+                          <span className="skyline-flag">
+                            <span>{tile.name}</span>
+                            <span className="skyline-arrow" aria-hidden="true">↗</span>
+                          </span>
+                          <span className={`skyline-photo${frame ? " skyline-photo-framed" : ""}`} style={framing}>
+                            <span className="skyline-cutout">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={tile.image} alt="" loading="lazy" decoding="async" />
+                            </span>
+                          </span>
+                        </span>
+                        <span className="skyline-ground" aria-hidden="true"><span /></span>
+                        <span className="skyline-ticket">
+                          <span className="skyline-models">{tile.count > 0 ? `${tile.count.toLocaleString("en-GB")} ${tile.count === 1 ? "model" : "models"}` : "Enquire in store"}</span>
+                          <span className="skyline-price">{tile.from !== null ? <>From <strong>{price(tile.from)}</strong></> : tile.count > 0 ? "Explore the range" : "View this type"}</span>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
-            </div>
+            </section>
           ))}
         </div>
+
+        <footer className="skyline-end">
+          <p>Big on appliances. <em>Personal by nature.</em></p>
+          <Link href="/categories/accessories-parts">Accessories &amp; spare parts <span aria-hidden="true">↗</span></Link>
+        </footer>
       </div>
     </section>
   );

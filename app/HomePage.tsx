@@ -197,10 +197,22 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       {hero === "walk" && <HeroShowroom total={products.length} departments={cats.map((c) => ({ id: c.id, name: c.name, count: c.productCount }))} />}
       {hero === "classes" && <HeroClasses total={products.length} groups={CLASS_ORDER.flatMap((id) => {
         const c = cats.find((x) => x.id === id); if (!c) return [];
-        // every classification with products in it; a chosen model's photo, its own picture, or the dearest photographed model in it
-        const tiles = childCategories(categories, c.id).filter((s) => s.productCount > 0).sort((x, y) => y.productCount - x.productCount).flatMap((s) => {
-          const image = byCode.get(CLASS_PICTURE[s.id] ?? "")?.image || s.image || products.filter((p) => p.subcategory === s.name && p.image).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0))[0]?.image;
-          return image ? [{ id: s.id, name: s.name, count: s.productCount, image }] : [];
+        // Use representative appliance photos (the freezer category's old photo
+        // is a fridge freezer). Prices respect every call-for-price flag.
+        const pictureCodes: Record<string, string> = { ...CLASS_PICTURE, freezers: "GIN81VEE0G", "washer-dryers": "WNG25401GB" };
+        // A temporarily empty range still needs its place in the shop directory.
+        const tiles = childCategories(categories, c.id).sort((x, y) => y.productCount - x.productCount).flatMap((s) => {
+          const models = products.filter((p) => p.subcategory === s.name && p.category === c.name);
+          // Sony's official BDP-S1700/K gallery provides a product cutout; the
+          // catalogue's current photo of this model is a cropped room scene.
+          const playerPhoto = s.id === "blu-ray-players" && models.some((p) => p.productCode === "BDPS1700K.CEK")
+            ? "https://sony.scene7.com/is/image/sonyglobalsolutions/Product-Intro-Plate_M-1?$productIntroPlatemobile$&fmt=png-alpha" : "";
+          const image = byCode.get(pictureCodes[s.id] ?? "")?.image || playerPhoto || s.image || models.filter((p) => p.image).sort((x, y) => (y.priceNow ?? 0) - (x.priceNow ?? 0))[0]?.image;
+          const from = poaSet.has(c.name) || poaSet.has(s.name) ? null : models.reduce<number | null>((lowest, p) => {
+            if (p.priceNow === null || !Number.isFinite(p.priceNow) || p.priceNow <= 0 || poaSet.has(p.brand)) return lowest;
+            return lowest === null || p.priceNow < lowest ? p.priceNow : lowest;
+          }, null);
+          return image ? [{ id: s.id, name: s.name, count: s.productCount, image, from }] : [];
         });
         return tiles.length ? [{ id: c.id, name: c.name, tiles }] : [];
       })} />}
