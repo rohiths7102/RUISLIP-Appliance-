@@ -130,7 +130,8 @@ async function readCatalog(): Promise<Catalog> {
   try {
     const [prod, cats, brds, biz, svcs] = await Promise.all([
       visibleProductRows(db),
-      db.category.findMany({ where: { isVisible: true } }),
+      // the owner's order inside a department (freestanding beside integrated, ovens together)
+      db.category.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }] }),
       // Owner's main brands pin first (order asc), then alphabetical.
       // A Brand column the generated client knows but the database does not
       // have yet (code deployed before the column was pushed) throws here, and
@@ -196,7 +197,7 @@ export const getNav = cache(async (): Promise<{ business: Business; categories: 
   }
   try {
     const [cats, brds, business] = await Promise.all([
-      db.category.findMany({ where: { isVisible: true }, select: { id: true, name: true, parentId: true, image: true, productCount: true } }),
+      db.category.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }], select: { id: true, name: true, parentId: true, image: true, productCount: true } }),
       db.brand.findMany({ where: { isVisible: true }, orderBy: [{ order: "asc" }, { name: "asc" }], select: { name: true, slug: true, productCount: true } }),
       getBusiness(),
     ]);

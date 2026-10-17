@@ -165,11 +165,10 @@ export default async function HomePage({ hero }: { hero: HeroVariant }) {
       {hero === "walk" && <HeroShowroom total={products.length} departments={cats.map((c) => ({ id: c.id, name: c.name, count: c.productCount }))} />}
       {hero === "classes" && <HeroClasses total={products.length} groups={CLASS_ORDER.flatMap((id) => {
         const c = cats.find((x) => x.id === id); if (!c) return [];
-        // Use representative appliance photos (the freezer category's old photo
-        // is a fridge freezer). Prices respect every call-for-price flag.
-        const pictureCodes: Record<string, string> = { ...CLASS_PICTURE, freezers: "GIN81VEE0G", "washer-dryers": "WNG25401GB" };
+        // Representative appliance photos. Prices respect every call-for-price flag.
+        const pictureCodes: Record<string, string> = { ...CLASS_PICTURE, "washer-dryers": "WNG25401GB" };
         // A temporarily empty range still needs its place in the shop directory.
-        const tiles = childCategories(categories, c.id).sort((x, y) => y.productCount - x.productCount).flatMap((s) => {
+        const tiles = childCategories(categories, c.id).flatMap((s) => {
           const models = products.filter((p) => p.subcategory === s.name && p.category === c.name);
           // Sony's official BDP-S1700/K gallery provides a product cutout; the
           // catalogue's current photo of this model is a cropped room scene.
