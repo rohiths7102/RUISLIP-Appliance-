@@ -31,7 +31,8 @@ const UTILITY = [
   { href: "/contact", label: "Contact" },
 ];
 
-/** Blue Call and the recognisable WhatsApp green. Both 44px tap targets. The number is
+/** Call (green, the action colour) and WhatsApp (its own green, so it reads as
+ *  WhatsApp and not a second "call us"). Both 44px tap targets. The number is
  *  spelt out only from 1024px: between 640 and 1024 the bar has no room for it. */
 function ContactButtons({ phone, className = "" }: { phone: string; className?: string }) {
   return (
@@ -65,10 +66,10 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
   // full menu covering the product the customer had just tapped.
   useEffect(() => { setOpen(false); setOpenDept(null); }, [pathname]);
   return (
-    <header data-site-chrome className="site-header sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
+    <header data-site-chrome className="sticky top-0 z-50 shadow-[0_1px_0_var(--color-line)]">
       {/* ---- white bar: name · member mark · search · phone ---- */}
       <div className="border-b border-line bg-paper">
-        <div className="header-identity container-x flex h-[72px] items-center gap-2 md:gap-4 lg:h-[88px]">
+        <div className="container-x flex h-[72px] items-center gap-2 md:gap-4 lg:h-[88px]">
           {/* The lockup: shop name, then "A member of Euronics". Side by side from
               640px; stacked on a phone, where the two would otherwise push the
               menu button off the right edge of a 360px screen. */}
@@ -78,7 +79,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
               <span className="shrink-0 font-brand text-[21px] font-bold leading-none tracking-[-0.015em] text-blue-deep sm:text-[25px] lg:text-[31px]">
                 Jyotsna Electrical
               </span>
-              <span className="header-established hidden font-mono text-[11px] leading-tight text-blue-deep xl:block">Est. 1977<br />South Ruislip</span>
+              <span className="hidden font-mono text-[8.5px] uppercase leading-tight tracking-[0.22em] text-blue-deep xl:block">Est. 1977<br />South Ruislip</span>
             </Link>
 
             {/* The shop's own "A member of euronics" lockup, taken from their live
@@ -102,7 +103,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
               </span>
             </div>
             <button
-              className="header-menu-button flex h-11 w-11 items-center justify-center border border-blue text-navy lg:hidden"
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-ink/15 text-navy lg:hidden"
               onClick={() => setOpen(!open)}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
@@ -135,7 +136,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
           beneath — a single row of all fourteen does not fit a 1366px laptop
           without dropping the chevrons or a department, which is the owner's
           call. The fly-out stays a sibling of the row, not a child. */}
-      <nav aria-label="Departments" className="header-nav relative hidden bg-blue lg:block"
+      <nav aria-label="Departments" className="relative hidden bg-blue lg:block"
         onMouseLeave={scheduleClose}
         onKeyDown={(e) => { if (e.key === "Escape") showDept(null); }}>
         <div className="container-x flex flex-wrap items-center gap-x-4">
@@ -187,7 +188,7 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
               viewport inside a sticky header, stranding the last links. ---- */}
       {open && (
         <div className="border-b border-line bg-paper lg:hidden">
-          <div className="header-mobile-links container-x flex max-h-[calc(100dvh-150px)] flex-col gap-1 overflow-y-auto py-3">
+          <div className="container-x flex max-h-[calc(100dvh-140px)] flex-col gap-1 overflow-y-auto py-3">
             {DEPARTMENTS.map(([slug, label]) => (
               <Link key={slug} href={`/categories/${slug}`} onClick={() => setOpen(false)}
                 className="border-b border-line py-3 text-sm font-medium text-ink">

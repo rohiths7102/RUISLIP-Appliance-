@@ -10,14 +10,14 @@ const CATS = [
 
 export default function Footer({ business }: { business: Business }) {
   return (
-    <footer data-site-chrome className="site-footer border-t border-blue/15 bg-navy">
+    <footer data-site-chrome className="border-t border-blue/15 bg-navy-3">
       <div className="container-x grid gap-10 py-16 md:grid-cols-2 lg:grid-cols-4">
         <div>
           <div className="mb-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/euronics-logo.png" alt="Euronics Ruislip" width={290} height={74} className="h-10 w-auto" />
           </div>
-          <p className="mb-4 max-w-[300px] text-[13.5px] leading-relaxed text-paper-2">
+          <p className="mb-4 max-w-[300px] text-[13.5px] leading-relaxed text-[#8ea6c4]">
             {business.businessName}. A family-run appliance shop serving Ruislip, South Ruislip and the
             surrounding area since 1977.
           </p>
@@ -27,11 +27,11 @@ export default function Footer({ business }: { business: Business }) {
         </div>
 
         <div>
-          <p className="footer-heading mb-4">Categories</p>
+          <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-sky">Categories</p>
           <ul className="flex flex-col gap-2.5">
             {CATS.map(([id, name]) => (
               <li key={id}>
-                <Link href={`/categories/${id}`} className="text-[13.5px] text-paper-2 transition-colors hover:text-white">
+                <Link href={`/categories/${id}`} className="text-[13.5px] text-[#a9c3de] transition-colors hover:text-sky">
                   {name}
                 </Link>
               </li>
@@ -40,26 +40,26 @@ export default function Footer({ business }: { business: Business }) {
         </div>
 
         <div>
-          <p className="footer-heading mb-4">Visit us</p>
-          <address className="text-[13.5px] not-italic leading-[1.8] text-paper-2">
+          <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-sky">Visit us</p>
+          <address className="text-[13.5px] not-italic leading-[1.8] text-[#a9c3de]">
             {business.address.line1}<br />
             {business.address.line2}<br />
             {business.address.county}, {business.address.postcode}
           </address>
           <p className="mt-3.5 text-[13.5px] font-semibold text-paper">Mon–Sat · 9:00–17:30</p>
-          <p className="text-[13.5px] text-paper-2">Sunday · Closed</p>
+          <p className="text-[13.5px] text-[#a9c3de]">Sunday · Closed</p>
         </div>
 
         <div>
-          <p className="footer-heading mb-4">More</p>
+          <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-sky">More</p>
           <ul className="flex flex-col gap-2.5 text-[13.5px]">
-            <li><Link href="/products" className="text-paper-2 hover:text-white">All appliances</Link></li>
-            <li><Link href="/brands" className="text-paper-2 hover:text-white">Brands</Link></li>
-            <li><Link href="/delivery-services" className="text-paper-2 hover:text-white">Delivery &amp; Services</Link></li>
-            <li><Link href="/about" className="text-paper-2 hover:text-white">About us</Link></li>
-            <li><Link href="/contact" className="text-paper-2 hover:text-white">Contact</Link></li>
-            <li><Link href="/terms" className="text-paper-2 hover:text-white">Terms &amp; Conditions</Link></li>
-            <li><Link href="/privacy" className="text-paper-2 hover:text-white">Privacy &amp; Cookies</Link></li>
+            <li><Link href="/products" className="text-[#a9c3de] hover:text-sky">All appliances</Link></li>
+            <li><Link href="/brands" className="text-[#a9c3de] hover:text-sky">Brands</Link></li>
+            <li><Link href="/delivery-services" className="text-[#a9c3de] hover:text-sky">Delivery &amp; Services</Link></li>
+            <li><Link href="/about" className="text-[#a9c3de] hover:text-sky">About us</Link></li>
+            <li><Link href="/contact" className="text-[#a9c3de] hover:text-sky">Contact</Link></li>
+            <li><Link href="/terms" className="text-[#a9c3de] hover:text-sky">Terms &amp; Conditions</Link></li>
+            <li><Link href="/privacy" className="text-[#a9c3de] hover:text-sky">Privacy &amp; Cookies</Link></li>
           </ul>
           <a href={telHref(business.phone)} className="mt-4 block font-display text-2xl text-sky">
             {business.phone}
@@ -68,7 +68,7 @@ export default function Footer({ business }: { business: Business }) {
             <div className="mt-4 flex gap-2.5">
               {business.socialLinks.map((s) => (
                 <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center border border-sky/45 px-3 py-1 text-[12px] capitalize text-paper-2 hover:border-white hover:text-white">
+                  className="rounded-full border border-sky/45 px-3 py-1 text-[11px] capitalize text-[#a9c3de] hover:border-blue hover:text-sky">
                   {s.platform}
                 </a>
               ))}
@@ -82,7 +82,7 @@ export default function Footer({ business }: { business: Business }) {
           is not, so nothing here is ever defaulted or placeholdered. */}
       {(business.companyNumber || business.vatNumber || business.registeredOffice) && (
         <div className="border-t border-paper/8">
-          <div className="footer-meta container-x flex flex-col gap-1 py-4 text-[11.5px] leading-relaxed text-line">
+          <div className="container-x flex flex-col gap-1 py-4 text-[11.5px] leading-relaxed text-[#8ea6c4]">
             {business.companyNumber && (
               <span>
                 {business.businessName} is a company registered
@@ -97,7 +97,7 @@ export default function Footer({ business }: { business: Business }) {
       )}
 
       <div className="border-t border-paper/8">
-        <div className="footer-meta container-x flex flex-col gap-2 py-5 text-[11.5px] text-line md:flex-row md:justify-between">
+        <div className="container-x flex flex-col gap-2 py-5 text-[11.5px] text-[#8ea6c4] md:flex-row md:justify-between">
           <span>© {new Date().getFullYear()} {business.businessName} · Euronics Ruislip. All rights reserved. E&amp;OE.</span>
           <span>Browse online, then call to confirm availability, price, delivery &amp; fitting.</span>
         </div>
