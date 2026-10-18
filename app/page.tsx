@@ -18,7 +18,6 @@ import ProductCard from "@/components/ProductCard";
 import { getHomepage, toHomepage, liveOffers, FEATURED_SHOWN } from "@/lib/homepage";
 import { getPrisma } from "@/lib/prisma";
 import { AREA_GROUPS, TOWNS } from "@/lib/areas";
-import categoryHeroes from "@/data/category-heroes.json";
 export const revalidate = 300;
 
 // Shop by type: [label, category id, category whose picture to use]. In the
@@ -347,55 +346,6 @@ export default async function Home() {
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-
-      {/* ---------------- CATEGORIES ---------------- */}
-      <section className="container-x pb-10 pt-24">
-        <Reveal className="mb-11 flex items-end justify-between gap-4">
-          <div>
-            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Departments</p>
-            <h2 className="font-display text-[44px] font-normal leading-[1.05]">Browse by category</h2>
-          </div>
-          <Link href="/products" className="hidden shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep sm:block">
-            View all appliances →
-          </Link>
-        </Reveal>
-        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
-            Euronics storefront runs its department panels — the appliance stands
-            on the light half, the name sits on the blue. No black anywhere. */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {cats.map((c, i) => {
-            // A cutout can stand on the blue; a catalogue shot on white cannot,
-            // so those departments get the light panel and multiply instead.
-            const cutout = (categoryHeroes as Record<string, string>)[c.id];
-            const shot = cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image;
-            return (
-            <Reveal key={c.id} delay={(i % 3) * 70}>
-              <Link href={`/categories/${c.id}`}
-                className="card-lift group block h-full overflow-hidden rounded-[4px] border border-line bg-white">
-                <div className={`relative aspect-[16/10] ${cutout
-                  ? "bg-[linear-gradient(112deg,#1b3d7d_0%,#1b3d7d_46%,#eef2f9_46.2%,#eef2f9_100%)]"
-                  : "bg-[linear-gradient(112deg,#dde4f3_0%,#dde4f3_46%,#f6f8fc_46.2%,#f6f8fc_100%)]"}`}>
-                  {shot ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={shot} alt="" aria-hidden loading="lazy"
-                      className={`absolute inset-0 h-full w-full object-contain p-7 transition-transform duration-700 group-hover:scale-105 ${cutout ? "drop-shadow-[0_14px_22px_rgba(0,0,0,.4)]" : "shot"}`} />
-                  ) : null}
-                </div>
-                <div className="flex items-center justify-between gap-3 px-[22px] py-5">
-                  <div>
-                    <h3 className="font-display text-[25px] font-medium leading-[1.05] text-ink">{c.name}</h3>
-                    <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-blue-deep">
-                      {c.productCount} models
-                    </p>
-                  </div>
-                  <ArrowRight size={20} className="shrink-0 text-blue transition-transform duration-300 group-hover:translate-x-1" />
-                </div>
-              </Link>
-            </Reveal>
-            );
-          })}
         </div>
       </section>
 
