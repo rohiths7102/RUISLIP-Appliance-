@@ -101,8 +101,6 @@ body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
 
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 .marquee { animation: marquee 70s linear infinite; }
-/* The brand band at the top runs the other way, a little quicker. */
-.marquee-rev { animation: marquee 55s linear infinite reverse; }
 
 @keyframes ctaUp { 0% { transform: translateY(120%); } 100% { transform: translateY(0); } }
 .cta-up { animation: ctaUp .5s cubic-bezier(.2,.8,.2,1); }
@@ -138,4 +136,18 @@ body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
   .card-lift { transition-property: box-shadow, border-color; }
   .card-lift:hover { transform: none; }
   html { scroll-behavior: auto; }
+}
+
+/* The brand wall (components/BrandWall.tsx): three rows drifting their own
+   way at their own pace; a row holds while pointed at or focused. Tiles lift
+   on hover. Reduced motion: still rows the visitor scrolls by hand. */
+.wall-row-a { animation: marquee 80s linear infinite; }
+.wall-row-b { animation: marquee 62s linear infinite reverse; }
+.wall-row-c { animation: marquee 96s linear infinite; }
+.wall-tile { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s; }
+.wall-tile:hover, .wall-tile:focus-visible { transform: translateY(-3px); box-shadow: 0 0 0 2px #fff, 0 10px 22px -10px rgba(0,0,0,.55); }
+@media (prefers-reduced-motion: reduce) {
+  .wall-row-a, .wall-row-b, .wall-row-c { animation: none; }
+  .wall-track { overflow-x: auto; }
+  .wall-tile:hover, .wall-tile:focus-visible { transform: none; }
 }

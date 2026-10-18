@@ -11,6 +11,7 @@ import WhatsAppIcon from "@/components/WhatsAppIcon";
 import HeroSlides from "@/components/HeroSlides";
 import PostcodeCheck from "@/components/PostcodeCheck";
 import ShopByType from "@/components/ShopByType";
+import BrandWall from "@/components/BrandWall";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
@@ -145,42 +146,8 @@ export default async function Home() {
                  bleeds past the grid so it reads as a room, not a thumbnail.
                  No .shot/multiply here — that is for light grounds; this image
                  is a true cutout and needs no blend. ------- */}
-      {/* ------- BRAND BAND — Quooker first (the owner asked for it above
-                 everything: the shop is a stockist and prices the range keenly),
-                 then every brand we sell on a running tape, in full colour. It
-                 runs the opposite way to the tape lower down; hovering pauses it. ------- */}
-      <div className="border-b border-line bg-paper-2">
-        <div className="flex flex-col items-stretch sm:flex-row">
-          <Link href="/brands/quooker"
-            className="group relative z-10 flex shrink-0 items-center justify-center gap-3.5 border-b border-line bg-paper-2 px-5 py-3 transition-colors hover:bg-[#e2e8f5] sm:justify-start sm:border-b-0 sm:border-r sm:pl-[max(1.25rem,calc((100vw-1280px)/2))] sm:shadow-[12px_0_18px_-10px_rgba(8,21,56,.18)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brands/quooker.svg" alt="Quooker" width={132} height={48} className="h-[28px] w-auto shrink-0" />
-            <span className="leading-tight">
-              <span className="block text-[13.5px] font-semibold text-navy">Quooker stockist — unbeatable prices</span>
-              <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-blue-deep">
-                See the taps <ArrowRight size={13} className="transition-transform duration-300 group-hover:translate-x-[3px]" />
-              </span>
-            </span>
-          </Link>
-          <div className="group/band relative flex min-w-0 flex-1 items-center overflow-hidden py-2.5 [mask-image:linear-gradient(90deg,transparent,#000_5%,#000_95%,transparent)]">
-            <div className="marquee-rev flex w-max items-center gap-2.5 group-hover/band:[animation-play-state:paused]">
-              {[...brandTape, ...brandTape].map((b, i) => (
-                <Link key={`band-${b.id}-${i}`} href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
-                  aria-hidden={i >= brandTape.length} tabIndex={i >= brandTape.length ? -1 : undefined}
-                  className="group/logo flex h-[46px] w-[112px] shrink-0 items-center justify-center rounded-md border border-line bg-white px-3 transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-blue hover:shadow-[0_6px_14px_-8px_rgba(10,39,136,.45)]">
-                  {b.logo ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={b.logo} alt={`${b.name} logo`} loading="lazy"
-                      className="max-h-[26px] max-w-[88%] object-contain" />
-                  ) : (
-                    <span className="text-center text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-blue-deep">{b.name}</span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ------- BRAND WALL — every brand, full width, Quooker heading it (components/BrandWall.tsx) ------- */}
+      <BrandWall brands={brandTape} />
 
       {/* ------- SHOP BY TYPE — the classifications on top (Sachin, 17 Oct 2026) ------- */}
       <ShopByType tiles={typeTiles} />
