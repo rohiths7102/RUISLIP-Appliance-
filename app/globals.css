@@ -100,7 +100,6 @@ body:has([data-admin-shell]) [data-site-chrome] { display: none !important; }
 .hero-ken { animation: heroKen 26s ease-in-out infinite alternate; will-change: transform; }
 
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-.marquee { animation: marquee 70s linear infinite; }
 
 @keyframes ctaUp { 0% { transform: translateY(120%); } 100% { transform: translateY(0); } }
 .cta-up { animation: ctaUp .5s cubic-bezier(.2,.8,.2,1); }

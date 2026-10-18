@@ -384,43 +384,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ---------------- BRAND TAPE — real logos, running like a showroom window ---------------- */}
-      <section className="border-y border-line bg-paper-2 py-16">
-        <div className="container-x">
-          <Reveal className="mb-9 text-center">
-            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The brands we stock</p>
-            <h2 className="font-display text-[40px] font-normal">{brands.length} trusted appliance brands</h2>
-          </Reveal>
-        </div>
-        {/* A running tape of the brands, the way a showroom window rotates them.
-            The track is the list twice over, so translating it half its width
-            loops seamlessly; hovering stops it, and it holds still for anyone
-            who asks for reduced motion (see .marquee in globals.css). */}
-        <div className="group/tape relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)]">
-          <div className="marquee flex w-max gap-3 group-hover/tape:[animation-play-state:paused]">
-            {[...brandTape, ...brandTape].map((b, i) => (
-              <Link key={`${b.id}-${i}`} href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
-                aria-hidden={i >= brandTape.length} tabIndex={i >= brandTape.length ? -1 : undefined}
-                className="flex h-[76px] w-[150px] shrink-0 items-center justify-center rounded-lg border border-line bg-white px-5 transition-colors hover:border-blue">
-                {b.logo ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={b.logo} alt={`${b.name} logo`} loading="lazy" className="max-h-[38px] max-w-[86%] object-contain" />
-                ) : (
-                  <span className="text-center text-[13px] font-bold uppercase leading-tight tracking-[0.08em] text-blue-deep">{b.name}</span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="container-x">
-          <div className="mt-8 text-center">
-            <Link href="/brands" className="inline-flex items-center gap-2 border-b border-blue pb-1 text-[13px] font-semibold text-blue-deep hover:text-blue">
-              See all brands <ArrowRight size={15} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* ---------------- LOCAL SERVICE ---------------- */}
       <section className="container-x py-24">
         <div className="grid items-center gap-14 lg:grid-cols-2">
