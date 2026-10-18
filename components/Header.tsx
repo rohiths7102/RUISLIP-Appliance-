@@ -132,14 +132,15 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
           etc. — compress this so it's all visible". Fourteen links at 16px with
           32px gaps measured 1903px, 544px over a 1366px laptop and still 385px
           over the 1520px container on a 1920px monitor. Tighter type and gaps,
-          departments on one row and the four utility links on a slimmer row
-          beneath — a single row of all fourteen does not fit a 1366px laptop
-          without dropping the chevrons or a department, which is the owner's
-          call. The fly-out stays a sibling of the row, not a child. */}
+          departments on one row spread to the container's width; the four
+          utility links ride the right end of the light USP strip below
+          (UspStrip), so the header is two bands, not three (Oct 2026). A
+          single row of all fourteen does not fit a 1366px laptop. The
+          fly-out stays a sibling of the row, not a child. */}
       <nav aria-label="Departments" className="relative hidden bg-blue lg:block"
         onMouseLeave={scheduleClose}
         onKeyDown={(e) => { if (e.key === "Escape") showDept(null); }}>
-        <div className="container-x flex flex-wrap items-center gap-x-4">
+        <div className="container-x flex flex-wrap items-center justify-between gap-x-4">
           {DEPARTMENTS.map(([slug, label]) => {
             const current = pathname === `/categories/${slug}`;
             const dept = nav?.departments.find((d) => d.id === slug);
@@ -156,17 +157,6 @@ export default function Header({ business, nav }: { business: Business; nav?: Na
               </Link>
             );
           })}
-          <div className="flex basis-full items-center gap-x-5 border-t border-white/15">
-          {UTILITY.map((u) => {
-            const current = pathname === u.href;
-            return (
-              <Link key={u.href} href={u.href} aria-current={current ? "page" : undefined}
-                className={`relative whitespace-nowrap py-2.5 text-[12px] font-medium text-white lg:py-[9px] lg:text-[13px] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-white after:transition-transform after:duration-300 after:[transition-timing-function:cubic-bezier(.2,.8,.2,1)] ${current ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}>
-                {u.label}
-              </Link>
-            );
-          })}
-          </div>
         </div>
         {openDept && nav && (() => {
           const dept = nav.departments.find((d) => d.id === openDept);
