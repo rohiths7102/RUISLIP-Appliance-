@@ -10,14 +10,27 @@ import PromoBanners from "@/components/PromoBanners";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import HeroSlides from "@/components/HeroSlides";
 import PostcodeCheck from "@/components/PostcodeCheck";
+import ShopByType from "@/components/ShopByType";
+import BrandWall from "@/components/BrandWall";
 import GoogleReviews from "@/components/GoogleReviews";
 import ShowroomTour from "@/components/ShowroomTour";
 import ProductCard from "@/components/ProductCard";
 import { getHomepage, toHomepage, liveOffers, FEATURED_SHOWN } from "@/lib/homepage";
 import { getPrisma } from "@/lib/prisma";
 import { AREA_GROUPS, TOWNS } from "@/lib/areas";
-import categoryHeroes from "@/data/category-heroes.json";
 export const revalidate = 300;
+
+// Shop by type: [label, category id, category whose picture to use]. In the
+// Ruislip Appliances order, as Sachin asked.
+const SHOP_BY_TYPE: [string, string, string?][] = [
+  ["Washing Machines", "washing-machines"], ["Washer Dryers", "washer-dryers"], ["Tumble Dryers", "tumble-dryers"],
+  ["Dishwashers", "dishwashers", "freestanding-dishwashers"], ["Refrigeration", "refrigeration", "fridge-freezers"],
+  ["Ovens", "ovens"], ["Hobs", "hobs"], ["Hoods", "cooker-hoods"], ["Cookers", "cookers"],
+  ["American-Style", "american-fridge-freezers"], ["Coffee Machines", "coffee-machines", "bean-to-cup"],
+  ["Wine Coolers", "wine-coolers"], ["Small Appliances", "small-appliances", "kettles"], ["Microwaves", "microwaves"],
+  ["Vacuum Cleaners", "floorcare", "vacuum-cleaners"], ["Warming Drawers", "warming-drawers"], ["Quooker", "quooker"],
+  ["Venting Hobs", "venting-hobs"], ["Sinks & Taps", "sinks-taps", "kitchen-taps"], ["Televisions", "televisions"],
+];
 
 const STEPS = [
   ["01", "Choose your appliance", "Browse the range and find the model that fits your kitchen."],
@@ -59,6 +72,16 @@ export default async function Home() {
     .map((p) => toCardItem(p, poaSet));
 
   const brandTape = [...brands].sort((a, b) => b.productCount - a.productCount);
+
+  // The classifications on top, in the Ruislip Appliances format (Sachin, 17 Oct 2026).
+  // Each tile is a real page; a department tile borrows the picture of its main type.
+  const catById = new Map(categories.map((c) => [c.id, c]));
+  const typeTiles = SHOP_BY_TYPE.flatMap(([name, id, pictureFrom]) => {
+    const c = catById.get(id);
+    const image = id === "quooker" ? "/catalog/quooker/3XBLK/01.png" : catById.get(pictureFrom ?? id)?.image || c?.image;
+    if (id === "quooker") return [{ name, href: "/brands/quooker", image: image! }];
+    return c && c.productCount > 0 && image ? [{ name, href: `/categories/${id}`, image }] : [];
+  });
 
   // Department -> sub-category names for the finder; one vocabulary with the
   // category pages and the /products browser.
@@ -122,42 +145,11 @@ export default async function Home() {
                  bleeds past the grid so it reads as a room, not a thumbnail.
                  No .shot/multiply here — that is for light grounds; this image
                  is a true cutout and needs no blend. ------- */}
-      {/* ------- BRAND BAND — Quooker first (the owner asked for it above
-                 everything: the shop is a stockist and prices the range keenly),
-                 then every brand we sell on a running tape, in full colour. It
-                 runs the opposite way to the tape lower down; hovering pauses it. ------- */}
-      <div className="border-b border-line bg-paper-2">
-        <div className="flex flex-col items-stretch sm:flex-row">
-          <Link href="/brands/quooker"
-            className="group relative z-10 flex shrink-0 items-center justify-center gap-3.5 border-b border-line bg-paper-2 px-5 py-3 transition-colors hover:bg-[#e2e8f5] sm:justify-start sm:border-b-0 sm:border-r sm:pl-[max(1.25rem,calc((100vw-1280px)/2))] sm:shadow-[12px_0_18px_-10px_rgba(8,21,56,.18)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brands/quooker.svg" alt="Quooker" width={132} height={48} className="h-[28px] w-auto shrink-0" />
-            <span className="leading-tight">
-              <span className="block text-[13.5px] font-semibold text-navy">Quooker stockist — unbeatable prices</span>
-              <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-blue-deep">
-                See the taps <ArrowRight size={13} className="transition-transform duration-300 group-hover:translate-x-[3px]" />
-              </span>
-            </span>
-          </Link>
-          <div className="group/band relative flex min-w-0 flex-1 items-center overflow-hidden py-2.5 [mask-image:linear-gradient(90deg,transparent,#000_5%,#000_95%,transparent)]">
-            <div className="marquee-rev flex w-max items-center gap-2.5 group-hover/band:[animation-play-state:paused]">
-              {[...brandTape, ...brandTape].map((b, i) => (
-                <Link key={`band-${b.id}-${i}`} href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
-                  aria-hidden={i >= brandTape.length} tabIndex={i >= brandTape.length ? -1 : undefined}
-                  className="group/logo flex h-[46px] w-[112px] shrink-0 items-center justify-center rounded-md border border-line bg-white px-3 transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-blue hover:shadow-[0_6px_14px_-8px_rgba(10,39,136,.45)]">
-                  {b.logo ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={b.logo} alt={`${b.name} logo`} loading="lazy"
-                      className="max-h-[26px] max-w-[88%] object-contain" />
-                  ) : (
-                    <span className="text-center text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-blue-deep">{b.name}</span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ------- BRAND WALL — every brand, full width, Quooker heading it (components/BrandWall.tsx) ------- */}
+      <BrandWall brands={brandTape} />
+
+      {/* ------- SHOP BY TYPE — the classifications on top (Sachin, 17 Oct 2026) ------- */}
+      <ShopByType tiles={typeTiles} />
 
       <section className="relative overflow-hidden bg-[#1b3d7d]">
         <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
@@ -357,55 +349,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ---------------- CATEGORIES ---------------- */}
-      <section className="container-x pb-10 pt-24">
-        <Reveal className="mb-11 flex items-end justify-between gap-4">
-          <div>
-            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— Departments</p>
-            <h2 className="font-display text-[44px] font-normal leading-[1.05]">Browse by category</h2>
-          </div>
-          <Link href="/products" className="hidden shrink-0 border-b border-blue pb-1 text-[13px] font-semibold hover:text-blue-deep sm:block">
-            View all appliances →
-          </Link>
-        </Reveal>
-        {/* Big panels on the shop's own blue with a diagonal wedge, the way his
-            Euronics storefront runs its department panels — the appliance stands
-            on the light half, the name sits on the blue. No black anywhere. */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {cats.map((c, i) => {
-            // A cutout can stand on the blue; a catalogue shot on white cannot,
-            // so those departments get the light panel and multiply instead.
-            const cutout = (categoryHeroes as Record<string, string>)[c.id];
-            const shot = cutout || c.image || products.find((p) => p.category === c.name && p.image)?.image;
-            return (
-            <Reveal key={c.id} delay={(i % 3) * 70}>
-              <Link href={`/categories/${c.id}`}
-                className="card-lift group block h-full overflow-hidden rounded-[4px] border border-line bg-white">
-                <div className={`relative aspect-[16/10] ${cutout
-                  ? "bg-[linear-gradient(112deg,#1b3d7d_0%,#1b3d7d_46%,#eef2f9_46.2%,#eef2f9_100%)]"
-                  : "bg-[linear-gradient(112deg,#dde4f3_0%,#dde4f3_46%,#f6f8fc_46.2%,#f6f8fc_100%)]"}`}>
-                  {shot ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={shot} alt="" aria-hidden loading="lazy"
-                      className={`absolute inset-0 h-full w-full object-contain p-7 transition-transform duration-700 group-hover:scale-105 ${cutout ? "drop-shadow-[0_14px_22px_rgba(0,0,0,.4)]" : "shot"}`} />
-                  ) : null}
-                </div>
-                <div className="flex items-center justify-between gap-3 px-[22px] py-5">
-                  <div>
-                    <h3 className="font-display text-[25px] font-medium leading-[1.05] text-ink">{c.name}</h3>
-                    <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-blue-deep">
-                      {c.productCount} models
-                    </p>
-                  </div>
-                  <ArrowRight size={20} className="shrink-0 text-blue transition-transform duration-300 group-hover:translate-x-1" />
-                </div>
-              </Link>
-            </Reveal>
-            );
-          })}
-        </div>
-      </section>
-
       {/* ---------------- HERITAGE — the family story, like the reference site ---------------- */}
       <section className="mt-16 bg-blue px-6 py-24">
         <div className="mx-auto max-w-[1000px] text-center">
@@ -438,43 +381,6 @@ export default async function Home() {
               <p className="text-sm leading-relaxed text-muted">{body}</p>
             </Reveal>
           ))}
-        </div>
-      </section>
-
-      {/* ---------------- BRAND TAPE — real logos, running like a showroom window ---------------- */}
-      <section className="border-y border-line bg-paper-2 py-16">
-        <div className="container-x">
-          <Reveal className="mb-9 text-center">
-            <p className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.24em] text-blue-deep">— The brands we stock</p>
-            <h2 className="font-display text-[40px] font-normal">{brands.length} trusted appliance brands</h2>
-          </Reveal>
-        </div>
-        {/* A running tape of the brands, the way a showroom window rotates them.
-            The track is the list twice over, so translating it half its width
-            loops seamlessly; hovering stops it, and it holds still for anyone
-            who asks for reduced motion (see .marquee in globals.css). */}
-        <div className="group/tape relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)]">
-          <div className="marquee flex w-max gap-3 group-hover/tape:[animation-play-state:paused]">
-            {[...brandTape, ...brandTape].map((b, i) => (
-              <Link key={`${b.id}-${i}`} href={`/brands/${b.slug}`} title={`${b.name} — ${b.productCount} models`}
-                aria-hidden={i >= brandTape.length} tabIndex={i >= brandTape.length ? -1 : undefined}
-                className="flex h-[76px] w-[150px] shrink-0 items-center justify-center rounded-lg border border-line bg-white px-5 transition-colors hover:border-blue">
-                {b.logo ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={b.logo} alt={`${b.name} logo`} loading="lazy" className="max-h-[38px] max-w-[86%] object-contain" />
-                ) : (
-                  <span className="text-center text-[13px] font-bold uppercase leading-tight tracking-[0.08em] text-blue-deep">{b.name}</span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="container-x">
-          <div className="mt-8 text-center">
-            <Link href="/brands" className="inline-flex items-center gap-2 border-b border-blue pb-1 text-[13px] font-semibold text-blue-deep hover:text-blue">
-              See all brands <ArrowRight size={15} />
-            </Link>
-          </div>
         </div>
       </section>
 

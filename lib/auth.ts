@@ -8,17 +8,22 @@ export const COOKIE_NAME = "admin_session";
  * Session-signing key. The dev fallback is a PUBLIC string in this repo — with
  * it, anyone could mint a valid admin cookie. In production we refuse to fall
  * back: a deployment missing SESSION_SECRET (and ADMIN_PASSWORD_HASH) fails
- * loudly at boot instead of silently signing with a known key.
+ * loudly on first use instead of silently signing with a known key.
  */
 const DEV_FALLBACK_SECRET = "dev-insecure-secret-change-me";
-const SECRET = (() => {
+// Resolved on first use, not at import: `next build` loads every route module
+// while collecting page data, and a preview deployment (no production secrets)
+// must still build — it just cannot sign a session.
+let secret: string | undefined;
+function sessionSecret(): string {
+  if (secret) return secret;
   const configured = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD_HASH;
-  if (configured) return configured;
+  if (configured) return (secret = configured);
   if (process.env.NODE_ENV === "production") {
     throw new Error("SESSION_SECRET (or ADMIN_PASSWORD_HASH) must be set in production — refusing to sign sessions with the public dev key.");
   }
-  return DEV_FALLBACK_SECRET;
-})();
+  return (secret = DEV_FALLBACK_SECRET);
+}
 
 export function hashPassword(pw: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -32,13 +37,13 @@ export function verifyPassword(pw: string, stored: string): boolean {
 }
 function sign(payload: object): string {
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const sig = crypto.createHmac("sha256", sessionSecret()).update(body).digest("base64url");
   return `${body}.${sig}`;
 }
 function unsign(token: string): any | null {
   const [body, sig] = (token || "").split(".");
   if (!body || !sig) return null;
-  const expect = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const expect = crypto.createHmac("sha256", sessionSecret()).update(body).digest("base64url");
   const s = Buffer.from(sig), e = Buffer.from(expect);
   if (s.length !== e.length || !crypto.timingSafeEqual(s, e)) return null;
   // An expiry is mandatory — a token without one would never age out.

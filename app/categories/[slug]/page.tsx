@@ -39,6 +39,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const brandNames = [...new Set(items.map((p) => p.brand).filter(Boolean))].sort();
   const kids = childCategories(categories, c.id);
   const subNames = kids.map((k) => k.name);
+  // On a type page, its sister types sit above the list (Single / Double /
+  // Built-under ovens…), so the finer split stays one tap apart.
+  const sisters = !kids.length && c.parentCategory ? childCategories(categories, c.parentCategory).filter((k) => k.productCount > 0) : [];
 
   return (
     <>
@@ -68,6 +71,16 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
               </Link>
             ))}
           </div>
+        )}
+        {sisters.length > 1 && (
+          <nav aria-label="Related types" className="mb-8 flex flex-wrap gap-2.5">
+            {sisters.map((k) => (
+              <Link key={k.id} href={`/categories/${k.id}`} aria-current={k.id === c.id ? "page" : undefined}
+                className={`rounded-full border px-4 py-2 text-[12.5px] font-medium transition-colors ${k.id === c.id ? "border-blue-deep bg-blue-deep text-white" : "border-ink/15 bg-card hover:border-blue hover:text-blue-deep"}`}>
+                {k.name} <span className={`font-mono text-[11px] ${k.id === c.id ? "text-white/80" : "text-ink/70"}`}>{k.productCount}</span>
+              </Link>
+            ))}
+          </nav>
         )}
         {items.length ? (
           <ProductBrowser items={items} brands={brandNames} categories={subNames} />
