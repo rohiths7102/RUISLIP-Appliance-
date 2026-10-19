@@ -22,7 +22,7 @@ import { readMakerPrice, MAKER_HOSTS } from "../../lib/maker-price";
 const args = process.argv.slice(2);
 const DRY = args.includes("--dry-run");
 const pairs = args.filter((a) => a.includes("=")).map((a) => { const i = a.indexOf("="); return { code: a.slice(0, i).toUpperCase(), url: a.slice(i + 1) }; });
-const BY = "Rohit (via Claude): Sachin's best sellers, 30 Sept 2026";
+const BY = process.env.IMPORT_REASON ? `Rohit (via Claude): ${process.env.IMPORT_REASON}` : "Rohit (via Claude): Sachin's best sellers, 30 Sept 2026";
 const norm = (s: unknown) => String(s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

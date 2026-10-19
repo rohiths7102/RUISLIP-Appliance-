@@ -5,7 +5,8 @@ import { Phone, MessageCircle, Check } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { getProduct, relatedFor, toCardItem, poaNamesFrom } from "@/lib/select";
 import { isBestSeller } from "@/lib/best-sellers";
-import { gbp, formatPrice, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, PRICE_MATCH_LINE, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
+import PriceMatchPromise, { showsPriceMatch } from "@/components/PriceMatchPromise";
+import { gbp, formatPrice, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
@@ -129,13 +130,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 <Phone size={16} strokeWidth={2.4} /> {priceMatch ? "Call for best price" : PRICE_ON_APPLICATION}
               </span>
             )}
-            {priceMatch && <p className="w-full text-[14px] text-muted">{PRICE_MATCH_LINE}</p>}
             {!poa && p.priceWas ? <span className="mb-1.5 text-lg text-muted line-through tabular-nums">{formatPrice(p.priceWas)}</span> : null}
             {!poa && p.saving ? (
               <span className="mb-1.5 rounded-sm bg-success-soft px-2.5 py-1.5 text-xs font-bold text-success tabular-nums">Save {formatPrice(p.saving)}</span>
             ) : null}
           </div>
           {!poa && <p className="mb-6 text-xs text-ink/70">Price shown excludes optional delivery &amp; installation</p>}
+          {showsPriceMatch(p.category) && <PriceMatchPromise code={p.productCode} title={p.title} />}
 
           <div className="mb-6 rounded-[4px] border border-blue/40 bg-blue/[.07] px-[18px] py-4">
             <p className="text-[13.5px] leading-relaxed text-[#44586f]">

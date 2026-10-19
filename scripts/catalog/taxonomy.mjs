@@ -8,37 +8,59 @@
  * Top-level ids are what the customer browses; leaves are what they filter by.
  */
 
+import { finerType } from "./finer-types.mjs";
+
 export const TREE = [
   { id: "laundry", name: "Laundry", blurb: "Washing machines, washer dryers and tumble dryers from the brands we stock and service.", children: [
-    { id: "washing-machines", name: "Washing Machines" },
-    { id: "washer-dryers", name: "Washer Dryers" },
+    { id: "washing-machines", name: "Freestanding Washing Machines" },
+    { id: "integrated-washing-machines", name: "Integrated Washing Machines" },
     { id: "tumble-dryers", name: "Tumble Dryers" },
+    { id: "washer-dryers", name: "Freestanding Washer Dryers" },
+    { id: "integrated-washer-dryers", name: "Integrated Washer Dryers" },
   ]},
   { id: "refrigeration", name: "Refrigeration", blurb: "Fridge freezers, American-style, integrated fridges, freezers and wine coolers.", children: [
-    { id: "fridge-freezers", name: "Fridge Freezers" },
+    { id: "fridge-freezers", name: "Freestanding Fridge Freezers" },
+    { id: "integrated-fridge-freezers", name: "Integrated Fridge Freezers" },
     { id: "american-fridge-freezers", name: "American Style Fridge Freezers" },
-    { id: "fridges", name: "Fridges" },
-    { id: "freezers", name: "Freezers" },
+    { id: "fridges", name: "Freestanding Fridges" },
+    { id: "integrated-fridges", name: "Integrated Fridges" },
+    { id: "freezers", name: "Freestanding Freezers" },
+    { id: "integrated-freezers", name: "Integrated Freezers" },
+    { id: "chest-freezers", name: "Chest Freezers" },
     { id: "wine-coolers", name: "Wine Coolers" },
   ]},
   { id: "dishwashers", name: "Dishwashers", blurb: "Integrated and freestanding dishwashers, fitted by our own team.", children: [
-    { id: "integrated-dishwashers", name: "Integrated Dishwashers" },
     { id: "freestanding-dishwashers", name: "Freestanding Dishwashers" },
+    { id: "slimline-dishwashers", name: "Slimline Dishwashers" },
+    { id: "integrated-dishwashers", name: "Fully Integrated Dishwashers" },
+    { id: "integrated-slimline-dishwashers", name: "Integrated Slimline Dishwashers" },
+    { id: "semi-integrated-dishwashers", name: "Semi-integrated Dishwashers" },
   ]},
   { id: "cooking", name: "Cooking", blurb: "Ovens, hobs, cookers, microwaves, extractor hoods and warming drawers.", children: [
-    { id: "ovens", name: "Ovens" },
-    { id: "hobs", name: "Hobs" },
-    { id: "cookers", name: "Cookers" },
+    { id: "ovens", name: "Single Ovens" },
+    { id: "double-ovens", name: "Double Ovens" },
+    { id: "built-under-ovens", name: "Built-under Double Ovens" },
+    { id: "compact-ovens", name: "Compact Ovens" },
     { id: "microwaves", name: "Microwaves" },
-    { id: "cooker-hoods", name: "Cooker Hoods & Extractors" },
     { id: "warming-drawers", name: "Warming Drawers" },
+    { id: "hobs", name: "Induction Hobs" },
+    { id: "gas-hobs", name: "Gas Hobs" },
+    { id: "ceramic-hobs", name: "Ceramic & Electric Hobs" },
+    { id: "venting-hobs", name: "Venting Hobs" },
+    { id: "cooker-hoods", name: "Cooker Hoods & Extractors" },
+    { id: "cookers", name: "Freestanding Cookers" },
+    { id: "range-cookers", name: "Range Cookers" },
   ]},
   // The owner sells Caple sinks/taps and the full Quooker boiling-water range,
   // neither of which is an "appliance" — they had nowhere to live and would have
   // been thrown out by classify() rather than guessed at.
   { id: "sinks-taps", name: "Sinks & Taps", blurb: "Kitchen sinks, mixer taps and boiling water taps, supplied and fitted.", children: [
-    { id: "kitchen-sinks", name: "Kitchen Sinks" },
-    { id: "kitchen-taps", name: "Kitchen Taps" },
+    { id: "kitchen-sinks", name: "Stainless Steel Sinks" },
+    { id: "granite-sinks", name: "Granite & Composite Sinks" },
+    { id: "ceramic-sinks", name: "Ceramic Sinks" },
+    { id: "kitchen-taps", name: "Kitchen Mixer Taps" },
+    { id: "pull-out-taps", name: "Pull-out & Spray Taps" },
+    { id: "filter-taps", name: "Filter Taps" },
     { id: "boiling-water-taps", name: "Boiling Water Taps" },
   ]},
   { id: "coffee-machines", name: "Coffee Machines", blurb: "Bean-to-cup, filter, pod machines and grinders.", children: [
@@ -102,7 +124,7 @@ export const URL_MAP = {
   "cooking/cooker-hoods": "cooker-hoods",
   "cooking/ovens": "ovens",
   "cooking/induction-electric-hobs": "hobs",
-  "cooking/gas-hobs": "hobs",
+  "cooking/gas-hobs": "gas-hobs",
   "cooking/microwaves": "microwaves",
   "cooking/warming-drawers": "warming-drawers",
   "cooking/cleaning-and-care": "cleaning-products",
@@ -158,8 +180,8 @@ export const URL_MAP = {
   "accessories/microwaves": "cooking-accessories",
   "fridges-freezers/wine-coolers": "wine-coolers", // neff spells it "wine-coolers"; bosch uses "wine-fridges"
   "hobs/induction-hobs": "hobs",
-  "hobs/gas-hobs": "hobs",
-  "hobs/ceramic-hobs": "hobs",
+  "hobs/gas-hobs": "gas-hobs",
+  "hobs/ceramic-hobs": "ceramic-hobs",
   "ovens-compact-ovens/ovens": "ovens",
   "ovens-compact-ovens/compact-ovens": "ovens",
   "extractor-hoods/wall-installation": "cooker-hoods",
@@ -392,6 +414,12 @@ export function urlKey(sourceUrl) {
  * silent mis-file can never reach the site.
  */
 export function classify(r) {
+  const out = classifyBroad(r);
+  const leaf = finerType(out.leaf, r.name, r.specifications);
+  return leaf === out.leaf ? out : { leaf, how: `${out.how}+finer` };
+}
+
+function classifyBroad(r) {
   // Match against both the raw text and a de-concatenated copy, so a rule hits
   // whether the source wrote "Washing Machine" or "WashingMachine".
   const text = `${r.description} ${r.name}`;

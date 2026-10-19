@@ -4,7 +4,8 @@ import Image from "next/image";
 import { Phone } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { slugOf } from "@/lib/select";
-import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, PRICE_MATCH_LINE } from "@/lib/format";
+import PriceMatchPromise, { showsPriceMatch } from "@/components/PriceMatchPromise";
+import { gbp, availabilityDot, telHref, waHref, STORE_PHONE, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import WarrantyBadge from "@/components/WarrantyBadge";
 import { energyClassOf, energyTone, type EnergyClass } from "@/lib/energy";
@@ -91,7 +92,6 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-blue">
                 <Phone size={13} strokeWidth={2.4} /> {priceMatch ? "Call for best price" : PRICE_ON_APPLICATION}
               </span>
-              {priceMatch && <p className="mt-1 text-[12px] leading-snug text-muted">{PRICE_MATCH_LINE}</p>}
             </div>
           ) : (
             <div className="flex items-baseline gap-2.5">
@@ -99,6 +99,7 @@ export default function ProductCard({ p, energyClass }: { p: Product; energyClas
               {p.priceWas ? <span className="text-sm text-ink/70 line-through">{gbp(p.priceWas)}</span> : null}
             </div>
           )}
+          {showsPriceMatch(p.category) && <PriceMatchPromise code={p.productCode} title={p.title} compact />}
         </div>
       </Link>
       {/* min-h-11 = 44px tap targets; most of this shop's traffic is on a phone.
