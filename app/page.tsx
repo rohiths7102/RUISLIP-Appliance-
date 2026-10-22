@@ -21,15 +21,17 @@ import { AREA_GROUPS, TOWNS } from "@/lib/areas";
 export const revalidate = 300;
 
 // Shop by type: [label, category id, category whose picture to use]. In the
-// Ruislip Appliances order, as Sachin asked.
+// Sachin's order (23 Oct 2026): laundry, dishwashers, refrigeration and
+// American-style, freestanding cookers, then the built-in kitchen together
+// (ovens, hobs, microwaves, hoods, warming drawers, venting hobs), then the rest.
 const SHOP_BY_TYPE: [string, string, string?][] = [
   ["Washing Machines", "washing-machines"], ["Washer Dryers", "washer-dryers"], ["Tumble Dryers", "tumble-dryers"],
   ["Dishwashers", "dishwashers", "freestanding-dishwashers"], ["Refrigeration", "refrigeration", "fridge-freezers"],
-  ["Ovens", "ovens"], ["Hobs", "hobs"], ["Hoods", "cooker-hoods"], ["Cookers", "cookers"],
-  ["American-Style", "american-fridge-freezers"], ["Coffee Machines", "coffee-machines", "bean-to-cup"],
-  ["Wine Coolers", "wine-coolers"], ["Small Appliances", "small-appliances", "kettles"], ["Freestanding Microwaves", "microwaves"], ["Built-in Microwaves", "built-in-microwaves"],
-  ["Vacuum Cleaners", "floorcare", "vacuum-cleaners"], ["Warming Drawers", "warming-drawers"], ["Quooker", "quooker"],
-  ["Venting Hobs", "venting-hobs"], ["Sinks & Taps", "sinks-taps", "kitchen-taps"], ["Televisions", "televisions"],
+  ["American-Style", "american-fridge-freezers"], ["Cookers", "cookers"],
+  ["Ovens", "ovens"], ["Hobs", "hobs"], ["Freestanding Microwaves", "microwaves"], ["Built-in Microwaves", "built-in-microwaves"],
+  ["Hoods", "cooker-hoods"], ["Warming Drawers", "warming-drawers"], ["Venting Hobs", "venting-hobs"],
+  ["Coffee Machines", "coffee-machines", "bean-to-cup"], ["Wine Coolers", "wine-coolers"], ["Small Appliances", "small-appliances", "kettles"],
+  ["Vacuum Cleaners", "floorcare", "vacuum-cleaners"], ["Quooker", "quooker"], ["Sinks & Taps", "sinks-taps", "kitchen-taps"], ["Televisions", "televisions"],
 ];
 
 const STEPS = [
