@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
-import { telHref, waHref } from "@/lib/format";
+import { telHref, waHref, gbp } from "@/lib/format";
 import Reveal from "@/components/Reveal";
 import CountUp from "@/components/CountUp";
 import DiscoverPanel from "@/components/DiscoverPanel";
@@ -27,7 +27,7 @@ const SHOP_BY_TYPE: [string, string, string?][] = [
   ["Dishwashers", "dishwashers", "freestanding-dishwashers"], ["Refrigeration", "refrigeration", "fridge-freezers"],
   ["Ovens", "ovens"], ["Hobs", "hobs"], ["Hoods", "cooker-hoods"], ["Cookers", "cookers"],
   ["American-Style", "american-fridge-freezers"], ["Coffee Machines", "coffee-machines", "bean-to-cup"],
-  ["Wine Coolers", "wine-coolers"], ["Small Appliances", "small-appliances", "kettles"], ["Microwaves", "microwaves"],
+  ["Wine Coolers", "wine-coolers"], ["Small Appliances", "small-appliances", "kettles"], ["Freestanding Microwaves", "microwaves"], ["Built-in Microwaves", "built-in-microwaves"],
   ["Vacuum Cleaners", "floorcare", "vacuum-cleaners"], ["Warming Drawers", "warming-drawers"], ["Quooker", "quooker"],
   ["Venting Hobs", "venting-hobs"], ["Sinks & Taps", "sinks-taps", "kitchen-taps"], ["Televisions", "televisions"],
 ];
@@ -149,7 +149,10 @@ export default async function Home() {
       <BrandWall brands={brandTape} />
 
       {/* ------- SHOP BY TYPE — the classifications on top (Sachin, 17 Oct 2026) ------- */}
-      <ShopByType tiles={typeTiles} />
+      <ShopByType tiles={typeTiles}
+        offers={liveOffers(home.offers, new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" })).map((o) => ({ id: o.id, href: o.href, alt: o.alt, image: o.mobile || o.wide }))}
+        picks={featured.filter((p) => bestSellers.has(p.productCode)).map((p) => toCardItem(p, poaSet)).filter((c) => c.priceNow !== null && c.image).slice(0, 8)
+          .map((c) => ({ slug: c.newSlug.replace(/^\/products\//, ""), code: c.productCode, brand: c.brand, title: c.title, price: gbp(c.priceNow), image: c.image }))} />
 
       <section className="relative overflow-hidden bg-[#1b3d7d]">
         <h1 className="sr-only">Euronics Ruislip — kitchen appliances, delivered and fitted in South Ruislip</h1>
