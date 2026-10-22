@@ -28,6 +28,23 @@ function dishwasher(t, specs) {
   return slim ? "slimline-dishwashers" : "freestanding-dishwashers";
 }
 
+// Built-in microwaves (Oct 2026): the maker's spec, the title, Euronics' own
+// category in the source link, or a family that only comes built-in (compact
+// and combination models whose titles never say so).
+const BUILT_IN_FAMILIES = /^(CM\d|CMA|CMG|CEG|BFL|BEL|BFR|HL[A-Z]|C1[0-9A-Z]|C2[0-9A-Z]|KMK|GK\d|CMS2|OCM|NQ5B|HCW)/i;
+export function builtInMicrowave(title, specs, sourceUrl = "", code = "") {
+  const s = spec(specs, "Built-in / Free-standing").toLowerCase();
+  if (s.startsWith("built")) return true;
+  if (s.startsWith("free")) return false;
+  if (/\bfree[- ]?standing\b|\bsolo\b|counter ?top|worktop/i.test(title)) return false;
+  if (/\b(built[- ]?in|integrated|built[- ]?under)\b/i.test(title)) return true;
+  if (/\/(built-in-microwaves|built-in-ovens)\//i.test(sourceUrl)) return true;
+  // Euronics files some built-in combis under "combination microwaves", so the
+  // families that only come built-in are asked before its other sections.
+  if (BUILT_IN_FAMILIES.test(code)) return true;
+  return false;
+}
+
 const RULES = {
   "washing-machines": (t, s) => (fitted(t, s) ? "integrated-washing-machines" : "washing-machines"),
   "washer-dryers": (t, s) => (fitted(t, s) ? "integrated-washer-dryers" : "washer-dryers"),
@@ -49,6 +66,7 @@ const RULES = {
     if (/\bcompact\b|\b45 ?cm\b/i.test(t)) return "compact-ovens";
     return "ovens";
   },
+  "microwaves": (t, s) => (builtInMicrowave(t, s) ? "built-in-microwaves" : "microwaves"),
   "hobs": (t) => {
     if (/venting|extract|downdraft|with integrated (hood|extractor)/i.test(t)) return "venting-hobs";
     if (/dual fuel|\bgas\b|\blpg\b|\bwok\b/i.test(t)) return "gas-hobs";
