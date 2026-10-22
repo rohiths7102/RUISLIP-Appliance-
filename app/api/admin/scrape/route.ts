@@ -59,7 +59,14 @@ async function findMatch(db: any, found: Found): Promise<MatchRow | null> {
     const byGtin = await db.product.findFirst({ where: { gtin: found.gtin }, select });
     if (byGtin) return byGtin as MatchRow;
   }
-  if (!code) return null;
+  if (!code) {
+    // No model number in the page's product data (Amazon publishes none), but
+    // the heading often names it: "Bosch Series 2 WGE03408GB Washing Machine…".
+    // Any word in it that is one of our own product codes is the match.
+    const words = [...new Set(String(found.title || "").split(/[\s|,:;()\[\]]+/).map((w) => w.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "")).filter((w) => w.length >= 5 && /\d/.test(w) && /[A-Za-z]/.test(w)))];
+    if (!words.length) return null;
+    return (await db.product.findFirst({ where: { productCode: { in: words } }, select })) as MatchRow | null;
+  }
 
   // Indexed exact hit first — covers the overwhelming majority.
   const exact = await db.product.findFirst({ where: { productCode: found.productCode.trim() }, select });
@@ -132,7 +139,6 @@ export async function POST(req: Request) {
       error: "We read that page but couldn't find any product details on it. It may not be a product page — or the site hides its details from us. You can still add this one using Add product.",
     }, { status: 422 });
   }
-  if (!found.productCode) warnings.push("No model number on that page — you'll need to type it in yourself.");
   if (found.price === null) warnings.push("No price on that page. Nothing will be priced automatically.");
   if (found.currency !== "GBP") {
     // Writing a euro figure into a pounds field puts a wrong price on the
@@ -150,6 +156,9 @@ export async function POST(req: Request) {
     let match: MatchRow | null = null;
     try { match = productId ? await db.product.findUnique({ where: { id: productId }, select: { id: true, title: true, productCode: true, brand: true, slug: true, priceNow: true } }) : await findMatch(db, found); }
     catch (e) { console.error("admin scrape match", e); warnings.push("We couldn't check this against your existing products just now."); }
+    // The model number came from the heading, matched to one of ours: show it as found.
+    if (!found.productCode && match) found.productCode = match.productCode;
+    if (!found.productCode) warnings.push("No model number on that page — you'll need to type it in yourself.");
 
     return NextResponse.json({
       ok: true, mode: "preview", url: finalUrl, found, warnings,
