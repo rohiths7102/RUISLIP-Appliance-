@@ -23,15 +23,16 @@ export const revalidate = 300;
 // Shop by type: [label, category id, category whose picture to use]. In the
 // Sachin's order (23 Oct 2026): laundry, dishwashers, refrigeration and
 // American-style, freestanding cookers, then the built-in kitchen together
-// (ovens, hobs, microwaves, hoods, warming drawers, venting hobs), then the rest.
+// (ovens, hobs, microwaves, hoods, warming drawers, venting hobs), then the
+// rest, with taps, small appliances and televisions last.
 const SHOP_BY_TYPE: [string, string, string?][] = [
   ["Washing Machines", "washing-machines"], ["Washer Dryers", "washer-dryers"], ["Tumble Dryers", "tumble-dryers"],
   ["Dishwashers", "dishwashers", "freestanding-dishwashers"], ["Refrigeration", "refrigeration", "fridge-freezers"],
   ["American-Style", "american-fridge-freezers"], ["Cookers", "cookers"],
   ["Ovens", "ovens"], ["Hobs", "hobs"], ["Freestanding Microwaves", "microwaves"], ["Built-in Microwaves", "built-in-microwaves"],
   ["Hoods", "cooker-hoods"], ["Warming Drawers", "warming-drawers"], ["Venting Hobs", "venting-hobs"],
-  ["Coffee Machines", "coffee-machines", "bean-to-cup"], ["Wine Coolers", "wine-coolers"], ["Small Appliances", "small-appliances", "kettles"],
-  ["Vacuum Cleaners", "floorcare", "vacuum-cleaners"], ["Quooker", "quooker"], ["Sinks & Taps", "sinks-taps", "kitchen-taps"], ["Televisions", "televisions"],
+  ["Wine Coolers", "wine-coolers"], ["Coffee Machines", "coffee-machines", "bean-to-cup"], ["Vacuum Cleaners", "floorcare", "vacuum-cleaners"],
+  ["Quooker", "quooker"], ["Sinks & Taps", "sinks-taps", "kitchen-taps"], ["Small Appliances", "small-appliances", "kettles"], ["Televisions", "televisions"],
 ];
 
 const STEPS = [
