@@ -44,7 +44,7 @@ export const REPLAY_WINDOW_SECONDS = 300;
  * so the key must not be able to choose its source freely.
  */
 const ROUTE_GRANTS: Record<string, { routes: string[]; sources: string[] }> = {
-  collector: { routes: ["worklist", "observations", "auto-apply"], sources: ["euronics", "google-benchmark", "manufacturer-rrp"] },
+  collector: { routes: ["worklist", "observations", "auto-apply", "pricewire"], sources: ["euronics", "google-benchmark", "manufacturer-rrp"] },
   supplier: { routes: ["observations", "supplier-prices"], sources: ["cih"] },
   // The owner relaying a price from WhatsApp. This key carries HUMAN authority —
   // it is the only machine key that may set Product.priceNow — so it is scoped

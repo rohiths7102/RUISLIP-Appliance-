@@ -1,8 +1,8 @@
-import { evaluateGuards, DEFAULT_GUARD_CONFIG } from "@/lib/price-watch/guards";
+import { evaluateGuards, manualBlockers, DEFAULT_GUARD_CONFIG } from "@/lib/price-watch/guards";
 import { isPoaProduct, poaNamesFromDb } from "@/lib/poa";
 import { reconcileSaving } from "@/lib/admin-product";
 import { writeAudit } from "@/lib/audit";
-import { isBestSeller } from "@/lib/best-sellers";
+import { followers, pricewireSourceIds } from "@/lib/price-watch/pricewire";
 
 /**
  * UNATTENDED price application — the machine path.
@@ -28,6 +28,10 @@ import { isBestSeller } from "@/lib/best-sellers";
  * at once", and the safe reading of that is "stop and ask a human" — not
  * "apply the first N of it". The held run is visible in lastRunStatus and the
  * admin panel, never silent.
+ *
+ * `approvedBy` (Admin → Brand prices → Apply): a person has seen the list of
+ * changes and approved it, so, like the Apply button in Price watch, only the
+ * blockers that stop a human too apply, and there is no change budget.
  */
 
 export type AutoApplyOutcome = {
@@ -55,10 +59,10 @@ const CFG = DEFAULT_GUARD_CONFIG;
 
 export async function autoApplySource(
   db: any,
-  opts: { sourceId: string; maxChanges?: number; appliedBy?: string },
+  opts: { sourceId: string; maxChanges?: number; appliedBy?: string; approvedBy?: string },
 ): Promise<AutoApplyOutcome> {
   const sourceId = opts.sourceId;
-  const appliedBy = opts.appliedBy || "price-agent (automated)";
+  const appliedBy = opts.approvedBy || opts.appliedBy || "price-agent (automated)";
   const out: AutoApplyOutcome = {
     sourceId, considered: 0, applied: [], unchanged: 0, refused: {}, halted: false, haltReason: "",
   };
@@ -68,7 +72,7 @@ export async function autoApplySource(
   // The three source-level switches are checked here AND inside the guards —
   // an endpoint bug cannot skip them because evaluateGuards re-blocks each row.
   if (!source) { out.halted = true; out.haltReason = "source_not_found"; return out; }
-  if (source.kind !== "authorised" || !source.enabled || source.allowAutoApply !== true) {
+  if (source.kind !== "authorised" || !source.enabled || (source.allowAutoApply !== true && !opts.approvedBy)) {
     out.halted = true;
     out.haltReason = `source not eligible (kind=${source.kind}, enabled=${source.enabled}, allowAutoApply=${source.allowAutoApply})`;
     return out;
@@ -116,20 +120,23 @@ export async function autoApplySource(
   type Candidate = { p: any; obs: any; proposedPrice: number | null };
   const candidates: Candidate[] = [];
 
-  // Bosch's and Neff's own prices apply to Sachin's best sellers only (30 Sept
-  // 2026); every other Bosch and Neff line is call for price, and a maker read
-  // of one must never put a price back on it.
-  const makerPrice = sourceId === "manufacturer-rrp";
-  for (const p of makerPrice ? products.filter((x: any) => isBestSeller(x.productCode || "")) : products) {
+  // Bosch, Neff and Siemens follow the site chosen for them in Admin →
+  // Pricewire (pricewire.ts). A site's read applies only to the products that
+  // follow it: never to a product priced by another site, and never to another
+  // brand's line (the Oracle collector reads Caple and Smeg makers too, for
+  // Price watch only).
+  const feedSource = (await pricewireSourceIds(db)).has(sourceId);
+  const follows = feedSource ? await followers(db, sourceId) : null;
+  for (const p of follows ? products.filter((x: any) => follows.has(x.id)) : products) {
     out.considered++;
     const obs = latest.get(p.id);
     const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
 
     if (obs.status === "no_offer") {
       if (p.priceNow === null) { out.unchanged++; continue; }
-      // The maker's shop not selling a best seller online is not Sachin not
-      // selling it: keep his price and leave the row for a person.
-      if (makerPrice) { refuse("maker_not_selling"); continue; }
+      // A site no longer selling a model is not Sachin not selling it: keep
+      // his price and leave the row for a person.
+      if (feedSource) { refuse("maker_not_selling"); continue; }
       if (isPoa) { refuse("poa_category"); continue; }
       if (listPrice.has(p.id)) { refuse("price_list_differs"); continue; }
       const prev = history.get(p.id)![1];
@@ -187,9 +194,10 @@ export async function autoApplySource(
           category: p.category,
           subcategory: p.subcategory,
           isPoa,
-          // A best seller's price IS the maker's (Sachin's decision), so like
-          // agency stock it needs no cost floor; the other guards still hold.
-          mandated: p.agencyStock === true || (makerPrice && isBestSeller(p.productCode || "")),
+          // A Pricewire price IS the shop's price (the owner's choice of
+          // site), so like agency stock it needs no cost floor; the other
+          // guards still hold.
+          mandated: p.agencyStock === true || feedSource,
         },
         poaNames,
         config: CFG,
@@ -202,12 +210,13 @@ export async function autoApplySource(
     // One PRODUCT, counted once, under its first reason. forEach(refuse) tallied
     // guard CODES, so a product with three blockers was reported as three held
     // items and the run summary did not reconcile with `considered`.
-    if (!g.allowed || g.blocking.length) { refuse(g.blocking[0] || "blocked"); continue; }
+    const blocking = opts.approvedBy ? manualBlockers(g.blocking) : g.blocking;
+    if (blocking.length) { refuse(blocking[0]); continue; }
     candidates.push({ p, obs, proposedPrice });
   }
 
   // ---- circuit breaker: all or nothing ----
-  const maxChanges = changeBudget(out.considered, opts.maxChanges);
+  const maxChanges = opts.approvedBy ? Infinity : changeBudget(out.considered, opts.maxChanges);
   if (candidates.length > maxChanges) {
     out.halted = true;
     out.haltReason = `${candidates.length} changes exceed the ${maxChanges}-change budget — held for review`;

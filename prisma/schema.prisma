@@ -62,6 +62,7 @@ model Product {
   /// below, so the cost-floor guards do not apply (see lib/price-watch/guards).
   agencyStock           Boolean   @default(false)
   priceObservations     PriceObservation[]
+  brandPriceItem        BrandPriceItem?
   isVisible             Boolean   @default(true)
   featured              Boolean   @default(false)
   adminOverrideFields   Json      // field names locked from being overwritten by re-scrape
@@ -197,6 +198,57 @@ model PriceObservation {
 
   @@index([productId, observedAt])
   @@index([sourceId, observedAt])
+}
+
+/// Pricewire (Admin → Pricewire, Oct 2026): the websites prices can be read
+/// from. "list" = a published price list (llms.txt style: one line per model
+/// with its £ price, e.g. Ruislip Appliances); "page" = a product page, with
+/// {code} where the model number goes (e.g. Bosch's own site). The id is also
+/// the site's PriceSource id. lib/price-watch/pricewire.ts.
+model PriceSite {
+  id              String    @id
+  name            String
+  kind            String    @default("page")   // "list" | "page"
+  url             String
+  enabled         Boolean   @default(true)
+  builtIn         Boolean   @default(false)
+  lastReadAt      DateTime?
+  lastReadSummary String    @default("")
+  /// JSON, list sites: models listed for Bosch/Neff/Siemens that are not in our catalogue.
+  notInCatalogue  String    @default("[]")
+  createdAt       DateTime  @default(now())
+}
+
+/// Which site prices each brand, and which one fills in when it has no price.
+model BrandPriceFeed {
+  brand          String    @id                         // "Bosch" | "Neff" | "Siemens"
+  siteId         String    @default("ruislip-appliances")
+  fallbackSiteId String    @default("")                // "" = none
+  enabled        Boolean   @default(true)
+  lastRunAt      DateTime?
+  lastRunSummary String    @default("")
+  updatedAt      DateTime  @updatedAt
+}
+
+/// The brand price list: every visible Bosch, Neff and Siemens product and the
+/// price Pricewire last mapped to it.
+model BrandPriceItem {
+  productId   String    @id
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  brand       String
+  productCode String
+  /// The site whose price this product follows ("" = none found).
+  siteId      String    @default("")
+  price       Float?
+  inStock     Boolean?
+  /// "ok" | "not_listed" | "no_price" | "discontinued" | "other_model" | "prices_disagree" | "unread"
+  status      String    @default("")
+  url         String    @default("")
+  readAt      DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@index([brand])
+  @@index([siteId])
 }
 
 model ServiceAddOn {

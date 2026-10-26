@@ -1,0 +1,81 @@
+{
+  "name": "Pricewire — Bosch, Neff & Siemens prices",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "20 5 * * *" }] } },
+      "name": "Morning Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {},
+      "name": "Run Now (manual)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Run Config ──────────────────────────────────────────────────────\n// Pricewire does the reading and applying on the site itself; this box only\n// asks it to run (lib/price-watch/pricewire.ts). Nothing here chooses sites,\n// brands or prices — the owner does that in Admin → Pricewire.\nconst appBaseUrl = ($env.PW_APP_URL || '').replace(/\\/$/, '');\nif (!appBaseUrl) throw new Error('PW_APP_URL is not set on the n8n container (e.g. https://www.kitchen-appliances.co.uk).');\nreturn [{ json: { appBaseUrl, keyId: 'collector', deadlineMs: Number($env.PRICEWIRE_DEADLINE_MS || 230000) } }];"
+      },
+      "name": "Run Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 100]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Sign Pricewire Request ──────────────────────────────────────────\n// HMAC per lib/machine-auth.ts: hex(HMAC_SHA256(secret, `${route}.${timestamp}.${rawBody}`)),\n// route = 'pricewire'. The body is signed byte for byte, so it is built here and\n// sent unchanged by the next node.\nlet crypto;\ntry { crypto = require('crypto'); } catch (e) {\n  throw new Error('The Code node cannot require(\"crypto\"). Set NODE_FUNCTION_ALLOW_BUILTIN=crypto on the n8n container and restart it. See ops/n8n/README.md.');\n}\nconst cfg = $input.first().json;\nconst envName = 'PRICE_INGEST_SECRET_' + String(cfg.keyId).toUpperCase().replace(/[^A-Z0-9]/g, '_');\nconst secret = $env[envName];\nif (!secret) throw new Error('No secret in environment variable ' + envName + '.');\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst rawBody = JSON.stringify({ deadlineMs: cfg.deadlineMs });\nconst signature = crypto.createHmac('sha256', secret).update('pricewire.' + timestamp + '.' + rawBody, 'utf8').digest('hex');\nreturn [{ json: { url: cfg.appBaseUrl + '/api/price-ingest/pricewire', rawBody, headers: { 'x-pw-key': cfg.keyId, 'x-pw-timestamp': timestamp, 'x-pw-signature': signature } } }];"
+      },
+      "name": "Sign Pricewire Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "x-pw-key", "value": "={{ $json.headers['x-pw-key'] }}" },
+            { "name": "x-pw-timestamp", "value": "={{ $json.headers['x-pw-timestamp'] }}" },
+            { "name": "x-pw-signature", "value": "={{ $json.headers['x-pw-signature'] }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ $json.rawBody }}",
+        "options": { "timeout": 300000, "response": { "response": { "neverError": true, "responseFormat": "json" } } }
+      },
+      "name": "POST Pricewire",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 100]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ── Run Summary ─────────────────────────────────────────────────────\nconst r = $input.first().json;\nif (!r || r.ok !== true) throw new Error('Pricewire did not run: ' + JSON.stringify(r).slice(0, 300));\nconst read = r.read || {};\nconst brands = Object.entries(read.brands || {}).map(([b, t]) => `${b} ${t.priced}/${t.products} priced${t.unread ? `, ${t.unread} not readable` : ''}${t.left ? `, ${t.left} left` : ''}`).join('; ');\nconst sites = Object.entries(read.sites || {}).filter(([, t]) => t.error).map(([id, t]) => `${id}: ${t.error}`).join('; ');\nreturn [{ json: { changed: r.changed, brands, applied: r.applied, siteProblems: sites || 'none' } }];"
+      },
+      "name": "Run Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 100]
+    }
+  ],
+  "connections": {
+    "Morning Trigger": { "main": [[{ "node": "Run Config", "type": "main", "index": 0 }]] },
+    "Run Now (manual)": { "main": [[{ "node": "Run Config", "type": "main", "index": 0 }]] },
+    "Run Config": { "main": [[{ "node": "Sign Pricewire Request", "type": "main", "index": 0 }]] },
+    "Sign Pricewire Request": { "main": [[{ "node": "POST Pricewire", "type": "main", "index": 0 }]] },
+    "POST Pricewire": { "main": [[{ "node": "Run Summary", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Europe/London", "saveManualExecutions": true, "saveExecutionProgress": true, "saveDataErrorExecution": "all", "saveDataSuccessExecution": "all", "executionTimeout": 600 },
+  "active": false
+}

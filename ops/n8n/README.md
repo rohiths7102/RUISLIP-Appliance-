@@ -333,3 +333,32 @@ workflows at one source id — `lastRunStatus` becomes meaningless and you lose 
 ability to disable one of them.
 
 Do not add Currys. It 403s this server, and their terms forbid it.
+
+---
+
+# Pricewire — Bosch, Neff & Siemens prices
+
+`pricewire.json` is the trigger for Pricewire (Admin → Pricewire). Unlike the
+Euronics collector above, this box does **no reading of its own**: it signs one
+request to `/api/price-ingest/pricewire` and the site reads the sites the owner
+chose (Ruislip Appliances' price list, the makers' pages, any site the owner
+added) and applies the prices through the usual guards. The call can start a
+run; it cannot choose sites, brands or prices.
+
+- Import it like the collector (inactive), set the same environment
+  (`NODE_FUNCTION_ALLOW_BUILTIN=crypto`, `PW_APP_URL`,
+  `PRICE_INGEST_SECRET_COLLECTOR` — the collector key already has the
+  `pricewire` route), run it once by hand, then activate.
+- Schedule: 05:20 Europe/London. The site's own 05:00 UTC cron does the same run;
+  keep both — a run that finds nothing new changes nothing — or turn the cron
+  off in vercel.json if n8n is to be the only trigger.
+- `PRICEWIRE_DEADLINE_MS` (default 230000): how long a run may spend on product
+  pages. Pages not reached wait for the next run, stalest first.
+- The Run Summary node shows per-brand counts and any site problem, e.g.
+  "bosch-home: 10 pages in a row could not be read … the site may be blocking
+  us". Bosch's and Neff's sites (one firewall, BSH) blocked this reader on
+  26 Oct 2026 after ~1,000 pages in two minutes; Pricewire now reads three at a
+  time and stops on a site after ten failures in a row.
+- Once Pricewire is live, retire `manufacturer_collector.py` on this box: it
+  reads the same Bosch/Neff pages for the old `manufacturer-rrp` source, which
+  no product follows any more, so it only adds load to BSH's firewall.

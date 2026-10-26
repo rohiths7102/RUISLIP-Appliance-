@@ -1,10 +1,9 @@
 /**
  * Sachin's best sellers — the Bosch and Neff models he picked (30 Sept 2026,
  * "BSH Models Removed.csv", typos corrected). They carry a "Best seller" tag,
- * come first on the Bosch and Neff pages, are read first by the nightly
- * maker-price check, and are the ONLY products whose price follows Bosch's
- * and Neff's own websites (lib/price-watch/auto-apply.ts). Every other Bosch
- * and Neff line is call for price.
+ * come first on the Bosch and Neff pages. Their prices, like every Bosch,
+ * Neff and Siemens line's since Oct 2026, follow the site chosen in Admin →
+ * Pricewire (lib/price-watch/pricewire.ts).
  */
 export const BEST_SELLERS = new Set(`
   B1DCC0AK3B B2DCG7AK3B B3ACE4AG3B B3ACE4AN3B B54CR31G0B B54CR71G0B B6ACH7AG7B C1AMG84G1B C1AMG84N1B C24MR21G0B

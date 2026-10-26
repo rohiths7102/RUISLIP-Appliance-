@@ -36,8 +36,8 @@ async function main() {
 
   for (const { code, url } of pairs) {
     const host = new URL(url).hostname;
-    if (!MAKER_HOSTS.test(host)) { console.log(`  skip ${code}: ${host} is not Bosch's or Neff's site`); continue; }
-    const brand = /neff/i.test(host) ? "Neff" : "Bosch";
+    if (!MAKER_HOSTS.test(host)) { console.log(`  skip ${code}: ${host} is not Bosch's, Neff's or Siemens' site`); continue; }
+    const brand = /neff/i.test(host) ? "Neff" : /siemens/i.test(host) ? "Siemens" : "Bosch";
     const { html } = await fetchPage(url);
     const ld = collectJsonLdProducts(html).find((p) => norm(p.mpn) === code || norm(p.sku) === code);
     if (!ld) { console.log(`  skip ${code}: the page does not name ${code}`); continue; }

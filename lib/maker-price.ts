@@ -2,7 +2,8 @@ import { collectJsonLdProducts, parsePrice } from "@/lib/page-reader";
 
 /**
  * The price Bosch or Neff itself shows for a model (bosch-home.co.uk,
- * neff-home.com). Their product pages come in three shapes (30 Sept 2026):
+ * neff-home.com; siemens-home.bsh-group.com reads the same, but Siemens shows
+ * no prices in the UK). Their product pages come in three shapes (30 Sept 2026):
  *
  *   on sale in their shop   a structured Offer from seller "BSH" carries the
  *                           price, and the same price is on screen;
@@ -19,7 +20,7 @@ import { collectJsonLdProducts, parsePrice } from "@/lib/page-reader";
  * structured and on-screen prices both exist they must agree, or the page is
  * not understood and nothing is read from it.
  */
-export const MAKER_HOSTS = /(^|\.)(bosch-home\.co\.uk|neff-home\.com)$/i;
+export const MAKER_HOSTS = /(^|\.)(bosch-home\.co\.uk|neff-home\.com|siemens-home\.bsh-group\.com)$/i;
 
 export type MakerRead =
   | { price: number; inStock: boolean; from: "offer" | "screen" }

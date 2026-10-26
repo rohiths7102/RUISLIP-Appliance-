@@ -61,8 +61,8 @@ export async function health(db: any): Promise<Health[]> {
   const trend = (label: string, now: number, before: number) => `${label} ${now} this week vs ${before} the week before${before ? ` (${now >= before ? "+" : ""}${Math.round(((now - before) / before) * 100)}%)` : ""}`;
   const maker: any = makerRun?.newValue || {};
   return [
-    { name: "Bosch/Neff best-seller prices", status: fresh(makerRun?.createdAt ?? null, 30) && !/held:/.test(String(maker.applied || "")) ? "ok" : "warn", href: adminHref("price-watch"),
-      detail: makerRun ? `checked ${ago(makerRun.createdAt)} · ${maker.read?.priced ?? "?"} priced from Bosch/Neff · ${maker.applied ?? ""}` : "never checked — needs the CRON_SECRET setting in Vercel" },
+    { name: "Bosch, Neff & Siemens prices", status: fresh(makerRun?.createdAt ?? null, 30) && !/held:/.test(String(maker.applied || "")) ? "ok" : "warn", href: adminHref("pricewire"),
+      detail: makerRun ? `checked ${ago(makerRun.createdAt)} · ${maker.read?.priced ?? "?"} priced · ${maker.applied ?? ""}` : "never checked — needs the CRON_SECRET setting in Vercel" },
     { name: "Calls from the website", status: drop(callsNow, callsBefore, 5) ? "warn" : "ok", href: adminHref("telemetry"), detail: trend("call taps", callsNow, callsBefore) },
     { name: "Euronics prices", status: fresh(priceAt, 30) ? "ok" : "warn", href: adminHref("price-watch"),
       detail: `${priced24h.toLocaleString("en-GB")} lines checked in the last 24h · last ${ago(priceAt)}` },

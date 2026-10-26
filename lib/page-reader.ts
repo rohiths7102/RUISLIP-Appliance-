@@ -255,7 +255,8 @@ export function parsePrice(v: unknown): number | null {
 
 export function collectJsonLdProducts(html: string): any[] {
   const out: any[] = [];
-  const re = /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  // The type may be unquoted (<script type=application/ld+json>), as on ruislipappliances.com.
+  const re = /<script\b[^>]*type\s*=\s*["']?application\/ld\+json(?=["'\s>])[^>]*>([\s\S]*?)<\/script>/gi;
   const walk = (node: any, depth = 0) => {
     if (!node || depth > 6) return;
     if (Array.isArray(node)) { for (const n of node) walk(n, depth + 1); return; }

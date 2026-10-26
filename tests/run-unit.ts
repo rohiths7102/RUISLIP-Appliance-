@@ -16,7 +16,7 @@ import { oldAddressTarget } from "../lib/old-urls.js";
 import { isBestSeller } from "../lib/best-sellers.js";
 import { autoApplySource } from "../lib/price-watch/auto-apply.js";
 import { readMakerPrice } from "../lib/maker-price.js";
-import { readMakerPrices } from "../lib/price-watch/maker-read.js";
+import { syncPricewire, parseListSite, readPagePrice, pageUrlFor } from "../lib/price-watch/pricewire.js";
 import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/homepage.js";
 import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
@@ -204,7 +204,7 @@ ok(oldAddressTarget("/zenith-integrated-dishwasher---a-energy-rated/p-4561", old
 ok(oldAddressTarget("/wp-login.php", oldCat) === null && oldAddressTarget("/random-page", oldCat) === null && oldAddressTarget("/_shops/c/currys_28.htm", oldCat) === null,
   "old address: anything that names nothing stays a 404");
 
-// ---- maker prices (manufacturer-rrp) reach Sachin's best sellers only
+// ---- Pricewire prices reach the products that follow that site only
 ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KIN96NSEOG") && !isBestSeller("KGN39VLEBG"),
   "best sellers: listed codes only, case-insensitive, typos not accepted");
 {
@@ -212,20 +212,23 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   // Reads newest first, as the query orders them.
   const read = (productId: string, price: number | null, d = 0) => ({ id: `o-${productId}-${d}`, productId, sourceId: "manufacturer-rrp", price, deliveryCost: null, inStock: price !== null, includesVat: true, sourceUrl: "https://www.bosch-home.co.uk/x", matchConfidence: 1, status: price === null ? "no_offer" : "ok", observedAt: daysAgo(d) });
   const product = (id: string, productCode: string, priceNow: number | null) => ({ id, productCode, title: productCode, brand: "Bosch", category: "Laundry", subcategory: "Washing Machines", priceNow, priceWas: null, saving: null, costPrice: null, floorPrice: null, agencyStock: false, adminOverrideFields: ["priceNow"] });
-  const run = async (products: any[], reads: any[]) => {
+  const run = async (products: any[], reads: any[], opts: { follows?: string[]; approvedBy?: string; allowAutoApply?: boolean } = {}) => {
     const writes: { id: string; data: any }[] = [];
+    const follows = opts.follows ?? products.map((p) => p.id);
     const fake: any = {
-      priceSource: { findUnique: async () => ({ id: "manufacturer-rrp", label: "Manufacturer RRP", kind: "authorised", enabled: true, allowAutoApply: true, priceIncludesVat: true }), update: async () => ({}) },
+      priceSource: { findUnique: async () => ({ id: "manufacturer-rrp", label: "Manufacturer RRP", kind: "authorised", enabled: true, allowAutoApply: opts.allowAutoApply ?? true, priceIncludesVat: true }), update: async () => ({}) },
+      priceSite: { findMany: async () => [] },
+      brandPriceItem: { findMany: async ({ where }: any) => (where.siteId === "manufacturer-rrp" ? follows.map((productId) => ({ productId })) : []) },
       priceObservation: { findMany: async ({ where }: any) => (where.sourceId === "cih" ? [] : reads) },
       product: { findMany: async () => products, update: async ({ where, data }: any) => { writes.push({ id: where.id, data }); return {}; } },
       category: { findMany: async () => [] }, brand: { findMany: async () => [] },
       adminAuditLog: { create: async () => ({}) },
     };
-    return { outcome: await autoApplySource(fake, { sourceId: "manufacturer-rrp" }), writes };
+    return { outcome: await autoApplySource(fake, { sourceId: "manufacturer-rrp", approvedBy: opts.approvedBy }), writes };
   };
-  const a = await run([product("best", "WAN28259GB", 479), product("other", "WGG254Z1XX", null)], [read("best", 499), read("other", 649)]);
+  const a = await run([product("best", "WAN28259GB", 479), product("other", "WGG254Z1XX", null)], [read("best", 499), read("other", 649)], { follows: ["best"] });
   ok(a.outcome.considered === 1 && a.writes.length === 1 && a.writes[0].id === "best" && a.writes[0].data.priceNow === 499,
-    "maker price: a best seller follows it with no cost on file; a call-for-price Bosch line is never repriced");
+    "maker price: a product following the maker takes its price with no cost on file; one following Ruislip Appliances is never touched by a maker read");
   const b = await run([product("best", "WAN28259GB", 479)], [read("best", null), read("best", null, 1)]);
   ok(!b.writes.length && b.outcome.refused.maker_not_selling === 1,
     "maker price: the maker's shop not selling a best seller keeps Sachin's price and holds the row");
@@ -233,6 +236,12 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   const d = await run([product("best", "KIN96NSE0G", null)], [read("best", 899)]);
   ok(c.writes.length === 1 && c.writes[0].data.priceNow === 899 && !d.writes.length && d.outcome.refused.no_current_price === 1,
     "maker price: a best seller with no price gets one after two maker reads agree, never from a single read");
+  const e = await run([product("x", "KIN96NSE0G", null)], [read("x", 899)], { approvedBy: "sachin@example.com", allowAutoApply: false });
+  ok(e.writes.length === 1 && e.writes[0].data.priceNow === 899, "brand prices: a person's Apply gives a first price from one read, even with the source on manual");
+  const many = Array.from({ length: 130 }, (_, i) => product(`p${i}`, `C${i}`, 100));
+  const f = await run(many, many.map((p) => read(p.id, 110)));
+  const g = await run(many, many.map((p) => read(p.id, 110)), { approvedBy: "sachin@example.com" });
+  ok(f.outcome.halted && !f.writes.length && g.writes.length === 130, "brand prices: unattended, 130 changes out of 130 trip the budget; a person's Apply has none");
 }
 
 // ---- the makers' own pages: the three shapes Bosch and Neff print (30 Sept 2026)
@@ -256,30 +265,142 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   const other = readMakerPrice(ld([bsh(529)], "S153HKX06G") + main("529.00"), "S153HKX03G");
   ok(other.price === null && other.reason === "other_model", "maker page: a page about another model (e.g. a successor) is never read as this one");
 
-  const obsWritten: any[] = [];
-  const pages: Record<string, string> = {
-    "https://www.bosch-home.co.uk/en/product/x/KIN96NSE0G": ld(retailers) + main("899.00"),
-    "https://www.bosch-home.co.uk/en/product/x/WAN28259GB": ld(retailers, "WAN28259GB") + "Product is no longer available",
+}
+
+// ---- Pricewire: price lists, product pages, the owner's sites (Oct 2026)
+{
+  const list = [
+    "# Ruislip Appliances - full product list", "## Washing Machines",
+    "- [Bosch WGG254Z1GB 10kg Washing Machine](https://www.ruislipappliances.com/products/WGG254Z1GB.md): £499.00, In stock",
+    "- [SIEMENSIQ500 80cm Venting Hob ED851HQ26E](https://www.ruislipappliances.com/products/ED851HQ26E.md): £1,999.00, Special order",
+    "- [Neff N70 Hob T99NEW1](https://www.ruislipappliances.com/products/T99NEW1.md): £649.00, Special order",
+    "- [SMEG Warming Drawer CPR315X](https://www.ruislipappliances.com/products/CPR315X.md): £529.00, Special order",
+    "## Graded stock (discounted)",
+    "- [Bosch WAN28259GB](https://www.ruislipappliances.com/products/WAN28259GB.htm?GrID=1): graded £49.00 (new £479.00), Grade 1",
+  ].join("\n");
+  const parsed = parseListSite(list);
+  ok(parsed.get("WGG254Z1GB")?.price === 499 && parsed.get("WGG254Z1GB")?.inStock === true && parsed.get("ED851HQ26E")?.price === 1999
+    && parsed.get("ED851HQ26E")?.brand === "Siemens" && parsed.get("CPR315X")?.brand === null && !parsed.has("WAN28259GB")
+    && parsed.get("WGG254Z1GB")?.url === "https://www.ruislipappliances.com/products/WGG254Z1GB.htm",
+    "price list: price, stock and brand per model; ex-display graded units are never a model's price");
+
+  const bsh = (mpn: string, price = 899) => `<script type="application/ld+json">${JSON.stringify({ "@type": "Product", mpn, offers: { "@type": "Offer", seller: { name: "BSH" }, price, availability: "InStock" } })}</script>`;
+  const shop = (sku: string, price: number) => `<script type="application/ld+json">${JSON.stringify({ "@type": "Product", name: `Bosch ${sku} washer`, sku, offers: { "@type": "Offer", price: String(price), priceCurrency: "GBP", availability: "https://schema.org/InStock" } })}</script>`;
+  ok(readPagePrice(shop("WGG254Z1GB", 499).replace('type="application/ld+json"', "type=application/ld+json"), "WGG254Z1GB", "https://www.ruislipappliances.com/products/WGG254Z1GB.htm").price === 499,
+    "product page: an unquoted type=application/ld+json tag (ruislipappliances.com) is read too");
+  ok(readPagePrice(bsh("WGG254Z1GB"), "WGG254Z1GB", "https://www.bosch-home.co.uk/en/product/WGG254Z1GB").price === 899
+    && readPagePrice(shop("WGG254Z1GB", 479), "WGG254Z1GB", "https://www.markselectrical.co.uk/x").price === 479
+    && readPagePrice(shop("WGG254Z1GB", 479), "WGG254Z1GB", "https://www.markselectrical.co.uk/x").inStock === true
+    && readPagePrice(shop("WGG254ZXGB", 479), "WGG254Z1GB", "https://www.markselectrical.co.uk/x").price === null
+    && readPagePrice("<p>hello</p>", "WGG254Z1GB", "https://www.markselectrical.co.uk/x").price === null,
+    "product page: a maker page goes through the maker reader; any other site must name the model in its product data, else nothing is read");
+  ok(pageUrlFor("https://www.bosch-home.co.uk/en/product/{code}", "WGG254Z1GB") === "https://www.bosch-home.co.uk/en/product/WGG254Z1GB"
+    && pageUrlFor("https://www.bosch-home.co.uk/en/product/{code}", "X", "https://www.bosch-home.co.uk/en/product/a/b/X") === "https://www.bosch-home.co.uk/en/product/a/b/X"
+    && pageUrlFor("https://www.bosch-home.co.uk/en/product/{code}", "X", "https://www.ruislipappliances.com/products/X.htm") === "https://www.bosch-home.co.uk/en/product/X",
+    "product page address: the product's own page when it is on that site, else the site's address with the model number");
+
+  const make = (feeds: any[], opts: { listOk?: boolean; sites?: any[] } = {}) => {
+    const items = new Map<string, any>(); const obs: any[] = [];
+    const siteRows = new Map<string, any>([
+      { id: "ruislip-appliances", name: "Ruislip Appliances", kind: "list", url: "https://list", enabled: true },
+      { id: "bosch-home", name: "Bosch", kind: "page", url: "https://www.bosch-home.co.uk/en/product/{code}", enabled: true },
+      { id: "neff-home", name: "Neff", kind: "page", url: "https://www.neff-home.com/uk/en/product/{code}", enabled: true },
+      { id: "siemens-home", name: "Siemens", kind: "page", url: "https://www.siemens-home.bsh-group.com/uk/en/mkt-product/{code}", enabled: true },
+      ...(opts.sites || []),
+    ].map((s) => [s.id, { lastReadSummary: "", notInCatalogue: "[]", ...s }]));
+    const feedRows = new Map<string, any>(feeds.map((f) => [f.brand, { fallbackSiteId: "", enabled: true, ...f }]));
+    const products = [
+      { id: "listed", brand: "Bosch", productCode: "WGG254Z1GB", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/WGG254Z1GB" },
+      { id: "unlisted", brand: "BOSCH", productCode: "KIN96NSE0G", sourceUrl: "https://www.ruislipappliances.com/products/KIN96NSE0G.htm" },
+      { id: "sie", brand: "Siemens", productCode: "ED851HQ26E", sourceUrl: "" },
+    ];
+    const fetched: string[] = [];
+    const db: any = {
+      priceSource: { upsert: async () => ({}) },
+      priceSite: { upsert: async () => ({}), findMany: async () => [...siteRows.values()], update: async ({ where, data }: any) => Object.assign(siteRows.get(where.id), data) },
+      brandPriceFeed: { upsert: async () => ({}), findMany: async () => [...feedRows.values()], update: async ({ where, data }: any) => Object.assign(feedRows.get(where.brand), data) },
+      product: { findMany: async ({ where }: any) => products.filter((p) => where.brand.in.includes(p.brand)) },
+      brandPriceItem: {
+        findMany: async () => [...items.values()],
+        createMany: async ({ data }: any) => data.forEach((d: any) => items.set(d.productId, { siteId: "", readAt: null, ...d })),
+        update: async ({ where, data }: any) => Object.assign(items.get(where.productId), data),
+        updateMany: async ({ where, data }: any) => [...items.values()].filter((i) => where.brand.in.includes(i.brand)).forEach((i) => Object.assign(i, data)),
+      },
+      priceObservation: { createMany: async ({ data }: any) => obs.push(...data) },
+      $transaction: (ops: Promise<unknown>[]) => Promise.all(ops),
+    };
+    const fetcher = async (url: string) => {
+      fetched.push(url);
+      if (url === "https://list") { if (opts.listOk === false) throw new Error("timed out"); return { html: list }; }
+      if (url.startsWith("https://other/")) return { html: shop(url.split("/").pop()!, 450) };
+      return { html: bsh(decodeURIComponent(url.split("/").pop()!)) };
+    };
+    return { db, items, obs, fetched, fetcher, feedRows, siteRows };
   };
-  const fakeDb: any = {
-    product: { findMany: async () => [
-      { id: "a", productCode: "KIN96NSE0G", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/KIN96NSE0G" },
-      { id: "b", productCode: "WAN28259GB", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/WAN28259GB" },
-      { id: "c", productCode: "KIN86NSE0G", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/KIN86NSE0G" }, // the page fails to load
-      { id: "d", productCode: "KGN39VLEBG", sourceUrl: "https://www.bosch-home.co.uk/en/product/x/KGN39VLEBG" }, // not a best seller
-      { id: "e", productCode: "U1ACE2AG3B", sourceUrl: "https://www.ruislipappliances.com/products/U1ACE2AG3B.htm" }, // not a maker page
-    ] },
-    priceObservation: { createMany: async ({ data }: any) => { obsWritten.push(...data); return { count: data.length }; } },
-  };
-  const fetcher = async (url: string) => { if (!pages[url]) throw new Error("That page took too long to answer"); return { html: pages[url] }; };
-  const t = await readMakerPrices(fakeDb, { fetcher });
-  const byId = new Map(obsWritten.map((o) => [o.productId, o]));
-  ok(t.pages === 3 && t.priced === 1 && t.discontinued === 1 && t.unread === 1 && obsWritten.length === 3
-    && byId.get("a")?.status === "ok" && byId.get("a")?.price === 899 && byId.get("a")?.sourceId === "manufacturer-rrp"
-    && byId.get("b")?.status === "parse_failed" && byId.get("c")?.status === "parse_failed" && !byId.has("d") && !byId.has("e"),
-    "daily maker read: best sellers with a maker page only; every page saved, read or not");
-  const late = await readMakerPrices(fakeDb, { fetcher, deadlineMs: -1 });
-  ok(late.notReached === 3 && late.priced === 0, "daily maker read: pages not started by the deadline are counted, not silently skipped");
+  const RA = { siteId: "ruislip-appliances" };
+
+  const r = make([{ brand: "Bosch", ...RA, fallbackSiteId: "bosch-home" }, { brand: "Neff", ...RA, fallbackSiteId: "neff-home" }, { brand: "Siemens", ...RA }]);
+  const t = await syncPricewire(r.db, { fetcher: r.fetcher });
+  const ob = (id: string, src: string) => r.obs.find((o) => o.productId === id && o.sourceId === src);
+  ok(r.items.get("listed").siteId === "ruislip-appliances" && r.items.get("listed").price === 499 && ob("listed", "ruislip-appliances")?.price === 499 && !ob("listed", "bosch-home")
+    && r.items.get("unlisted").siteId === "bosch-home" && r.items.get("unlisted").price === 899 && ob("unlisted", "bosch-home")?.price === 899
+    && r.fetched.includes("https://www.bosch-home.co.uk/en/product/KIN96NSE0G") && r.items.get("sie").price === 1999 && r.items.get("sie").siteId === "ruislip-appliances",
+    "Pricewire: a listed model follows the list site; one it doesn't list is read from the backup site at its address");
+  ok(t.brands.Bosch.priced === 2 && t.brands.Bosch.bySite["ruislip-appliances"] === 1 && t.brands.Bosch.bySite["bosch-home"] === 1 && t.sites["ruislip-appliances"].priced === 2,
+    "Pricewire: the run says how many each brand got from each site");
+  const missing = JSON.parse(r.siteRows.get("ruislip-appliances").notInCatalogue);
+  ok(missing.length === 1 && missing[0].code === "T99NEW1" && missing[0].brand === "Neff",
+    "Pricewire: models in a list that we don't have are kept per site, our brands only");
+
+  const m = make([{ brand: "Bosch", siteId: "bosch-home" }]);
+  await syncPricewire(m.db, { fetcher: m.fetcher });
+  ok(m.items.get("listed").siteId === "bosch-home" && m.items.get("listed").price === 899 && m.fetched.includes("https://www.bosch-home.co.uk/en/product/x/WGG254Z1GB")
+    && !m.fetched.includes("https://list") && !m.items.has("sie"),
+    "Pricewire: a brand on a page site reads every model's page (its own page first), never a list it doesn't use; other brands untouched");
+
+  const own = make([{ brand: "Bosch", siteId: "other-shop" }], { sites: [{ id: "other-shop", name: "Other shop", kind: "page", url: "https://other/{code}", enabled: true }] });
+  await syncPricewire(own.db, { fetcher: own.fetcher });
+  ok(own.items.get("listed").siteId === "other-shop" && own.items.get("listed").price === 450 && own.obs.some((o) => o.sourceId === "other-shop" && o.price === 450),
+    "Pricewire: a site the owner added works like a built-in one, under its own price source");
+
+  const down = make([{ brand: "Bosch", ...RA, fallbackSiteId: "bosch-home" }], { listOk: false });
+  await syncPricewire(down.db, { fetcher: down.fetcher });
+  Object.assign(down.items.get("listed"), { siteId: "ruislip-appliances", price: 499 });
+  const t2 = await syncPricewire(down.db, { fetcher: down.fetcher });
+  ok(t2.sites["ruislip-appliances"].error && down.items.get("listed").siteId === "ruislip-appliances" && down.items.get("listed").price === 499
+    && !down.obs.some((o) => o.productId === "listed" && o.sourceId === "bosch-home"),
+    "Pricewire: with a list unreadable, its products keep their mapping; nothing flips to the backup for a night");
+
+  const late = make([{ brand: "Bosch", siteId: "bosch-home" }]);
+  const t3 = await syncPricewire(late.db, { fetcher: late.fetcher, deadlineMs: -1 });
+  ok(t3.brands.Bosch.left === 2 && t3.sites["bosch-home"] === undefined, "Pricewire: pages not started by the deadline are counted for the next run, not dropped");
+
+  const off = make([{ brand: "Bosch", ...RA }]);
+  await syncPricewire(off.db, { fetcher: off.fetcher });
+  off.feedRows.get("Bosch").enabled = false;
+  await syncPricewire(off.db, { fetcher: off.fetcher });
+  ok([...off.items.values()].every((i) => i.siteId === ""), "Pricewire: a brand switched off follows no site, so nothing is applied to it");
+
+  const blocked = make([{ brand: "Bosch", siteId: "bosch-home" }]);
+  await syncPricewire(blocked.db, { fetcher: blocked.fetcher });
+  const t4 = await syncPricewire(blocked.db, { fetcher: async (url: string) => { blocked.fetched.push(url); throw new Error("That website blocked us"); } });
+  ok(t4.brands.Bosch.unread === 2 && blocked.items.get("listed").siteId === "bosch-home" && blocked.items.get("listed").price === 899
+    && blocked.obs.filter((o) => o.productId === "listed" && o.status === "parse_failed").length === 1,
+    "Pricewire: a page that could not be read (blocked, slow) keeps the product's last mapping, and the failed read is on record");
+
+  const wall = make([{ brand: "Bosch", siteId: "bosch-home" }]);
+  const manyBosch = Array.from({ length: 40 }, (_, i) => ({ id: `b${i}`, brand: "Bosch", productCode: `WAN${i}`, sourceUrl: "" }));
+  wall.db.product.findMany = async () => manyBosch;
+  let hits = 0;
+  const t5 = await syncPricewire(wall.db, { fetcher: async () => { hits++; throw new Error("blocked"); }, concurrency: 1 });
+  ok(hits === 10 && t5.brands.Bosch.unread === 10 && t5.brands.Bosch.left === 30 && /blocking/.test(t5.sites["bosch-home"].error),
+    "Pricewire: a site that fails 10 pages in a row is left alone for the rest of the run; the rest wait for tomorrow");
+
+  const siteOff = make([{ brand: "Bosch", ...RA, fallbackSiteId: "bosch-home" }]);
+  siteOff.siteRows.get("bosch-home").enabled = false;
+  await syncPricewire(siteOff.db, { fetcher: siteOff.fetcher });
+  ok(siteOff.items.get("unlisted").siteId === "" && !siteOff.fetched.some((u) => u.includes("bosch-home")),
+    "Pricewire: a site switched off is never read, even as a backup");
 }
 
 // ---- homepage offers (Admin → Homepage → Offers)
