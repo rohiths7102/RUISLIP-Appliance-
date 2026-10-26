@@ -61,6 +61,10 @@ model Product {
   /// the shop earns commission, not margin. There is no shop-side cost to sell
   /// below, so the cost-floor guards do not apply (see lib/price-watch/guards).
   agencyStock           Boolean   @default(false)
+  /// Its price was put on by Pricewire from a checked site (a retail price,
+  /// read from Ruislip Appliances or the maker): shown even in a category set
+  /// to call for price. A brand set to call for price still hides it.
+  pricewire             Boolean   @default(false)
   priceObservations     PriceObservation[]
   brandPriceItem        BrandPriceItem?
   isVisible             Boolean   @default(true)

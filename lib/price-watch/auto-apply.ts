@@ -130,7 +130,10 @@ export async function autoApplySource(
   for (const p of follows ? products.filter((x: any) => follows.has(x.id)) : products) {
     out.considered++;
     const obs = latest.get(p.id);
-    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand });
+    // A Pricewire price is a retail price from a checked site, so a call-for-price
+    // CATEGORY does not stop it (it is shown, lib/select hidesPrice); a
+    // call-for-price BRAND still does.
+    const isPoa = isPoaProduct(poaNames, { category: p.category, subcategory: p.subcategory, brand: p.brand, pricewire: feedSource });
 
     if (obs.status === "no_offer") {
       if (p.priceNow === null) { out.unchanged++; continue; }
@@ -241,6 +244,7 @@ export async function autoApplySource(
     if ("priceWas" in data) overrides.add("priceWas");
     if ("saving" in data) overrides.add("saving");
     data.adminOverrideFields = [...overrides];
+    if (feedSource && proposedPrice !== null) data.pricewire = true;
     data.lastUpdatedByAdmin = new Date();
 
     await db.product.update({ where: { id: p.id }, data });

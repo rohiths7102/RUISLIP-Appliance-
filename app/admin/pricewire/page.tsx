@@ -12,7 +12,7 @@ export default async function AdminPricewire() {
   const data = await pricewireOverview(await getPrisma());
   return (
     <AdminShell active="/admin/pricewire" email={admin.email}>
-      <PricewireAdmin {...data} links={{ brands: adminHref("brands"), priceWatch: adminHref("price-watch"), categories: adminHref("categories") }} />
+      <PricewireAdmin {...data} links={{ brands: adminHref("brands"), priceWatch: adminHref("price-watch") }} />
     </AdminShell>
   );
 }

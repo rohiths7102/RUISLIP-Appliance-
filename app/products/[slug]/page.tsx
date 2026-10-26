@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Phone, MessageCircle, Check } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
-import { getProduct, relatedFor, toCardItem, poaNamesFrom } from "@/lib/select";
+import { getProduct, relatedFor, toCardItem, poaNamesFrom, hidesPrice } from "@/lib/select";
 import { isBestSeller } from "@/lib/best-sellers";
 import PriceMatchPromise, { showsPriceMatch } from "@/components/PriceMatchPromise";
 import { gbp, formatPrice, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
@@ -49,7 +49,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   // Owner-flagged "call for price" category or brand — no price anywhere on this page.
   const poaSet = poaNamesFrom(categories, brands);
-  const poa = poaSet.has(p.category) || poaSet.has(p.subcategory) || poaSet.has(p.brand);
+  const poa = hidesPrice(poaSet, p);
   const priceMatch = PRICE_MATCH_BRANDS.test(p.brand) && (poa || p.priceNow === null);
   const related = relatedFor(products, p);
   const enquiryHref = `/contact?product=${encodeURIComponent(p.title)}&code=${encodeURIComponent(p.productCode)}`;

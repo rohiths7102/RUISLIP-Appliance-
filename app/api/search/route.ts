@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { loadCatalog } from "@/lib/repo";
-import { poaNamesFrom, slugOf } from "@/lib/select";
+import { poaNamesFrom, slugOf, hidesPrice } from "@/lib/select";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
   scored.sort((a, b) => b[0] - a[0] || a[1].title.localeCompare(b[1].title));
 
   const items = scored.slice(0, 6).map(([, p]) => {
-    const hidden = poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand);
+    const hidden = hidesPrice(poa, p);
     return {
       slug: slugOf(p), title: p.title, brand: p.brand, productCode: p.productCode,
       image: p.image, priceNow: hidden ? null : p.priceNow, poa: hidden,

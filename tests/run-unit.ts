@@ -40,6 +40,14 @@ const poaSet = poaNamesFrom([{ name: "Hobs", priceOnApplication: false }], [{ na
 ok(poaSet.has("Siemens") && !poaSet.has("Bosch"), "a flagged brand joins the call-for-price set; an unflagged one does not");
 ok(isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Siemens" }), "a Siemens product is call-for-price by brand alone");
 ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }), "a Bosch hob keeps its price");
+{
+  const poa = new Set(["Accessories & Spare Parts", "Siemens"]);
+  ok(isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Smeg" })
+    && !isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Bosch", pricewire: true })
+    && isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Bosch" })
+    && isPoaProduct(poa, { category: "Cooking", subcategory: "Hobs", brand: "Siemens", pricewire: true }),
+    "call for price: a Pricewire price shows in a call-for-price category; other accessories stay hidden; a call-for-price brand still hides");
+}
 ok(poaNamesFrom([], []).has("Siemens"), "with no brand information at all, Siemens stays masked");
 ok(!poaNamesFrom([], [{ name: "Siemens", priceOnApplication: false }]).has("Siemens"), "the owner unticking Siemens wins over the fallback");
 // rag documents

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { adminHref } from "@/lib/admin-config";
 import { requireAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { poaNamesFromDb } from "@/lib/poa";
+import { poaNamesFromDb, isPoaProduct } from "@/lib/poa";
 import { FEED_AVAILABILITY } from "@/lib/merchant-feed";
 import { isBestSeller } from "@/lib/best-sellers";
 import AdminShell from "@/components/admin/AdminShell";
@@ -59,7 +59,7 @@ async function adsData() {
   const buckets: Record<string, Row[]> = { eligible: [], hidden: [], poa: [], noPrice: [], noImage: [], availability: [] };
   for (const p of products) {
     if (!p.isVisible) buckets.hidden.push(p);
-    else if (poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand)) buckets.poa.push(p);
+    else if (isPoaProduct(poa, p)) buckets.poa.push(p);
     else if (p.priceNow === null) buckets.noPrice.push(p);
     else if (!p.mainImage) buckets.noImage.push(p);
     else if (!FEED_AVAILABILITY.includes(p.availabilityNormalised)) buckets.availability.push(p);

@@ -14,7 +14,7 @@ import type { BrandView, ChangeView, CheckLine, CheckView, PendingChange, RunVie
  *            the models a list site sells that we don't
  * The morning run and n8n do the same read (lib/price-watch/pricewire.ts).
  */
-export type PricewireLinks = { brands: string; priceWatch: string; categories: string };
+export type PricewireLinks = { brands: string; priceWatch: string };
 type Msg = { tone: "success" | "warning" | "danger"; text: string } | null;
 type Data = { sites: SiteView[]; brands: BrandView[]; pending: PendingChange[]; runs: RunView[]; checks: Record<string, CheckView>; coverage: Record<string, Record<string, number>>; changes: ChangeView[] };
 
@@ -206,7 +206,6 @@ function BrandCard({ b, sites, checks, links, onSaved }: { b: BrandView; sites: 
           {sites.filter((s) => s.id !== f.siteId).map((s) => <option key={s.id} value={s.id} disabled={!pickable(s)}>{s.name}{tag(s)}</option>)}
         </select></label>
       {b.callForPrice && <Notice tone="warning" className="mt-3">{b.brand} is set to <b>Call for price</b> in <a className="underline" href={links.brands}>Brands</a>, so its prices stay hidden until you untick that.</Notice>}
-      {b.hiddenByCategory > 0 && <p className="mt-3 text-xs text-muted">{b.hiddenByCategory} mapped prices are in categories set to Call for price in <a className="underline" href={links.categories}>Categories</a> (accessories and spare parts), so they stay hidden.</p>}
       {msg && <Notice tone={msg.tone} className="mt-3">{msg.text}</Notice>}
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className="text-xs text-muted">Last run {when(b.lastRunAt)}{b.lastRunSummary ? `: ${b.lastRunSummary}` : ""}</span>

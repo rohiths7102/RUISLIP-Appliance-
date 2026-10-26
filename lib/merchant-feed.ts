@@ -31,7 +31,9 @@ export async function feedRows(db: any): Promise<FeedRow[]> {
       priceNow: { not: null },
       mainImage: { not: "" },
       availabilityNormalised: { in: FEED_AVAILABILITY },
-      ...(poaNames.length && { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }, { brand: { in: poaNames } }] }),
+      // Hidden prices stay out (lib/select hidesPrice): a call-for-price brand always,
+      // a call-for-price category unless Pricewire priced the product.
+      ...(poaNames.length && { NOT: [{ brand: { in: poaNames } }], OR: [{ pricewire: true }, { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }] }),
     },
     select: {
       productCode: true, title: true, brand: true, slug: true, priceNow: true,

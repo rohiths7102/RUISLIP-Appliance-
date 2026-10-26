@@ -387,7 +387,7 @@ export type SiteView = {
 };
 export type BrandView = {
   brand: FeedBrand; siteId: string; fallbackSiteId: string; enabled: boolean; lastRunAt: string | null; lastRunSummary: string;
-  callForPrice: boolean; products: number; mapped: number; unmapped: number; showing: number; hiddenByCategory: number;
+  callForPrice: boolean; products: number; mapped: number; unmapped: number; showing: number;
 };
 export type RunView = { at: string; by: string; summary: string };
 export type CheckView = { passed: boolean; fresh: boolean; summary: string; checkedAt: string; lines: CheckLine[] };
@@ -406,7 +406,7 @@ export async function pricewireOverview(db: any): Promise<{
   const [siteRows, feeds, items, brandRows, sources, poa, audits, checkRows] = await Promise.all([
     db.priceSite.findMany({ orderBy: [{ builtIn: "desc" }, { createdAt: "asc" }] }),
     db.brandPriceFeed.findMany(),
-    db.brandPriceItem.findMany({ include: { product: { select: { slug: true, title: true, priceNow: true, isVisible: true, category: true, subcategory: true } } } }),
+    db.brandPriceItem.findMany({ include: { product: { select: { slug: true, title: true, priceNow: true, isVisible: true, category: true, subcategory: true, pricewire: true } } } }),
     db.brand.findMany({ where: { name: { in: [...FEED_BRANDS] } }, select: { name: true, priceOnApplication: true } }).catch(() => []),
     db.priceSource.findMany({ select: { id: true, allowAutoApply: true, kind: true, enabled: true } }),
     poaNamesFromDb(db),
@@ -431,11 +431,10 @@ export async function pricewireOverview(db: any): Promise<{
     const f = feeds.find((x: any) => x.brand === brand);
     const mine = live.filter((i: any) => i.brand === brand);
     const callForPrice = !!brandRows.find((b: any) => b.name === brand)?.priceOnApplication;
-    let hiddenByCategory = 0;
     for (const i of mine) {
       // A call-for-price brand's prices can never go on, so none of them is "waiting".
+      // A call-for-price category does not stop a Pricewire price (lib/select hidesPrice).
       if (!i.siteId || typeof i.price !== "number" || callForPrice) continue;
-      if (isPoaProduct(poa, { category: i.product.category, subcategory: i.product.subcategory })) { hiddenByCategory++; continue; }
       if (!(typeof i.product.priceNow === "number" && Math.abs(i.product.priceNow - i.price) < 0.01)) {
         pending.push({ productId: i.productId, slug: i.product.slug, brand, code: i.productCode, title: i.product.title, from: i.product.priceNow ?? null, to: i.price, siteId: i.siteId });
       }
@@ -444,7 +443,7 @@ export async function pricewireOverview(db: any): Promise<{
       brand, siteId: f.siteId, fallbackSiteId: f.fallbackSiteId, enabled: f.enabled,
       lastRunAt: f.lastRunAt ? new Date(f.lastRunAt).toISOString() : null, lastRunSummary: f.lastRunSummary,
       callForPrice, products: mine.length, mapped: mine.filter((i: any) => i.siteId).length, unmapped: mine.filter((i: any) => !i.siteId).length,
-      showing: mine.filter((i: any) => typeof i.product.priceNow === "number").length, hiddenByCategory,
+      showing: mine.filter((i: any) => typeof i.product.priceNow === "number" && !isPoaProduct(poa, { ...i.product, brand })).length,
     };
   });
   const runs: RunView[] = audits.map((a: any) => ({ at: new Date(a.createdAt).toISOString(), by: a.changedBy, summary: String((a.newValue as any)?.applied ?? (a.newValue as any)?.summary ?? "") }));

@@ -74,7 +74,7 @@ function mapProduct(r: any): Product {
   return {
     id: r.id, sourceUrl: r.sourceUrl, oldUrl: r.oldUrl, newSlug: `/products/${r.slug}`,
     title: r.title, brand: r.brand, productCode: r.productCode, gtin: r.gtin || "", category: r.category, subcategory: r.subcategory,
-    breadcrumbs: arr(r.breadcrumbs), priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, currency: r.currency,
+    breadcrumbs: arr(r.breadcrumbs), priceNow: r.priceNow, priceWas: r.priceWas, saving: r.saving, currency: r.currency, pricewire: !!r.pricewire,
     availability: r.availabilityRaw, availabilityNormalised: r.availabilityNormalised, warranty: r.warranty,
     shortDescription: r.shortDescription, descriptionHtml: r.descriptionHtml, descriptionText: r.descriptionText,
     specifications: arr(r.specifications), features: arr(r.features), energyLabelUrl: r.energyLabelUrl,

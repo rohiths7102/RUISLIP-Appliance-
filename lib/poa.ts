@@ -1,4 +1,4 @@
-import { poaNamesFrom } from "./select";
+import { poaNamesFrom, hidesPrice } from "./select";
 
 /**
  * The call-for-price category names, read straight from the database.
@@ -20,6 +20,5 @@ export async function poaNamesFromDb(db: any): Promise<Set<string>> {
   return poaNamesFrom(cats, brands);
 }
 
-/** True when a product's own category or sub-category is call-for-price. */
-export const isPoaProduct = (poa: Set<string>, p: { category?: string | null; subcategory?: string | null; brand?: string | null }) =>
-  poa.has(p.category || "") || poa.has(p.subcategory || "") || poa.has(p.brand || "");
+/** True when the shop hides this product's price (see hidesPrice in lib/select). */
+export const isPoaProduct = hidesPrice;

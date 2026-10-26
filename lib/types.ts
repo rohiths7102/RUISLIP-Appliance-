@@ -6,6 +6,8 @@ export interface Product {
   title: string; brand: string; productCode: string; gtin?: string;
   category: string; subcategory: string; breadcrumbs: string[];
   priceNow: number | null; priceWas: number | null; saving: number | null; currency: string;
+  /** Price put on by Pricewire from a checked site — shown even in a call-for-price category. */
+  pricewire?: boolean;
   availability: string; availabilityNormalised: AvailabilityNormalised;
   warranty: string; shortDescription: string; descriptionHtml: string; descriptionText: string;
   specifications: { label: string; value: string }[]; features: string[];

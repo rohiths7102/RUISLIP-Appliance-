@@ -247,7 +247,7 @@ export async function findForChat(history: ChatMsg[], question: string): Promise
     const shelf = async (b: string | null, lo: number | null, hi: number | null) => {
       const rows: any[] = await db.product.findMany({
         where: { isVisible: true, ...(category && { OR: [{ subcategory: category }, { category: category }] }), ...(b && { brand: b }) },
-        select: { productCode: true, title: true, brand: true, category: true, subcategory: true, priceNow: true, featured: true },
+        select: { productCode: true, title: true, brand: true, category: true, subcategory: true, priceNow: true, featured: true, pricewire: true },
       });
       const unique = [...new Map(rows.map((r) => [r.productCode, r])).values()]; // Bosch/Neff twins share a code
       const appliances = ACCESSORY.test(question) ? unique : unique.filter((r) => !ACCESSORY.test(r.title));
@@ -308,7 +308,7 @@ export async function findForChat(history: ChatMsg[], question: string): Promise
   // --- facts, live
   const live = why.size ? await db.product.findMany({
     where: { productCode: { in: [...why.keys()] }, isVisible: true },
-    select: { productCode: true, title: true, brand: true, category: true, subcategory: true, priceNow: true, priceWas: true, saving: true,
+    select: { productCode: true, title: true, brand: true, category: true, subcategory: true, priceNow: true, priceWas: true, saving: true, pricewire: true,
       availabilityRaw: true, warranty: true, slug: true, specifications: true, shortDescription: true },
   }) : [];
   const products: Fact[] = [];

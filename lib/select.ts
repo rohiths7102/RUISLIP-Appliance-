@@ -8,13 +8,23 @@ export const slugOf = (p: Product) => p.newSlug.replace(/^\/products\//, "");
  * pre-computed here so ProductBrowser can build its filter row and chips without
  * shipping the specs array to the client.
  */
+/**
+ * Does the shop hide this product's price ("call for price")? A brand set to
+ * call for price always hides it. A call-for-price category hides it unless
+ * Pricewire put the price on from a checked site (Oct 2026: Bosch, Neff and
+ * Siemens accessories show Ruislip Appliances' or the maker's retail price;
+ * other brands' accessories, priced from supplier cost, stay hidden).
+ */
+export const hidesPrice = (poa: Set<string>, p: { category?: string | null; subcategory?: string | null; brand?: string | null; pricewire?: boolean | null }) =>
+  poa.has(p.brand || "") || (!p.pricewire && (poa.has(p.category || "") || poa.has(p.subcategory || "")));
+
 export const toCardItem = (p: Product, poaNames?: Set<string>) => {
   // Owner-flagged "call for price" categories (accessories at cost price, coffee
   // machines) — the card shows no price at all, per the owner's instruction.
   // The numbers are nulled, not just hidden: a price the owner doesn't publish
   // must not ride along in the RSC payload where View Source would reveal it
   // (it would also silently drive the price sort).
-  const poa = !!poaNames && (poaNames.has(p.category) || poaNames.has(p.subcategory) || poaNames.has(p.brand));
+  const poa = !!poaNames && hidesPrice(poaNames, p);
   return {
     id: p.id, newSlug: p.newSlug, title: p.title, brand: p.brand, productCode: p.productCode,
     category: p.category, subcategory: p.subcategory, image: p.image,

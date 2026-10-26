@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Phone } from "lucide-react";
 import { loadCatalog, getBusiness } from "@/lib/repo";
-import { toCardItem, poaNamesFrom } from "@/lib/select";
+import { toCardItem, poaNamesFrom, hidesPrice } from "@/lib/select";
 import { LOCAL_DEPARTMENTS, townBySlug, milesFromShop, nearestTowns, townDepartmentHref } from "@/lib/areas";
 import { telHref } from "@/lib/format";
 import { breadcrumbJsonLd, faqJsonLd, jsonLdScript, SITE } from "@/lib/seo";
@@ -30,7 +30,7 @@ async function load(slug: string, deptId: string) {
   if (!cat) return null;
   const poaSet = poaNamesFrom(categories, brands);
   const items = products
-    .filter((p) => p.category === cat.name && p.image && p.priceNow !== null && !poaSet.has(p.category) && !poaSet.has(p.subcategory) && !poaSet.has(p.brand))
+    .filter((p) => p.category === cat.name && p.image && p.priceNow !== null && !hidesPrice(poaSet, p))
     .sort((a, b) => (STOCK_RANK[a.availabilityNormalised] ?? 9) - (STOCK_RANK[b.availabilityNormalised] ?? 9));
   return { t, cat, business, poaSet, items, ready: items.filter((p) => p.availabilityNormalised in STOCK_RANK).length };
 }

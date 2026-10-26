@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Phone, ArrowRight, Wrench, Recycle, Truck } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
-import { topCategories, childCategories, toCardItem, poaNamesFrom } from "@/lib/select";
+import { topCategories, childCategories, toCardItem, poaNamesFrom, hidesPrice } from "@/lib/select";
 import { telHref, waHref, gbp } from "@/lib/format";
 import Reveal from "@/components/Reveal";
 import CountUp from "@/components/CountUp";
@@ -69,7 +69,7 @@ export default async function Home() {
   // for value over "premium": lead with what people actually save.
   const offers = products
     .filter((p) => p.image && p.priceNow !== null && p.priceWas !== null && (p.saving ?? 0) > 0 &&
-      !poaSet.has(p.category) && !poaSet.has(p.subcategory))
+      !hidesPrice(poaSet, p))
     .sort((a, b) => (b.saving ?? 0) - (a.saving ?? 0))
     .slice(0, 8)
     .map((p) => toCardItem(p, poaSet));
