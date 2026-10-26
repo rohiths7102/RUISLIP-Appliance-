@@ -219,6 +219,22 @@ model PriceSite {
   createdAt       DateTime  @default(now())
 }
 
+/// A site's check for one brand (Pricewire "Check"): read live on that brand's
+/// products, the model on each page must match and each price must be close
+/// to the price we know. Only a site that passed can be picked for the brand.
+model PriceSiteCheck {
+  siteId    String
+  brand     String
+  passed    Boolean
+  /// One line the owner reads, e.g. "5 of 5 read correctly".
+  summary   String   @default("")
+  /// JSON: [{ code, ours, read, status }] — the models tried and what came back.
+  detail    String   @default("[]")
+  checkedAt DateTime @default(now())
+
+  @@id([siteId, brand])
+}
+
 /// Which site prices each brand, and which one fills in when it has no price.
 model BrandPriceFeed {
   brand          String    @id                         // "Bosch" | "Neff" | "Siemens"

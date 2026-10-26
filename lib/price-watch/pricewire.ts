@@ -36,6 +36,7 @@ export const LEGACY_MAKER_SOURCE = "manufacturer-rrp";
 
 export const BUILT_IN_SITES = [
   { id: "ruislip-appliances", name: "Ruislip Appliances", kind: "list", url: "https://www.ruislipappliances.com/llms-full.txt" },
+  { id: "ruislip-pages", name: "Ruislip Appliances pages", kind: "page", url: "https://www.ruislipappliances.com/products/{code}.htm" },
   { id: "bosch-home", name: "Bosch", kind: "page", url: "https://www.bosch-home.co.uk/en/product/{code}" },
   { id: "neff-home", name: "Neff", kind: "page", url: "https://www.neff-home.com/uk/en/product/{code}" },
   { id: "siemens-home", name: "Siemens", kind: "page", url: "https://www.siemens-home.bsh-group.com/uk/en/mkt-product/{code}" },
@@ -43,8 +44,8 @@ export const BUILT_IN_SITES = [
 const DEFAULT_FEEDS: Record<FeedBrand, { siteId: string; fallbackSiteId: string }> = {
   Bosch: { siteId: "ruislip-appliances", fallbackSiteId: "bosch-home" },
   Neff: { siteId: "ruislip-appliances", fallbackSiteId: "neff-home" },
-  // Siemens' own UK site shows no prices; Ruislip Appliances is the only source.
-  Siemens: { siteId: "ruislip-appliances", fallbackSiteId: "" },
+  // Siemens' own UK site shows no prices: Ruislip Appliances' list, then their pages.
+  Siemens: { siteId: "ruislip-appliances", fallbackSiteId: "ruislip-pages" },
 };
 
 const norm = (s: unknown) => String(s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -302,6 +303,80 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
   return run;
 }
 
+/* ------------------------------------------------------ certification */
+
+/** How long a passed check lets a site be picked for a brand. */
+export const CHECK_VALID_DAYS = 7;
+export type CheckLine = { code: string; ours: number; read: number | null; status: "correct" | "wrong_price" | "wrong_model" | "no_price" | "unread" };
+export type CheckResult = { passed: boolean; summary: string; lines: CheckLine[] };
+
+/**
+ * Check a site for a brand before it can price it: read it live for up to 12
+ * of that brand's products whose price we already know, and judge each read.
+ *   correct      the page names the model and the price is within 35% of ours
+ *                (Ruislip Appliances sells some lines ~20% under maker price)
+ *   wrong_price  a price, but more than 35% away — the reader is misreading
+ *   wrong_model  the page is about another model
+ * Passes with at least 3 correct and no more than one wrong in four. Stops at
+ * 5 correct, or after 5 unreadable pages in a row (blocked or down).
+ */
+export async function checkSite(db: any, siteId: string, brand: FeedBrand, fetcher: Fetcher = fetchPage): Promise<CheckResult> {
+  const site = await db.priceSite.findUnique({ where: { id: siteId } });
+  if (!site) throw new Error("No such site.");
+  const rows = await db.product.findMany({
+    where: { isVisible: true, brand: { in: [brand, brand.toUpperCase()] } },
+    select: { id: true, productCode: true, sourceUrl: true, priceNow: true, brandPriceItem: { select: { price: true, siteId: true } } },
+  });
+  const known = rows.map((p: any) => ({ ...p, ref: typeof p.priceNow === "number" ? p.priceNow : p.brandPriceItem?.price ?? null }))
+    .filter((p: any) => typeof p.ref === "number" && p.ref > 0);
+  let list: Map<string, ListLine> | null = null;
+  if (site.kind === "list") list = parseListSite((await fetcher(site.url)).html);
+  // Models the site most likely carries first: those it prices already, then
+  // (for a list) those it lists; the rest shuffled so a check is not always
+  // decided by the same handful.
+  const score = (p: any) => (p.brandPriceItem?.siteId === siteId ? 2 : 0) + (list?.has(norm(p.productCode)) ? 1 : 0);
+  const sample = known.map((p: any) => ({ p, k: score(p) + Math.random() * 0.5 })).sort((a: any, b: any) => b.k - a.k).slice(0, 12).map((x: any) => x.p);
+
+  const lines: CheckLine[] = [];
+  let unreadRun = 0;
+  for (const p of sample) {
+    if (lines.filter((l) => l.status === "correct").length >= 5 || unreadRun >= 5) break;
+    let read: number | null = null, status: CheckLine["status"];
+    if (list) {
+      read = list.get(norm(p.productCode))?.price ?? null;
+      status = read === null ? "no_price" : "correct";
+    } else {
+      const url = pageUrlFor(site.url, p.productCode, p.sourceUrl || "");
+      try {
+        const r = readPagePrice((await fetcher(url)).html, p.productCode, url);
+        read = r.price;
+        status = r.price !== null ? "correct" : r.status === "other_model" ? "wrong_model" : "no_price";
+        unreadRun = 0;
+      } catch { status = "unread"; unreadRun++; }
+    }
+    if (read !== null && Math.abs(read - p.ref) / p.ref > 0.35) status = "wrong_price";
+    lines.push({ code: p.productCode, ours: p.ref, read, status });
+  }
+  const n = (s: CheckLine["status"]) => lines.filter((l) => l.status === s).length;
+  const correct = n("correct"), wrong = n("wrong_price") + n("wrong_model");
+  const passed = correct >= 3 && wrong * 4 <= correct;
+  const summary = !sample.length ? `no ${brand} products with a known price to check against`
+    : unreadRun >= 5 ? `the site would not answer (${n("unread")} pages unreadable) — it may be blocking us`
+    : `${correct} of ${lines.length} read correctly${wrong ? `, ${wrong} wrong` : ""}${n("no_price") ? `, ${n("no_price")} without a price` : ""}`;
+  await db.priceSiteCheck.upsert({
+    where: { siteId_brand: { siteId, brand } },
+    update: { passed, summary, detail: JSON.stringify(lines), checkedAt: new Date() },
+    create: { siteId, brand, passed, summary, detail: JSON.stringify(lines) },
+  });
+  return { passed, summary, lines };
+}
+
+/** May this site be picked for this brand now? */
+export async function checkPassed(db: any, siteId: string, brand: string): Promise<boolean> {
+  const c = await db.priceSiteCheck.findUnique({ where: { siteId_brand: { siteId, brand } } });
+  return !!c?.passed && Date.now() - new Date(c.checkedAt).getTime() <= CHECK_VALID_DAYS * 86400_000;
+}
+
 /* ----------------------------------------------------------- overview */
 
 export type PendingChange = { productId: string; slug: string; brand: string; code: string; title: string; from: number | null; to: number; siteId: string };
@@ -315,11 +390,20 @@ export type BrandView = {
   callForPrice: boolean; products: number; mapped: number; unmapped: number; showing: number; hiddenByCategory: number;
 };
 export type RunView = { at: string; by: string; summary: string };
+export type CheckView = { passed: boolean; fresh: boolean; summary: string; checkedAt: string; lines: CheckLine[] };
+export type ChangeView = { at: string; code: string; title: string; slug: string; from: number | null; to: number | null; site: string; by: string };
 
 /** Everything Admin → Pricewire shows. */
-export async function pricewireOverview(db: any): Promise<{ sites: SiteView[]; brands: BrandView[]; pending: PendingChange[]; runs: RunView[] }> {
+export async function pricewireOverview(db: any): Promise<{
+  sites: SiteView[]; brands: BrandView[]; pending: PendingChange[]; runs: RunView[];
+  /** "siteId|brand" → that site's last check for that brand. */
+  checks: Record<string, CheckView>;
+  /** brand → siteId → products priced by it ("" = none). */
+  coverage: Record<string, Record<string, number>>;
+  changes: ChangeView[];
+}> {
   await ensurePricewire(db);
-  const [siteRows, feeds, items, brandRows, sources, poa, audits] = await Promise.all([
+  const [siteRows, feeds, items, brandRows, sources, poa, audits, checkRows] = await Promise.all([
     db.priceSite.findMany({ orderBy: [{ builtIn: "desc" }, { createdAt: "asc" }] }),
     db.brandPriceFeed.findMany(),
     db.brandPriceItem.findMany({ include: { product: { select: { slug: true, title: true, priceNow: true, isVisible: true, category: true, subcategory: true } } } }),
@@ -327,6 +411,7 @@ export async function pricewireOverview(db: any): Promise<{ sites: SiteView[]; b
     db.priceSource.findMany({ select: { id: true, allowAutoApply: true, kind: true, enabled: true } }),
     poaNamesFromDb(db),
     db.adminAuditLog.findMany({ where: { action: { in: ["price-watch:maker-read", "pricewire:read"] } }, orderBy: { createdAt: "desc" }, take: 8, select: { createdAt: true, changedBy: true, newValue: true } }),
+    db.priceSiteCheck.findMany().catch(() => []),
   ]);
   const live = items.filter((i: any) => i.product?.isVisible);
   const auto = new Map(sources.map((s: any) => [s.id, s.kind === "authorised" && s.enabled && s.allowAutoApply === true]));
@@ -363,5 +448,27 @@ export async function pricewireOverview(db: any): Promise<{ sites: SiteView[]; b
     };
   });
   const runs: RunView[] = audits.map((a: any) => ({ at: new Date(a.createdAt).toISOString(), by: a.changedBy, summary: String((a.newValue as any)?.applied ?? (a.newValue as any)?.summary ?? "") }));
-  return { sites, brands, pending: pending.sort((a, b) => a.brand.localeCompare(b.brand) || a.code.localeCompare(b.code)), runs };
+
+  const checks: Record<string, CheckView> = {};
+  for (const c of checkRows as any[]) {
+    let lines: CheckLine[] = [];
+    try { lines = JSON.parse(c.detail || "[]"); } catch { /* left empty */ }
+    checks[`${c.siteId}|${c.brand}`] = { passed: c.passed, fresh: Date.now() - new Date(c.checkedAt).getTime() <= CHECK_VALID_DAYS * 86400_000,
+      summary: c.summary, checkedAt: new Date(c.checkedAt).toISOString(), lines };
+  }
+  const coverage: Record<string, Record<string, number>> = {};
+  for (const i of live) (coverage[i.brand] ??= {})[i.siteId || ""] = (coverage[i.brand]?.[i.siteId || ""] || 0) + 1;
+
+  // The last prices Pricewire put on, newest first — what changed, from where.
+  const siteIds = new Set(siteRows.map((s: any) => s.id));
+  const applied = await db.adminAuditLog.findMany({ where: { action: { in: ["price-watch:auto-apply", "price-watch:apply"] } }, orderBy: { createdAt: "desc" }, take: 200,
+    select: { createdAt: true, entityId: true, changedBy: true, previousValue: true, newValue: true } });
+  const mine = applied.filter((a: any) => siteIds.has((a.newValue as any)?.sourceId)).slice(0, 30);
+  const named = new Map((await db.product.findMany({ where: { id: { in: mine.map((a: any) => a.entityId) } }, select: { id: true, productCode: true, title: true, slug: true } })).map((p: any) => [p.id, p]));
+  const changes: ChangeView[] = mine.map((a: any) => {
+    const p: any = named.get(a.entityId) || {};
+    return { at: new Date(a.createdAt).toISOString(), code: p.productCode || "", title: p.title || "", slug: p.slug || "",
+      from: (a.previousValue as any)?.priceNow ?? null, to: (a.newValue as any)?.priceNow ?? null, site: (a.newValue as any)?.sourceLabel || "", by: a.changedBy };
+  });
+  return { sites, brands, pending: pending.sort((a, b) => a.brand.localeCompare(b.brand) || a.code.localeCompare(b.code)), runs, checks, coverage, changes };
 }

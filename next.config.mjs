@@ -11,6 +11,14 @@ const nextConfig = {
   // Lets `npm run build:check` build into .next-check so a production build can be
   // verified without clobbering a running dev server's chunks.
   distDir: process.env.NEXT_DIST || ".next",
+  // Dev only: the local SQLite file and the 2.8 GB of catalogue photos are data,
+  // not code. Watching them recompiled the app on every database write or saved
+  // photo, which reloaded open pages (the sign-in form reset mid-submit) and
+  // failed requests that landed mid-compile (Oct 2026, Pricewire import).
+  webpack: (config, { dev }) => {
+    if (dev) config.watchOptions = { ...config.watchOptions, ignored: ["**/node_modules/**", "**/.git/**", "**/prisma/*.db*", "**/public/catalog/**"] };
+    return config;
+  },
   images: {
     // Resizing happens on the image hosts' own CDNs (lib/image-loader.ts), not
     // Vercel's Image Optimization, whose Hobby quota ran out and 402'd photos.

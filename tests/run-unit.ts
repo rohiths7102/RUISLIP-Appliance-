@@ -16,7 +16,8 @@ import { oldAddressTarget } from "../lib/old-urls.js";
 import { isBestSeller } from "../lib/best-sellers.js";
 import { autoApplySource } from "../lib/price-watch/auto-apply.js";
 import { readMakerPrice } from "../lib/maker-price.js";
-import { syncPricewire, parseListSite, readPagePrice, pageUrlFor } from "../lib/price-watch/pricewire.js";
+import { syncPricewire, parseListSite, readPagePrice, pageUrlFor, checkSite, checkPassed } from "../lib/price-watch/pricewire.js";
+import { ruislipType } from "../scripts/catalog/ruislip-types.js";
 import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/homepage.js";
 import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
@@ -402,6 +403,49 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   ok(siteOff.items.get("unlisted").siteId === "" && !siteOff.fetched.some((u) => u.includes("bosch-home")),
     "Pricewire: a site switched off is never read, even as a backup");
 }
+
+// ---- Pricewire site checks: only a site that reads a brand correctly can price it
+{
+  const page = (sku: string, price: number) => `<script type="application/ld+json">${JSON.stringify({ "@type": "Product", name: sku, sku, offers: { "@type": "Offer", price } })}</script>`;
+  const ours = [
+    ["A1", 500], ["A2", 400], ["A3", 300], ["A4", 800], ["A5", 1000], ["A6", 250],
+  ].map(([code, priceNow]) => ({ id: code, productCode: code, sourceUrl: "", priceNow, brandPriceItem: null }));
+  const make = () => {
+    const saved: any[] = [];
+    const db: any = {
+      priceSite: { findUnique: async () => ({ id: "shop", kind: "page", url: "https://shop.example/{code}" }) },
+      product: { findMany: async () => ours },
+      priceSiteCheck: { upsert: async ({ create }: any) => { saved.push(create); }, findUnique: async () => saved.at(-1) ? { ...saved.at(-1), checkedAt: new Date() } : null },
+    };
+    return { db, saved };
+  };
+  const good = make();
+  const r1 = await checkSite(good.db, "shop", "Bosch", async (url) => { const c = url.split("/").pop()!; return { html: page(c, ours.find((o) => o.productCode === c)!.priceNow * 0.9) }; });
+  ok(r1.passed && r1.lines.filter((l) => l.status === "correct").length === 5 && await checkPassed(good.db, "shop", "Bosch"),
+    "site check: a site reading 5 models within 35% of our price passes and can then be picked");
+  const off = make();
+  const r2 = await checkSite(off.db, "shop", "Bosch", async (url) => { const c = url.split("/").pop()!; return { html: page(c, c === "A1" || c === "A2" ? 9 : ours.find((o) => o.productCode === c)!.priceNow) }; });
+  ok(!r2.passed && r2.lines.some((l) => l.status === "wrong_price") && !(await checkPassed(off.db, "shop", "Bosch")),
+    "site check: two prices way off (a misreading site, £9 for a £500 model) fail the check");
+  const wall = make();
+  let tries = 0;
+  const r3 = await checkSite(wall.db, "shop", "Bosch", async () => { tries++; throw new Error("blocked"); });
+  ok(!r3.passed && tries === 5 && /blocking/.test(r3.summary), "site check: a site that won't answer stops after 5 pages and fails, saying it may be blocking us");
+  const other = make();
+  const r4 = await checkSite(other.db, "shop", "Bosch", async () => ({ html: page("ZZ999", 450) }));
+  ok(!r4.passed && r4.lines.every((l) => l.status === "wrong_model"), "site check: pages about other models never count as correct");
+}
+
+// ---- Ruislip import: the type comes from their section, words only choose within it
+ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT TouchControl") === "hobs"
+  && ruislipType("Venting Hobs", "Venting Hobs (Built-In)", "IQ500 80cm Venting Hob") === "venting-hobs"
+  && ruislipType("Hoods", "Hoods", "73cm, 3 speeds + intensive, LED lights. Optional recirculation kit") === "cooker-hoods"
+  && ruislipType("Hoods", "Hoods", "Clean Air Plus recirculation filter kit") === "cooker-hood-accessories"
+  && ruislipType("Refrigeration", "Refrigeration (Built-In)", "N50 Integrated Fridge Freezer 177x54 70/30") === "integrated-fridge-freezers"
+  && ruislipType("Dishwashers", "Dishwashers (Built-In)", "N50 45cm slimline fully integrated") === "integrated-slimline-dishwashers"
+  && ruislipType("Coffee Machines", "Coffee Machines", "Tassimo Hot Drinks Machine") === "tassimo"
+  && ruislipType("Other Products", "", "Something") === null,
+  "Ruislip import: hobs stay hobs whatever their spec words, hoods that mention a kit stay hoods, and an unknown section is not guessed");
 
 // ---- homepage offers (Admin → Homepage → Offers)
 {

@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { ensurePricewire, FEED_BRANDS } from "@/lib/price-watch/pricewire";
+import { ensurePricewire, checkPassed, CHECK_VALID_DAYS, FEED_BRANDS } from "@/lib/price-watch/pricewire";
 export const dynamic = "force-dynamic";
 
 /**
  * Save one brand's Pricewire choice: the site its prices come from, a backup
  * site for models the first has no price for, and whether it runs at all.
- * Audit-logged. Body: { brand, siteId, fallbackSiteId, enabled }
+ * A site newly picked for a brand must have passed its check for that brand
+ * in the last few days (lib/price-watch/pricewire.ts checkSite), so a site
+ * that cannot read this brand's prices never gets chosen. Audit-logged.
+ * Body: { brand, siteId, fallbackSiteId, enabled }
  */
 export async function PATCH(req: Request) {
   const gate = await requireAdminApi(req, { limit: 30, bucket: "pricewire" });
@@ -26,6 +29,13 @@ export async function PATCH(req: Request) {
   if (fallbackSiteId === siteId) return NextResponse.json({ error: "The backup site must be a different site." }, { status: 400 });
 
   const before = await db.brandPriceFeed.findUnique({ where: { brand } });
+  const names = new Map((await db.priceSite.findMany({ select: { id: true, name: true } })).map((s: any) => [s.id, s.name]));
+  for (const id of [siteId, fallbackSiteId]) {
+    if (!id || id === before.siteId || id === before.fallbackSiteId) continue;
+    if (!(await checkPassed(db, id, brand))) {
+      return NextResponse.json({ error: `${names.get(id)} hasn't passed its ${brand} check in the last ${CHECK_VALID_DAYS} days. Press Check next to it, then save.` }, { status: 400 });
+    }
+  }
   const data = { siteId, fallbackSiteId, enabled: body.enabled !== false };
   const after = await db.brandPriceFeed.update({ where: { brand }, data });
   const changed = Object.keys(data).filter((k) => (before as any)[k] !== (data as any)[k]);
