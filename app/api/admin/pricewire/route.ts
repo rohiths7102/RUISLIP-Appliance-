@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { ensurePricewire, checkPassed, CHECK_VALID_DAYS, FEED_BRANDS } from "@/lib/price-watch/pricewire";
+import { ensurePricewire, checkPassed, brandsForSite, CHECK_VALID_DAYS, FEED_BRANDS } from "@/lib/price-watch/pricewire";
 export const dynamic = "force-dynamic";
 
 /**
@@ -32,6 +32,7 @@ export async function PATCH(req: Request) {
   const names = new Map((await db.priceSite.findMany({ select: { id: true, name: true } })).map((s: any) => [s.id, s.name]));
   for (const id of [siteId, fallbackSiteId]) {
     if (!id || id === before.siteId || id === before.fallbackSiteId) continue;
+    if (!brandsForSite(id).includes(brand)) return NextResponse.json({ error: `The ${names.get(id)} site only sells ${brandsForSite(id).join(", ")}.` }, { status: 400 });
     if (!(await checkPassed(db, id, brand))) {
       return NextResponse.json({ error: `${names.get(id)} hasn't passed its ${brand} check in the last ${CHECK_VALID_DAYS} days. Press Check next to it, then save.` }, { status: 400 });
     }

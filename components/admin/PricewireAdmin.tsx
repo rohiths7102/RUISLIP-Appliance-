@@ -25,7 +25,6 @@ const STATUS: Record<string, string> = { not_listed: "not in their list", no_pri
 const LINE: Record<CheckLine["status"], string> = { correct: "read correctly", wrong_price: "price too far from ours", wrong_model: "page is about another model", no_price: "no price", unread: "page would not load" };
 // One colour per site in the coverage bars, in the order sites are listed.
 const SITE_COLOURS = ["#ffffff", "#7fb3e0", "#3b82c4", "#a5b4fc", "#5eead4", "#94a3b8"];
-const FEED_BRANDS = ["Bosch", "Neff", "Siemens"] as const;
 
 async function call(url: string, method: string, body?: unknown) {
   const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -165,7 +164,7 @@ function SiteRow({ s, colour, checks, onChange }: { s: SiteView; colour: string;
         </div>
       </div>
       <div className="mt-3 grid gap-2 md:grid-cols-3">
-        {FEED_BRANDS.map((b) => <CheckChip key={b} siteId={s.id} brand={b} check={checks[`${s.id}|${b}`]} onDone={onChange} />)}
+        {s.brands.map((b) => <CheckChip key={b} siteId={s.id} brand={b} check={checks[`${s.id}|${b}`]} onDone={onChange} />)}
       </div>
       {msg && <Notice tone={msg.tone} className="mt-3">{msg.text}</Notice>}
     </div>
@@ -198,12 +197,12 @@ function BrandCard({ b, sites, checks, links, onSaved }: { b: BrandView; sites: 
       </div>
       <label className="mt-3 block text-sm"><span className="font-medium text-ink">Prices from</span>
         <select value={f.siteId} onChange={(e) => setF({ ...f, siteId: e.target.value })} className={input}>
-          {sites.map((s) => <option key={s.id} value={s.id} disabled={!pickable(s)}>{s.name}{tag(s)}</option>)}
+          {sites.filter((s) => s.brands.includes(b.brand) || s.id === f.siteId).map((s) => <option key={s.id} value={s.id} disabled={!pickable(s)}>{s.name}{tag(s)}</option>)}
         </select></label>
       <label className="mt-3 block text-sm"><span className="font-medium text-ink">If {name(f.siteId)} has no price, try</span>
         <select value={f.fallbackSiteId} onChange={(e) => setF({ ...f, fallbackSiteId: e.target.value })} className={input}>
           <option value="">Nothing — keep the current price</option>
-          {sites.filter((s) => s.id !== f.siteId).map((s) => <option key={s.id} value={s.id} disabled={!pickable(s)}>{s.name}{tag(s)}</option>)}
+          {sites.filter((s) => s.id !== f.siteId && (s.brands.includes(b.brand) || s.id === f.fallbackSiteId)).map((s) => <option key={s.id} value={s.id} disabled={!pickable(s)}>{s.name}{tag(s)}</option>)}
         </select></label>
       {b.callForPrice && <Notice tone="warning" className="mt-3">{b.brand} is set to <b>Call for price</b> in <a className="underline" href={links.brands}>Brands</a>, so its prices stay hidden until you untick that.</Notice>}
       {msg && <Notice tone={msg.tone} className="mt-3">{msg.text}</Notice>}

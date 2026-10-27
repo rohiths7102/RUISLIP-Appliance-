@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       previousValue: {}, newValue: { brand, passed: r.passed, summary: r.summary }, changedBy: gate.admin.email });
     return NextResponse.json(r);
   } catch (e: any) {
-    return NextResponse.json({ error: `Could not check the site: ${String(e?.message || e).slice(0, 160)}` }, { status: 502 });
+    const m = String(e?.message || e).slice(0, 160);
+    return NextResponse.json({ error: /only sells/.test(m) ? m : `Could not check the site: ${m}` }, { status: /only sells/.test(m) ? 400 : 502 });
   }
 }

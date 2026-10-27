@@ -41,6 +41,14 @@ export const BUILT_IN_SITES = [
   { id: "neff-home", name: "Neff", kind: "page", url: "https://www.neff-home.com/uk/en/product/{code}" },
   { id: "siemens-home", name: "Siemens", kind: "page", url: "https://www.siemens-home.bsh-group.com/uk/en/mkt-product/{code}" },
 ] as const;
+/**
+ * A maker's own site sells only its own brand, so it is checked, picked and
+ * shown for that brand alone. Shops (Ruislip Appliances, any site the owner
+ * adds) can price every brand.
+ */
+const MAKER_SITE_BRAND: Record<string, FeedBrand> = { "bosch-home": "Bosch", "neff-home": "Neff", "siemens-home": "Siemens" };
+export const brandsForSite = (siteId: string): FeedBrand[] => (MAKER_SITE_BRAND[siteId] ? [MAKER_SITE_BRAND[siteId]] : [...FEED_BRANDS]);
+
 const DEFAULT_FEEDS: Record<FeedBrand, { siteId: string; fallbackSiteId: string }> = {
   Bosch: { siteId: "ruislip-appliances", fallbackSiteId: "bosch-home" },
   Neff: { siteId: "ruislip-appliances", fallbackSiteId: "neff-home" },
@@ -323,6 +331,7 @@ export type CheckResult = { passed: boolean; summary: string; lines: CheckLine[]
 export async function checkSite(db: any, siteId: string, brand: FeedBrand, fetcher: Fetcher = fetchPage): Promise<CheckResult> {
   const site = await db.priceSite.findUnique({ where: { id: siteId } });
   if (!site) throw new Error("No such site.");
+  if (!brandsForSite(siteId).includes(brand)) throw new Error(`The ${site.name} site only sells ${brandsForSite(siteId).join(", ")}.`);
   const rows = await db.product.findMany({
     where: { isVisible: true, brand: { in: [brand, brand.toUpperCase()] } },
     select: { id: true, productCode: true, sourceUrl: true, priceNow: true, brandPriceItem: { select: { price: true, siteId: true } } },
@@ -382,6 +391,8 @@ export async function checkPassed(db: any, siteId: string, brand: string): Promi
 export type PendingChange = { productId: string; slug: string; brand: string; code: string; title: string; from: number | null; to: number; siteId: string };
 export type SiteView = {
   id: string; name: string; kind: string; url: string; enabled: boolean; builtIn: boolean; automatic: boolean;
+  /** The brands this site can be checked and picked for (a maker's site: its own). */
+  brands: FeedBrand[];
   lastReadAt: string | null; lastReadSummary: string; followers: number; usedBy: string[];
   notInCatalogue: { code: string; brand: string; title: string; price: number; section: string; url: string }[];
 };
@@ -419,7 +430,7 @@ export async function pricewireOverview(db: any): Promise<{
     let notInCatalogue: SiteView["notInCatalogue"] = [];
     try { notInCatalogue = JSON.parse(s.notInCatalogue || "[]"); } catch { /* left empty */ }
     return {
-      id: s.id, name: s.name, kind: s.kind, url: s.url, enabled: s.enabled, builtIn: s.builtIn, automatic: !!auto.get(s.id),
+      id: s.id, name: s.name, kind: s.kind, url: s.url, enabled: s.enabled, builtIn: s.builtIn, automatic: !!auto.get(s.id), brands: brandsForSite(s.id),
       lastReadAt: s.lastReadAt ? new Date(s.lastReadAt).toISOString() : null, lastReadSummary: s.lastReadSummary,
       followers: live.filter((i: any) => i.siteId === s.id).length,
       usedBy: feeds.filter((f: any) => f.enabled && (f.siteId === s.id || f.fallbackSiteId === s.id)).map((f: any) => f.brand),

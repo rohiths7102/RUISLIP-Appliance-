@@ -16,7 +16,7 @@ import { oldAddressTarget } from "../lib/old-urls.js";
 import { isBestSeller } from "../lib/best-sellers.js";
 import { autoApplySource } from "../lib/price-watch/auto-apply.js";
 import { readMakerPrice } from "../lib/maker-price.js";
-import { syncPricewire, parseListSite, readPagePrice, pageUrlFor, checkSite, checkPassed } from "../lib/price-watch/pricewire.js";
+import { syncPricewire, parseListSite, readPagePrice, pageUrlFor, checkSite, checkPassed, brandsForSite } from "../lib/price-watch/pricewire.js";
 import { ruislipType } from "../scripts/catalog/ruislip-types.js";
 import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/homepage.js";
 import { pickPage } from "../lib/offer-ai.js";
@@ -442,6 +442,14 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   const other = make();
   const r4 = await checkSite(other.db, "shop", "Bosch", async () => ({ html: page("ZZ999", 450) }));
   ok(!r4.passed && r4.lines.every((l) => l.status === "wrong_model"), "site check: pages about other models never count as correct");
+}
+
+ok(brandsForSite("siemens-home").join() === "Siemens" && brandsForSite("bosch-home").join() === "Bosch" && brandsForSite("ruislip-appliances").length === 3 && brandsForSite("my-new-shop").length === 3,
+  "site brands: a maker's own site is for its own brand only; a shop (Ruislip, any added site) for all three");
+{
+  let threw = "";
+  try { await checkSite({ priceSite: { findUnique: async () => ({ id: "siemens-home", name: "Siemens", kind: "page", url: "x/{code}" }) } } as any, "siemens-home", "Bosch"); } catch (e: any) { threw = e.message; }
+  ok(/only sells Siemens/.test(threw), "site check: checking Siemens' own site for Bosch is refused, not run");
 }
 
 // ---- Ruislip import: the type comes from their section, words only choose within it
