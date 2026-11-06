@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Button, Card, Notice } from "@/components/admin/ui";
+import { Badge, Button, Notice } from "@/components/admin/ui";
 import type { Alert, HistorySeries, Rule } from "@/lib/price-watch/pricing-rules";
 import type { PriceCandidate } from "@/lib/price-watch/pricewire-map";
+import { queueChanged } from "@/components/admin/PricewireAI";
 
 /**
  * Admin → Pricewire → Engine: alerts, pricing rules, mapping (finding products
@@ -20,8 +21,7 @@ async function call(url: string, method = "GET", body?: unknown) {
   const r = await fetch(url, { method, headers: body === undefined ? undefined : { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
   return { ok: r.ok, j: await r.json().catch(() => ({})) };
 }
-/** The AI desk's queue listens for this and reloads. */
-const queueChanged = () => window.dispatchEvent(new Event("pricewire:queue-changed"));
+
 
 /* ------------------------------------------------------------ alerts */
 
@@ -301,10 +301,9 @@ const TABS = ["Alerts", "Pricing rules", "Mapping", "Price history"] as const;
 export default function PricewireEngine(props: Props) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Alerts");
   return (
-    <Card className="mt-6 p-5">
+    <div>
       <div className="flex flex-wrap items-baseline gap-3">
-        <h2 className="font-display text-xl text-ink">Pricing engine</h2>
-        <nav className="flex flex-wrap gap-1" role="tablist">
+        <nav className="flex flex-wrap gap-1" role="tablist" aria-label="Pricing engine">
           {TABS.map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
             className={`rounded-full px-3 py-1 text-xs font-medium ${tab === t ? "bg-navy text-paper" : "text-ink/70 hover:bg-paper-2"}`}>{t}</button>)}
         </nav>
@@ -315,6 +314,6 @@ export default function PricewireEngine(props: Props) {
         {tab === "Mapping" && <Mapping sites={props.sites} brands={["Bosch", "Neff", "Siemens"]} />}
         {tab === "Price history" && <History />}
       </div>
-    </Card>
+    </div>
   );
 }

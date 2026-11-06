@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Card, Notice } from "@/components/admin/ui";
 import type { BrandView, ChangeView, CheckLine, CheckView, PendingChange, RunView, SiteView } from "@/lib/price-watch/pricewire";
@@ -217,7 +217,30 @@ function BrandCard({ b, sites, checks, links, onSaved }: { b: BrandView; sites: 
 
 /* -------------------------------------------------------------- page */
 
-export default function PricewireAdmin({ sites, brands, pending, runs, checks, coverage, changes, links }: Data & { links: PricewireLinks }) {
+/** The tool's modules, in the order the owner works through them. Each has its own address (#sources …). */
+const MODULES = [
+  { id: "overview", label: "Overview" }, { id: "sources", label: "Sources" }, { id: "engine", label: "Pricing engine" },
+  { id: "desk", label: "AI desk" }, { id: "review", label: "Review queue" }, { id: "activity", label: "Activity" },
+] as const;
+type ModuleId = (typeof MODULES)[number]["id"];
+
+export default function PricewireAdmin({ sites, brands, pending, runs, checks, coverage, changes, links, engine, desk, queue }: Data & { links: PricewireLinks; engine: ReactNode; desk: ReactNode; queue: ReactNode }) {
+  const [mod, setMod] = useState<ModuleId>("overview");
+  const [counts, setCounts] = useState<{ review: number | null; alerts: number | null }>({ review: null, alerts: null });
+  // Open the module named in the address, and keep the address in step, so a module can be bookmarked or linked.
+  useEffect(() => {
+    const fromHash = () => { const h = window.location.hash.slice(1); if (MODULES.some((m) => m.id === h)) setMod(h as ModuleId); };
+    fromHash(); window.addEventListener("hashchange", fromHash); return () => window.removeEventListener("hashchange", fromHash);
+  }, []);
+  const open = (id: ModuleId) => { setMod(id); history.replaceState(null, "", `#${id}`); };
+  // Live counts on the module bar: suggestions waiting, and alerts that need action.
+  useEffect(() => {
+    const load = async () => {
+      const [q, a] = await Promise.all([call("/api/admin/pricewire/ai/queue", "GET"), call("/api/admin/pricewire/insights?view=alerts", "GET")]);
+      setCounts({ review: q.ok ? (q.j.items || []).length : null, alerts: a.ok ? (a.j.alerts || []).filter((x: any) => x.level !== "info").length : null });
+    };
+    load(); window.addEventListener("pricewire:queue-changed", load); return () => window.removeEventListener("pricewire:queue-changed", load);
+  }, []);
   const router = useRouter();
   const [busy, setBusy] = useState<"" | "read" | "apply">("");
   const [msg, setMsg] = useState<Msg>(null);
@@ -274,10 +297,12 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
             {busy === "read" ? "Reading… (up to a minute)" : "Read prices now"}
           </button>
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           {[
             ["Prices mapped", mapped.toLocaleString("en-GB"), `of ${products.toLocaleString("en-GB")} products`],
             ["Waiting to go on", String(pending.length), `${pending.filter((p) => p.from === null).length} first prices`],
+            ["To review", counts.review === null ? "…" : String(counts.review), "rules, documents, assistant"],
+            ["Alerts", counts.alerts === null ? "…" : String(counts.alerts), "undercuts and site problems"],
             ["Sites in use", String(sites.filter((s) => s.usedBy.length).length), `${sites.length} set up`],
             ["Last run", lastRun ? when(lastRun.at) : "never", lastRun ? lastRun.by.replace(/^price-agent \(|\)$/g, "") : "press Read prices now"],
           ].map(([k, v, h]) => (
@@ -307,10 +332,24 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
           </div>
         </div>
       </section>
+      <nav aria-label="Pricewire modules" className="sticky top-0 z-20 mt-4 flex gap-1 overflow-x-auto rounded-2xl bg-[#0b2240] p-1.5 shadow-lg ring-1 ring-white/10">
+        {MODULES.map((m) => {
+          const badge = m.id === "review" ? counts.review : m.id === "overview" ? pending.length : m.id === "engine" ? counts.alerts : null;
+          const active = mod === m.id;
+          return (
+            <button key={m.id} type="button" onClick={() => open(m.id)} aria-current={active ? "page" : undefined}
+              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${active ? "bg-white text-[#0d2949]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}>
+              {m.label}
+              {!!badge && <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${active ? "bg-[#0d2949] text-white" : "bg-white/15 text-white"}`}>{badge}</span>}
+            </button>
+          );
+        })}
+      </nav>
       {manual.length > 0 && <Notice tone="warning" className="mt-4">{manual.map((s) => s.name).join(" and ")} {manual.length > 1 ? "are" : "is"} on manual apply in <a className="underline" href={links.priceWatch}>Price watch</a>; use Apply below for those.</Notice>}
       {msg && <Notice tone={msg.tone} className="mt-4">{msg.text}</Notice>}
 
-      <section className="mt-8">
+      {mod === "sources" && <>
+      <section className="mt-6">
         <h2 className="text-base font-semibold text-ink">Brands</h2>
         <p className="text-xs text-muted">Pick where each brand&apos;s prices come from. Only sites that passed their check for that brand can be picked.</p>
         <div className="mt-3 grid gap-4 lg:grid-cols-3">{brands.map((b) => <BrandCard key={b.brand} b={b} sites={sites} checks={checks} links={links} onSaved={refresh} />)}</div>
@@ -326,8 +365,13 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
           {sites.map((s) => <SiteRow key={s.id} s={s} colour={colourOf(s.id)} checks={checks} onChange={refresh} />)}
         </div>
       </section>
+      </>}
 
-      <Card className="mt-8 p-5">
+      {mod === "engine" && <Card className="mt-6 p-5"><Module title="Pricing engine" text="Rules that turn the other sources' prices into ours, finding products on a shop's site, teaching a site where its price is, alerts and price history.">{engine}</Module></Card>}
+      {mod === "desk" && <Card className="mt-6 p-5"><Module title="AI desk" text="Upload any price document, or ask the assistant. What they find waits in the review queue.">{desk}</Module></Card>}
+      {mod === "review" && <Card className="mt-6 p-5"><Module title="Review queue" text="Every suggested price, from pricing rules, uploaded documents and the assistant. Apply puts it on the website through the same checks as any other price change.">{queue}</Module></Card>}
+
+      {mod === "overview" && <Card className="mt-6 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-ink">Prices waiting to go on</h2><p className="text-xs text-muted">What each product will show after Apply, from the site it follows.</p></div>
           <div className="flex items-center gap-2">
@@ -351,8 +395,9 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
             {shown.length > 400 && <p className="mt-2 text-xs text-muted">Showing 400 of {shown.length}.</p>}
           </div>
         ) : <p className="mt-4 text-sm text-muted">Nothing waiting: every mapped product shows its site&apos;s price.</p>}
-      </Card>
+      </Card>}
 
+      {mod === "activity" && <>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card className="p-5">
           <h2 className="text-base font-semibold text-ink">Latest price changes</h2>
@@ -394,6 +439,17 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
           )}
         </Card>
       )}
+      </>}
     </div>
+  );
+}
+
+function Module({ title, text, children }: { title: string; text: string; children: ReactNode }) {
+  return (
+    <>
+      <h2 className="text-lg font-semibold text-ink">{title}</h2>
+      <p className="mt-0.5 max-w-3xl text-xs text-muted">{text}</p>
+      <div className="mt-4">{children}</div>
+    </>
   );
 }

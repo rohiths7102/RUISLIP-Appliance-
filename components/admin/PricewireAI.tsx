@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Card, Notice, type Tone } from "@/components/admin/ui";
+import { Badge, Button, Notice, type Tone } from "@/components/admin/ui";
 import type { ImportSummary, QueueFlag, QueueItem } from "@/lib/price-watch/pricewire-ai";
 import type { Proposal } from "@/lib/price-watch/pricewire-agent";
 
@@ -250,32 +250,37 @@ function Queue({ items, reload }: { items: QueueItem[]; reload: () => void }) {
 
 /* ------------------------------------------------------------ desk */
 
-export default function PricewireAI() {
+/** Tells the review queue (and the module bar's count) that suggestions changed. */
+export const queueChanged = () => window.dispatchEvent(new Event("pricewire:queue-changed"));
+
+/** Pricewire → AI desk: document upload and the assistant. Their prices land in the review queue. */
+export function AiDesk() {
   const [ready, setReady] = useState(true);
-  const [items, setItems] = useState<QueueItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+  useEffect(() => { json("/api/admin/pricewire/ai/queue").then(({ ok, j }) => { if (ok) setReady(!!j.ready); setLoaded(true); }); }, []);
+  return (
+    <div>
+      <div className="flex flex-wrap items-baseline gap-2">
+        <Badge tone={ready ? "success" : "warning"}>{ready ? "Claude Haiku 5.5 ready" : "AI key missing"}</Badge>
+        <p className="text-xs text-muted">The AI suggests; you decide. Every price is checked against cost, call-for-price and VAT before it goes live.</p>
+      </div>
+      {loaded && !ready && <Notice tone="warning" className="mt-3">Add <code>ANTHROPIC_API_KEY</code> to the site&apos;s environment settings (and restart) to turn on document reading and the assistant. The review queue works without it.</Notice>}
+      <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <Upload ready={ready} onStaged={queueChanged} />
+        <Assistant ready={ready} onProposed={queueChanged} />
+      </div>
+    </div>
+  );
+}
+
+/** Pricewire → Review queue: every suggested price from documents, the assistant and pricing rules. */
+export function ReviewQueue() {
+  const [items, setItems] = useState<QueueItem[]>([]);
   const load = useCallback(async () => {
     const { ok, j } = await json("/api/admin/pricewire/ai/queue");
-    if (ok) { setReady(!!j.ready); setItems(j.items || []); }
-    setLoaded(true);
+    if (ok) setItems(j.items || []);
   }, []);
   useEffect(() => { load(); }, [load]);
-  // Pricing rules run from the engine card above refill the queue.
   useEffect(() => { window.addEventListener("pricewire:queue-changed", load); return () => window.removeEventListener("pricewire:queue-changed", load); }, [load]);
-
-  return (
-    <Card className="mt-6 p-5">
-      <div className="flex flex-wrap items-baseline gap-2">
-        <h2 className="font-display text-xl text-ink">AI desk</h2>
-        <Badge tone={ready ? "success" : "warning"}>{ready ? "Claude Haiku 5.5 ready" : "AI key missing"}</Badge>
-        <p className="w-full text-xs text-muted sm:ml-auto sm:w-auto">The AI suggests; you decide. Every price is checked against cost, call-for-price and VAT before it goes live.</p>
-      </div>
-      {loaded && !ready && <Notice tone="warning" className="mt-3">Add <code>ANTHROPIC_API_KEY</code> to the site's environment settings (and restart) to turn on document reading and the assistant. The review queue works without it.</Notice>}
-      <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <Upload ready={ready} onStaged={load} />
-        <Assistant ready={ready} onProposed={load} />
-      </div>
-      <div className="mt-6 border-t border-line pt-5"><Queue items={items} reload={load} /></div>
-    </Card>
-  );
+  return <Queue items={items} reload={() => { load(); queueChanged(); }} />;
 }
