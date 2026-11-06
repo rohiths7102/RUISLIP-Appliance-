@@ -105,6 +105,10 @@ export const ukTodaySerial = (now = new Date()) => {
   return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(1899, 11, 30)) / 86_400_000);
 };
 
+/** Any .xlsx or .csv as rows of cell text — for files that aren't the CIH layout (lib/price-watch/pricewire-ai.ts). */
+export const readTable = (filename: string, bytes: Uint8Array): string[][] =>
+  /\.xlsx$/i.test(filename) ? readXlsx(bytes) : readCsv(strFromU8(bytes));
+
 /** The list's rows, each with the customer price that applies TODAY (a future price whose date has come wins). */
 export function parsePriceList(filename: string, bytes: Uint8Array, today = ukTodaySerial()): ListRow[] {
   const table = /\.xlsx$/i.test(filename) ? readXlsx(bytes)

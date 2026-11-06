@@ -45,6 +45,7 @@
     "pg:deploy": "node scripts/db/engine.mjs deploy"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
     "@prisma/client": "^6.1.0",
     "@vercel/blob": "^2.6.1",
     "fflate": "0.8.2",

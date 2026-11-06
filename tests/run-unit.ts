@@ -479,4 +479,35 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
     "offer AI: only our own pages — an invented page falls back to a brand/department named in the banner, else the whole range");
 }
 
+// Pricewire AI: matching a document's rows to our products, and cleaning what the AI returns.
+{
+  const { makeMatcher, cleanRows, cleanPrice, readDocument } = await import("../lib/price-watch/pricewire-ai.js");
+  const { validHistory } = await import("../lib/price-watch/pricewire-agent.js");
+  const match = makeMatcher([
+    { id: "a", productCode: "WGG24409GB", gtin: "4242005321234", brand: "Bosch" },
+    { id: "b", productCode: "SMS2HVW67G/01", brand: "Bosch" },
+    { id: "c", productCode: "N50ABC1234", brand: "Neff" }, { id: "d", productCode: "N50ABC1235", brand: "Siemens" },
+  ]);
+  ok(match({ model: "wgg 24409-gb", ean: "", brand: "" }).productIds.join() === "a" && match({ model: "X", ean: "4242005321234", brand: "" }).by === "ean",
+    "AI import: a model code matches whatever its spacing, dashes or case; else the EAN");
+  ok(match({ model: "SMS2HVW67G", ean: "", brand: "" }).by === "close" && match({ model: "N50ABC123", ean: "", brand: "" }).productIds.length === 0
+    && match({ model: "N50ABC123", ean: "", brand: "Neff" }).productIds.join() === "c",
+    "AI import: a short suffix difference matches only when ONE product fits (or the brand settles it)");
+  ok(match({ model: "WGG2", ean: "", brand: "" }).productIds.length === 0, "AI import: a fragment of a code never matches");
+  const rows = cleanRows([{ model: " WGG24409GB ", ean: "4242-0053-21234", brand: "Bosch", description: "Washer", price: 499, wasPrice: 449, priceType: "retail" },
+    { model: "WGG24409GB", price: 499 }, { model: "A", price: 10 }, { model: "KGN39VWEAG", price: -5, priceType: "nonsense" }]);
+  ok(rows.length === 2 && rows[0].model === "WGG24409GB" && rows[0].ean === "4242005321234" && rows[0].wasPrice === null && rows[1].price === null && rows[1].priceType === "unknown",
+    "AI import: rows are trimmed, de-duplicated, a was-price below the price and a negative price are dropped, unknown types stay unknown");
+  ok(cleanPrice("£1,299.99") === 1299.99 && cleanPrice(0) === null && cleanPrice(250000) === null, "AI import: prices are cleaned and implausible ones refused");
+  const prevKey = process.env.ANTHROPIC_API_KEY; delete process.env.ANTHROPIC_API_KEY;
+  const cih = await readDocument("list.csv", new TextEncoder().encode("Model Number,B2C Agency Price\nWGG24409GB,499\n"));
+  ok(cih.via === "table" && cih.rows[0].price === 499, "AI import: the Euronics price list is read directly, without the AI");
+  let aiNeeded = ""; try { await readDocument("flyer.pdf", new Uint8Array([37, 80, 68, 70])); } catch (e) { aiNeeded = (e as Error).message; }
+  ok(/ANTHROPIC_API_KEY/.test(aiNeeded), "AI import: without a key, a document that needs the AI says how to switch it on");
+  if (prevKey !== undefined) process.env.ANTHROPIC_API_KEY = prevKey;
+  ok(validHistory([]) && validHistory([{ role: "user", content: "hi" }, { role: "assistant", content: [{ type: "text", text: "hello" }] }])
+    && !validHistory([{ role: "assistant", content: "x" }]) && !validHistory([{ role: "system", content: "x" }]) && !validHistory("x"),
+    "assistant: only a conversation that starts with the user and has user/assistant turns is accepted back");
+}
+
 console.log(`\n${n} unit assertions passed`);
