@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { poaNamesFromDb, isPoaProduct } from "@/lib/poa";
 import { writeAudit } from "@/lib/audit";
-import { AI_MODEL, AI_SOURCES, aiClient, cleanPrice, ensureAiSources, normCode } from "@/lib/price-watch/pricewire-ai";
+import { AI_MODEL, aiClient, cleanPrice, ensureAiSources, normCode } from "@/lib/price-watch/pricewire-ai";
 
 /**
  * The Pricewire assistant: a chat in Admin → Pricewire that looks things up
@@ -80,11 +80,16 @@ async function findProduct(db: any, code: string) {
   return hit ? db.product.findUnique({ where: { id: hit.id } }) : null;
 }
 
-/** Latest price per source for these products: observations from the last 14 days (AI ones excluded) and Pricewire's followed site. */
+/**
+ * Latest price per source for these products: observations from the last 14
+ * days and Pricewire's followed site. Prices read from uploaded documents count
+ * (a competitor's screenshot is evidence, labelled with its file); the
+ * assistant's own proposals don't, or it would compare against itself.
+ */
 async function sourcePrices(db: any, ids: string[]) {
   const since = new Date(Date.now() - 14 * DAY);
   const [obs, items, sources] = await Promise.all([
-    db.priceObservation.findMany({ where: { productId: { in: ids }, observedAt: { gte: since }, status: "ok", NOT: { sourceId: { in: [...AI_SOURCES] } } }, orderBy: { observedAt: "desc" }, select: { productId: true, sourceId: true, price: true, includesVat: true, observedAt: true } }),
+    db.priceObservation.findMany({ where: { productId: { in: ids }, observedAt: { gte: since }, status: "ok", NOT: { sourceId: "ai-assistant" } }, orderBy: { observedAt: "desc" }, select: { productId: true, sourceId: true, price: true, includesVat: true, observedAt: true, note: true } }),
     db.brandPriceItem.findMany({ where: { productId: { in: ids } }, select: { productId: true, siteId: true, price: true, readAt: true } }).catch(() => []),
     db.priceSource.findMany({ select: { id: true, label: true } }),
   ]);
@@ -92,11 +97,14 @@ async function sourcePrices(db: any, ids: string[]) {
   const out = new Map<string, { source: string; price: number; at: string }[]>();
   const seen = new Set<string>();
   for (const o of obs) {
-    const k = `${o.productId}|${o.sourceId}`;
+    // Each uploaded document is its own source: a later screenshot must not hide a flyer's lower price.
+    const doc = o.sourceId === "ai-import" ? String(o.note || "").split(" · ")[0] : "";
+    const k = `${o.productId}|${o.sourceId}|${doc}`;
     if (seen.has(k) || typeof o.price !== "number") continue;
     seen.add(k);
     const price = o.includesVat === false ? round2(o.price * 1.2) : o.price;
-    out.set(o.productId, [...(out.get(o.productId) || []), { source: label.get(o.sourceId) || o.sourceId, price, at: new Date(o.observedAt).toISOString().slice(0, 10) }]);
+    const source = doc ? `Document: ${doc}` : label.get(o.sourceId) || o.sourceId;
+    out.set(o.productId, [...(out.get(o.productId) || []), { source, price, at: new Date(o.observedAt).toISOString().slice(0, 10) }]);
   }
   for (const it of items) {
     if (typeof it.price !== "number") continue;

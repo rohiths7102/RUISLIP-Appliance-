@@ -35,6 +35,21 @@ const PROMPTS = [
   "Which products have a source price but show no price?",
 ];
 
+/** The assistant writes light Markdown: **bold** and "- " bullets. Rendered as text nodes, never as HTML. */
+function Reply({ text }: { text: string }) {
+  const bold = (s: string) => s.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <strong key={i}>{part}</strong> : part));
+  return (
+    <div className="space-y-1.5 leading-relaxed">
+      {text.split(/\n{2,}/).map((block, i) => {
+        const lines = block.split("\n");
+        return lines.every((l) => /^\s*[-*•] /.test(l))
+          ? <ul key={i} className="ml-4 list-disc space-y-1">{lines.map((l, k) => <li key={k}>{bold(l.replace(/^\s*[-*•] /, ""))}</li>)}</ul>
+          : <p key={i} className="whitespace-pre-wrap">{bold(block)}</p>;
+      })}
+    </div>
+  );
+}
+
 async function json(url: string, init?: RequestInit) {
   const r = await fetch(url, init);
   return { ok: r.ok, j: await r.json().catch(() => ({})) };
@@ -131,7 +146,7 @@ function Assistant({ ready, onProposed }: { ready: boolean; onProposed: () => vo
         {lines.map((l, i) => (
           <div key={i} className={l.role === "user" ? "ml-8 rounded-xl bg-navy px-3 py-2 text-sm text-paper" : "mr-4 rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink"}>
             {l.tools && l.tools.length > 0 && <p className="mb-1 text-[11px] text-muted">{l.tools.join(" · ")}</p>}
-            <p className="whitespace-pre-wrap leading-relaxed">{l.text}</p>
+            {l.role === "assistant" ? <Reply text={l.text} /> : <p className="whitespace-pre-wrap leading-relaxed">{l.text}</p>}
             {l.proposals && l.proposals.length > 0 && (
               <ul className="mt-2 space-y-1 border-t border-line pt-2 text-xs">
                 {l.proposals.map((p, k) => <li key={k}><b>{p.code}</b> {money(p.from)} → <b>{money(p.to)}</b> <span className="text-muted">— in the queue</span></li>)}
@@ -207,7 +222,7 @@ function Queue({ items, reload }: { items: QueueItem[]; reload: () => void }) {
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead><tr className="border-b border-line text-[11px] uppercase tracking-wide text-muted">
               <th className="w-8 py-2"><input type="checkbox" aria-label="Select all" checked={sel.size === items.length && items.length > 0} onChange={(e) => setSel(e.target.checked ? new Set(items.map(key)) : new Set())} /></th>
-              <th className="py-2">Product</th><th className="py-2 text-right">Now</th><th className="py-2 text-right">Suggested</th><th className="py-2 text-right">Change</th><th className="py-2 pl-4">From</th>
+              <th className="py-2">Product</th><th className="py-2 pl-4 text-right">Now</th><th className="py-2 pl-4 text-right">Suggested</th><th className="py-2 pl-4 text-right">Change</th><th className="py-2 pl-4">From</th>
             </tr></thead>
             <tbody>
               {items.map((it) => (
@@ -219,9 +234,9 @@ function Queue({ items, reload }: { items: QueueItem[]; reload: () => void }) {
                     <p className="line-clamp-1 text-xs text-muted">{it.title}</p>
                     {it.flags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">{it.flags.map((f) => <Badge key={f} tone={FLAG[f][1]}>{FLAG[f][0]}</Badge>)}</div>}
                   </td>
-                  <td className="py-2 text-right tabular-nums text-muted">{money(it.from)}</td>
-                  <td className="py-2 text-right font-semibold tabular-nums">{money(it.to)}</td>
-                  <td className={`py-2 text-right tabular-nums ${it.changePct === null ? "text-muted" : it.changePct < 0 ? "text-success" : "text-warning"}`}>{it.changePct === null ? "new" : `${it.changePct > 0 ? "+" : ""}${it.changePct}%`}</td>
+                  <td className="py-2 pl-4 text-right tabular-nums text-muted">{money(it.from)}</td>
+                  <td className="py-2 pl-4 text-right font-semibold tabular-nums">{money(it.to)}</td>
+                  <td className={`py-2 pl-4 text-right tabular-nums ${it.changePct === null ? "text-muted" : it.changePct < 0 ? "text-success" : "text-warning"}`}>{it.changePct === null ? "new" : `${it.changePct > 0 ? "+" : ""}${it.changePct}%`}</td>
                   <td className="py-2 pl-4 text-xs text-muted"><span className="text-ink/80">{it.sourceId === "ai-import" ? "Document" : "Assistant"}</span><p className="line-clamp-2">{it.note}</p></td>
                 </tr>
               ))}
