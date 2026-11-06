@@ -59,7 +59,7 @@ const CFG = DEFAULT_GUARD_CONFIG;
 
 export async function autoApplySource(
   db: any,
-  opts: { sourceId: string; maxChanges?: number; appliedBy?: string; approvedBy?: string },
+  opts: { sourceId: string; maxChanges?: number; appliedBy?: string; approvedBy?: string; onlyProductIds?: string[] },
 ): Promise<AutoApplyOutcome> {
   const sourceId = opts.sourceId;
   const appliedBy = opts.approvedBy || opts.appliedBy || "price-agent (automated)";
@@ -97,6 +97,8 @@ export async function autoApplySource(
   }
   const latest = new Map<string, any>();
   for (const [id, h] of history) latest.set(id, h[0]);
+  // The owner ticked some products (Admin → Pricewire): only those.
+  if (opts.onlyProductIds) { const only = new Set(opts.onlyProductIds); for (const id of [...latest.keys()]) if (!only.has(id)) latest.delete(id); }
   if (!latest.size) return out;
 
   const [products, poaNames, listRows] = await Promise.all([

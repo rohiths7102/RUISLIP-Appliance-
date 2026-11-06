@@ -246,6 +246,7 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
   const [msg, setMsg] = useState<Msg>(null);
   const [adding, setAdding] = useState(false);
   const [brand, setBrand] = useState("All");
+  const [ticked, setTicked] = useState<Set<string>>(new Set());
   const [missingSite, setMissingSite] = useState("");
   const refresh = () => router.refresh();
   const colourOf = (id: string) => SITE_COLOURS[Math.max(0, sites.findIndex((s) => s.id === id)) % SITE_COLOURS.length];
@@ -270,10 +271,14 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
       text: `Priced ${priced} this read.${sum("left") ? ` ${sum("left")} product pages still to read — press Read prices now again.` : ""}${sum("unread") ? ` ${sum("unread")} pages could not be read; those products keep their last price.` : ""}${errors.length ? ` ${errors.join("; ")}.` : ""}` });
     refresh();
   }
+  // What Apply acts on: the ticked rows, else every row shown under the brand filter.
+  const toApply = ticked.size ? shown.filter((p) => ticked.has(p.productId)) : shown;
   async function apply() {
-    if (!confirm(`Put ${pending.length} new prices on the website now?`)) return;
+    const label = ticked.size ? `${toApply.length} ticked` : brand === "All" ? `all ${toApply.length}` : `${toApply.length} ${brand}`;
+    if (!confirm(`Put ${label} new price${toApply.length === 1 ? "" : "s"} on the website now?`)) return;
     setBusy("apply"); setMsg(null);
-    const { ok, j } = await call("/api/admin/pricewire/apply", "POST");
+    const { ok, j } = await call("/api/admin/pricewire/apply", "POST", { productIds: toApply.map((p) => p.productId) });
+    setTicked(new Set());
     setBusy("");
     if (!ok) { setMsg({ tone: "danger", text: j.error || "Apply failed." }); return; }
     const held: Record<string, number> = {};
@@ -376,15 +381,16 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
           <div><h2 className="text-base font-semibold text-ink">Prices waiting to go on</h2><p className="text-xs text-muted">What each product will show after Apply, from the site it follows.</p></div>
           <div className="flex items-center gap-2">
             <select value={brand} onChange={(e) => setBrand(e.target.value)} className="rounded-lg border border-line px-2 py-1.5 text-sm">{["All", ...brands.map((b) => b.brand)].map((x) => <option key={x}>{x}</option>)}</select>
-            <Button onClick={apply} disabled={!!busy || !pending.length}>{busy === "apply" ? "Applying…" : `Apply ${pending.length} prices`}</Button>
+            <Button onClick={apply} disabled={!!busy || !toApply.length}>{busy === "apply" ? "Applying…" : ticked.size ? `Apply ${toApply.length} ticked` : `Apply ${toApply.length}${brand === "All" ? "" : ` ${brand}`} prices`}</Button>
           </div>
         </div>
         {shown.length ? (
           <div className="mt-4 max-h-[460px] overflow-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white text-left text-xs text-muted"><tr><th className="py-2">Model</th><th>Product</th><th>From</th><th className="text-right">Now</th><th className="text-right">New</th></tr></thead>
+              <thead className="sticky top-0 bg-white text-left text-xs text-muted"><tr><th className="w-7 py-2"><input type="checkbox" aria-label="Tick every row shown" checked={shown.length > 0 && shown.every((p) => ticked.has(p.productId))} onChange={(e) => setTicked(e.target.checked ? new Set(shown.map((p) => p.productId)) : new Set())} /></th><th className="py-2">Model</th><th>Product</th><th>From</th><th className="text-right">Now</th><th className="text-right">New</th></tr></thead>
               <tbody>{shown.slice(0, 400).map((p) => (
                 <tr key={p.productId} className="border-t border-line">
+                  <td className="py-1.5"><input type="checkbox" aria-label={`Tick ${p.code}`} checked={ticked.has(p.productId)} onChange={() => setTicked((t) => { const n = new Set(t); if (n.has(p.productId)) n.delete(p.productId); else n.add(p.productId); return n; })} /></td>
                   <td className="py-1.5 font-mono text-xs">{p.code}</td>
                   <td className="max-w-[340px] truncate"><a href={`/products/${p.slug}`} target="_blank" rel="noreferrer" className="hover:underline">{p.title}</a></td>
                   <td className="text-xs">{siteName(p.siteId)}</td>
