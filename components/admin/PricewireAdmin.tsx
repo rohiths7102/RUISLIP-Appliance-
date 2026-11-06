@@ -98,11 +98,12 @@ function SiteForm({ initial, onDone }: { initial?: SiteView; onDone: () => void 
         <label className="text-sm"><span className="font-medium text-ink">Site name</span><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={input} placeholder="e.g. Marks Electrical" disabled={initial?.builtIn} /></label>
         <label className="text-sm"><span className="font-medium text-ink">What it gives</span>
           <select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })} className={input} disabled={initial?.builtIn}>
-            <option value="page">Product pages</option><option value="list">A price list (one line per model)</option>
+            <option value="page">Product pages</option><option value="search">A site search (finds each product)</option><option value="list">A price list (one line per model)</option>
           </select></label>
         <label className="text-sm"><span className="font-medium text-ink">Address</span>
-          <input value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} className={`${input} font-mono text-xs`} placeholder={f.kind === "page" ? "https://www.example.co.uk/products/{code}" : "https://www.example.co.uk/price-list.txt"} />
-          {f.kind === "page" && <span className="mt-1 block text-xs text-muted">Put <code>{"{code}"}</code> where the model number goes.</span>}</label>
+          <input value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} className={`${input} font-mono text-xs`} placeholder={f.kind === "page" ? "https://www.example.co.uk/products/{code}" : f.kind === "search" ? "https://www.example.co.uk/search?q={q}" : "https://www.example.co.uk/price-list.txt"} />
+          {f.kind === "page" && <span className="mt-1 block text-xs text-muted">Put <code>{"{code}"}</code> where the model number goes.</span>}
+          {f.kind === "search" && <span className="mt-1 block text-xs text-muted">Put <code>{"{q}"}</code> where the search words go. Pricewire searches each model, checks the page it finds and remembers it.</span>}</label>
       </div>
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="text-sm"><span className="font-medium text-ink">Try one model</span><input value={code} onChange={(e) => setCode(e.target.value)} className={`${input} w-44 font-mono text-xs`} /></label>

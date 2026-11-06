@@ -70,6 +70,8 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 type Ctx = { db: any; by: string; poa: Set<string>; proposals: Proposal[] };
+/** One source's latest price for a product, inc VAT. sourceId is the price source, or "pricewire:<site>" for the site Pricewire follows. */
+export type SourcePrice = { sourceId: string; source: string; price: number; at: string };
 export type Proposal = { code: string; title: string; from: number | null; to: number; reason: string };
 
 async function findProduct(db: any, code: string) {
@@ -86,15 +88,15 @@ async function findProduct(db: any, code: string) {
  * (a competitor's screenshot is evidence, labelled with its file); the
  * assistant's own proposals don't, or it would compare against itself.
  */
-async function sourcePrices(db: any, ids: string[]) {
+export async function sourcePrices(db: any, ids: string[]): Promise<Map<string, SourcePrice[]>> {
   const since = new Date(Date.now() - 14 * DAY);
   const [obs, items, sources] = await Promise.all([
-    db.priceObservation.findMany({ where: { productId: { in: ids }, observedAt: { gte: since }, status: "ok", NOT: { sourceId: "ai-assistant" } }, orderBy: { observedAt: "desc" }, select: { productId: true, sourceId: true, price: true, includesVat: true, observedAt: true, note: true } }),
+    db.priceObservation.findMany({ where: { productId: { in: ids }, observedAt: { gte: since }, status: "ok", NOT: { sourceId: { in: ["ai-assistant", "pricing-rules"] } } }, orderBy: { observedAt: "desc" }, select: { productId: true, sourceId: true, price: true, includesVat: true, observedAt: true, note: true } }),
     db.brandPriceItem.findMany({ where: { productId: { in: ids } }, select: { productId: true, siteId: true, price: true, readAt: true } }).catch(() => []),
     db.priceSource.findMany({ select: { id: true, label: true } }),
   ]);
   const label = new Map<string, string>(sources.map((s: any) => [s.id, s.label]));
-  const out = new Map<string, { source: string; price: number; at: string }[]>();
+  const out = new Map<string, SourcePrice[]>();
   const seen = new Set<string>();
   for (const o of obs) {
     // Each uploaded document is its own source: a later screenshot must not hide a flyer's lower price.
@@ -104,11 +106,11 @@ async function sourcePrices(db: any, ids: string[]) {
     seen.add(k);
     const price = o.includesVat === false ? round2(o.price * 1.2) : o.price;
     const source = doc ? `Document: ${doc}` : label.get(o.sourceId) || o.sourceId;
-    out.set(o.productId, [...(out.get(o.productId) || []), { source, price, at: new Date(o.observedAt).toISOString().slice(0, 10) }]);
+    out.set(o.productId, [...(out.get(o.productId) || []), { sourceId: o.sourceId, source, price, at: new Date(o.observedAt).toISOString().slice(0, 10) }]);
   }
   for (const it of items) {
     if (typeof it.price !== "number") continue;
-    out.set(it.productId, [...(out.get(it.productId) || []), { source: `Pricewire (${it.siteId})`, price: it.price, at: it.readAt ? new Date(it.readAt).toISOString().slice(0, 10) : "" }]);
+    out.set(it.productId, [...(out.get(it.productId) || []), { sourceId: `pricewire:${it.siteId}`, source: `Pricewire (${it.siteId})`, price: it.price, at: it.readAt ? new Date(it.readAt).toISOString().slice(0, 10) : "" }]);
   }
   return out;
 }
@@ -132,7 +134,7 @@ export async function runTool(name: string, input: any, ctx: Ctx): Promise<unkno
     const q = String(input.query || "").trim();
     const limit = Math.min(25, Math.max(1, Number(input.limit) || 10));
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
-    const all: any[] = await db.product.findMany({ select: { id: true, productCode: true, title: true, brand: true, category: true, subcategory: true, priceNow: true, isVisible: true, agencyStock: true, adminOverrideFields: true } });
+    const all: any[] = await db.product.findMany({ select: { id: true, productCode: true, title: true, brand: true, category: true, pricewire: true, subcategory: true, priceNow: true, isVisible: true, agencyStock: true, adminOverrideFields: true } });
     const hits = all.filter((r) => {
       const text = `${r.productCode} ${r.title} ${r.brand} ${r.category} ${r.subcategory}`.toLowerCase();
       const flat = squash(text);
@@ -155,7 +157,7 @@ export async function runTool(name: string, input: any, ctx: Ctx): Promise<unkno
   if (name === "offer_opportunities") {
     const limit = Math.min(30, Math.max(1, Number(input.limit) || 15));
     const brand = String(input.brand || "").trim().toLowerCase();
-    const products: any[] = (await db.product.findMany({ where: { isVisible: true }, select: { id: true, slug: true, productCode: true, title: true, brand: true, category: true, subcategory: true, priceNow: true, agencyStock: true, costPrice: true, isVisible: true, adminOverrideFields: true } }))
+    const products: any[] = (await db.product.findMany({ where: { isVisible: true }, select: { id: true, slug: true, productCode: true, title: true, brand: true, category: true, pricewire: true, subcategory: true, priceNow: true, agencyStock: true, costPrice: true, isVisible: true, adminOverrideFields: true } }))
       .filter((p: any) => (!brand || String(p.brand).toLowerCase() === brand) && !isPoaProduct(poa, p));
     const kind = String(input.kind);
     if (kind === "viewed_not_called") {

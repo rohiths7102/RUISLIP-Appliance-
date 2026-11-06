@@ -67,6 +67,7 @@ model Product {
   pricewire             Boolean   @default(false)
   priceObservations     PriceObservation[]
   brandPriceItem        BrandPriceItem?
+  siteLinks             ProductSiteLink[]
   isVisible             Boolean   @default(true)
   featured              Boolean   @default(false)
   adminOverrideFields   Json      // field names locked from being overwritten by re-scrape
@@ -199,6 +200,8 @@ model PriceObservation {
   status        String      @default("ok")
   note          String      @default("")
   observedAt    DateTime    @default(now())
+  /// A crossed-out or "was" price the source showed beside its price (Pricewire, AI import). Shown to the owner, never copied as ours.
+  wasPrice      Float?
 
   @@index([productId, observedAt])
   @@index([sourceId, observedAt])
@@ -218,6 +221,10 @@ model PriceSite {
   builtIn         Boolean   @default(false)
   lastReadAt      DateTime?
   lastReadSummary String    @default("")
+  /// Point-and-click price location (lib/price-watch/pricewire-map.ts), e.g. "span.price-now". "" = structured data only.
+  priceSelector   String    @default("")
+  /// Pages in a row where the learned location found no price: the site's layout may have changed.
+  selectorMisses  Int       @default(0)
   /// JSON, list sites: models listed for Bosch/Neff/Siemens that are not in our catalogue.
   notInCatalogue  String    @default("[]")
   createdAt       DateTime  @default(now())
@@ -265,6 +272,10 @@ model BrandPriceItem {
   status      String    @default("")
   url         String    @default("")
   readAt      DateTime?
+  /// Smarter scheduling: when this product's page is next worth reading, and how often its price has moved.
+  nextCheckAt DateTime?
+  priceChanges Int      @default(0)
+  lastChangeAt DateTime?
   updatedAt   DateTime  @updatedAt
 
   @@index([brand])
@@ -443,4 +454,50 @@ model ActionDismissal {
   until       DateTime
   dismissedBy String   @default("")
   createdAt   DateTime @default(now())
+}
+
+/// Pricewire smart matching: the exact page a product was found on, on one site.
+/// A "search" site finds it with the site's own search; any page site records
+/// the page's change markers (ETag / Last-Modified) so an unchanged page isn't
+/// re-read. Only "auto" (model code or EAN on the page) and "confirmed" links
+/// are followed for prices; "review" waits for the owner.
+model ProductSiteLink {
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  siteId       String
+  url          String
+  confidence   Float    @default(0)
+  matchedBy    String   @default("")   // "code" | "ean" | "code_on_page" | "title" | "template"
+  status       String   @default("auto") // "auto" | "review" | "confirmed" | "rejected"
+  etag         String   @default("")
+  lastModified String   @default("")
+  checkedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@id([productId, siteId])
+  @@index([siteId, status])
+}
+
+/// Pricewire pricing rules: what our price should be from the other sources'.
+/// Their results go to the review queue ("pricing-rules"); nothing applies itself.
+model PricingRule {
+  id             String   @id @default(cuid())
+  name           String
+  enabled        Boolean  @default(true)
+  priority       Int      @default(100)    // lower runs first; a product takes the first rule that fits
+  brand          String   @default("")     // "" = every brand
+  category       String   @default("")     // a category or sub-category name; "" = all
+  strategy       String   @default("beat_lowest") // "match_lowest" | "beat_lowest" | "match_source"
+  sourceIds      String   @default("")     // comma list; "" = every source we hold
+  amount         Float    @default(0)      // how much below (beat_lowest)
+  amountUnit     String   @default("gbp")  // "gbp" | "pct"
+  rounding       String   @default("99")   // "none" | "99" | "00"
+  minMarginPct   Float    @default(0.1)    // over cost inc VAT, when cost is known
+  capAtMaker     Boolean  @default(true)   // never above the maker's own price
+  maxChangePct   Float    @default(25)     // bigger moves are flagged, not suggested
+  lastRunAt      DateTime?
+  lastRunSummary String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

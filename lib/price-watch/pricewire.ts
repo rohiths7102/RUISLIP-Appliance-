@@ -1,4 +1,5 @@
 import { fetchPage, collectJsonLdProducts, parsePrice } from "@/lib/page-reader";
+import { discover, nextCheckAt, pageNamesModel, readBySelector, robotsAllows, NOT_FOUND_RETRY_DAYS, type Fetcher } from "@/lib/price-watch/pricewire-map";
 import { readMakerPrice, MAKER_HOSTS } from "@/lib/maker-price";
 import { isPoaProduct, poaNamesFromDb } from "@/lib/poa";
 
@@ -96,47 +97,73 @@ export function parseListSite(text: string): Map<string, ListLine> {
   return out;
 }
 
-export type PageRead = { price: number; inStock: boolean | null } | { price: null; status: "no_price" | "discontinued" | "other_model" | "prices_disagree" };
+export type PageRead =
+  | { price: number; inStock: boolean | null; wasPrice?: number | null; deliveryCost?: number | null; via?: "maker" | "data" | "selector" }
+  | { price: null; status: "no_price" | "discontinued" | "other_model" | "prices_disagree" };
+
+const list = (v: any) => (Array.isArray(v) ? v : v ? [v] : []);
+/** A strike-through / list / RRP price the offer carries, when it is above the price. */
+const wasOf = (o: any, price: number) => {
+  const was = list(o.priceSpecification).filter((s: any) => /strikethrough|listprice|msrp|rrp/i.test(String(s?.priceType || ""))).map((s: any) => parsePrice(s.price)).find((v: number | null) => v !== null && v > price);
+  return was ?? null;
+};
+/** Delivery cost the offer states (OfferShippingDetails), when it does. */
+const deliveryOf = (o: any) => {
+  for (const d of list(o.shippingDetails)) { const v = parsePrice(d?.shippingRate?.value ?? d?.shippingRate?.price); if (v !== null) return v; }
+  return null;
+};
 
 /**
  * A price from a product page. Bosch, Neff and Siemens pages go through the
  * maker reader (it knows their on-screen price and their retailer lists).
  * Any other site: the page's structured product data must name the model, and
  * its own Offer price is read; a marketplace AggregateOffer is not a price.
+ * A page listing variants (colours, sizes) as separate offers gives the offer
+ * whose SKU is this model, or nothing when the variants' prices differ. With
+ * no structured data, the site's learned price location is read — only when
+ * the page names the model (pricewire-map.ts).
  */
-export function readPagePrice(html: string, code: string, url: string): PageRead {
+export function readPagePrice(html: string, code: string, url: string, selector = ""): PageRead {
   if (MAKER_HOSTS.test(host(url)) || MAKER_HOSTS.test(`www.${host(url)}`)) {
     const r = readMakerPrice(html, code);
-    return r.price !== null ? { price: r.price, inStock: r.inStock } : { price: null, status: r.reason };
+    return r.price !== null ? { price: r.price, inStock: r.inStock, via: "maker" } : { price: null, status: r.reason };
   }
   const products = collectJsonLdProducts(html);
   const about = products.filter((p) => [p.mpn, p.sku, p.productID, p.model].some((v) => norm(v) === norm(code)) || norm(p.name).includes(norm(code)));
-  if (!about.length) return { price: null, status: products.length ? "other_model" : "no_price" };
-  for (const p of about) {
-    for (const o of Array.isArray(p.offers) ? p.offers : [p.offers]) {
-      if (!o || !/^Offer$/i.test(String(o["@type"] || "Offer"))) continue;
-      const price = parsePrice(o.price ?? o.priceSpecification?.price);
-      if (price !== null && price > 0) return { price, inStock: o.availability ? /InStock/i.test(String(o.availability)) : null };
-    }
+  const priced = about.flatMap((p) => list(p.offers)).filter((o: any) => o && /^Offer$/i.test(String(o["@type"] || "Offer")))
+    .map((o: any) => ({ o, price: parsePrice(o.price ?? o.priceSpecification?.price) })).filter((x: any) => x.price !== null && x.price > 0);
+  if (priced.length) {
+    const exact = priced.find((x: any) => [x.o.sku, x.o.mpn].some((v) => v && norm(v) === norm(code)));
+    const variants = new Set(priced.map((x: any) => norm(x.o.sku || x.o.mpn || ""))).size > 1 && new Set(priced.map((x: any) => x.price)).size > 1;
+    const pick = exact ?? (variants ? null : priced[0]);
+    if (!pick) return { price: null, status: "prices_disagree" };
+    return { price: pick.price!, inStock: pick.o.availability ? /InStock/i.test(String(pick.o.availability)) : null, wasPrice: wasOf(pick.o, pick.price!), deliveryCost: deliveryOf(pick.o), via: "data" };
   }
-  return { price: null, status: "no_price" };
+  if (selector && pageNamesModel(html, code)) {
+    const price = readBySelector(html, selector);
+    if (price !== null) return { price, inStock: null, via: "selector" };
+  }
+  return { price: null, status: about.length || !products.length ? "no_price" : "other_model" };
 }
 
 /** The page address for one product: its own stored page when that is on the site, else the site's address with {code}. */
 export const pageUrlFor = (siteUrl: string, code: string, ownUrl = "") =>
   ownUrl && host(ownUrl) && host(ownUrl) === host(siteUrl) ? ownUrl : siteUrl.replace(/\{code\}/gi, encodeURIComponent(code));
 
-type Fetcher = (url: string) => Promise<{ html: string }>;
-
 /** Admin → Pricewire → Test: what a site says for one model, read now, saved nowhere. */
-export async function testSite(site: { kind: string; url: string }, code: string, fetcher: Fetcher = fetchPage) {
+export async function testSite(site: { kind: string; url: string; priceSelector?: string }, code: string, fetcher: Fetcher = fetchPage) {
   if (site.kind === "list") {
     const list = parseListSite((await fetcher(site.url)).html);
     const line = list.get(norm(code));
     return { listed: list.size, url: site.url, ...(line ? { price: line.price, inStock: line.inStock, title: line.title } : { price: null, status: list.size ? "not_listed" : "no_prices_in_list" }) };
   }
-  const url = pageUrlFor(site.url, code);
-  const r = readPagePrice((await fetcher(url)).html, code, url);
+  let url = pageUrlFor(site.url, code);
+  if (site.kind === "search") {
+    const found = await discover(site.url, { code, title: "", brand: "" }, fetcher);
+    if (!found.found) return { url: site.url, price: null, status: "not_found", reason: found.reason };
+    url = found.url;
+  }
+  const r = readPagePrice((await fetcher(url)).html, code, url, site.priceSelector || "");
   return { url, ...r };
 }
 
@@ -165,13 +192,15 @@ export async function pricewireSourceIds(db: any): Promise<Set<string>> {
 
 /* ---------------------------------------------------------------- run */
 
-export type BrandTally = { products: number; priced: number; bySite: Record<string, number>; noPrice: number; left: number; unread: number };
+export type BrandTally = { products: number; priced: number; bySite: Record<string, number>; noPrice: number; left: number; unread: number; scheduled: number; unchangedPages: number; found: number; toReview: number };
 export type SiteTally = { read: number; priced: number; error: string };
 /** Page reads in a row that fail before a site is left alone for the rest of the run. */
 export const PAUSE_AFTER_FAILURES = 10;
 export type PricewireRun = { brands: Record<string, BrandTally>; sites: Record<string, SiteTally> };
+/** Products a search site may look up for the first time in one run (each is a search plus up to four pages). */
+export const MAX_DISCOVER_PER_RUN = 40;
 
-type Read = { siteId: string; price: number | null; inStock: boolean | null; status: string; url: string; observed: boolean };
+type Read = { siteId: string; price: number | null; inStock: boolean | null; status: string; url: string; observed: boolean; wasPrice?: number | null; deliveryCost?: number | null; notModified?: boolean };
 
 export async function syncPricewire(db: any, opts: { deadlineMs?: number; concurrency?: number; fetcher?: Fetcher } = {}): Promise<PricewireRun> {
   const started = Date.now();
@@ -205,7 +234,7 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
 
   const products = await db.product.findMany({
     where: { isVisible: true, brand: { in: feeds.flatMap((f: any) => [f.brand, f.brand.toUpperCase()]) } },
-    select: { id: true, brand: true, productCode: true, sourceUrl: true },
+    select: { id: true, brand: true, productCode: true, sourceUrl: true, gtin: true, title: true },
   });
   const items = new Map<string, any>(
     (await db.brandPriceItem.findMany({ where: { productId: { in: products.map((p: any) => p.id) } } })).map((i: any) => [i.productId, i]),
@@ -216,11 +245,18 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
     for (const i of fresh) items.set(i.productId, { ...i, siteId: "", readAt: null });
   }
 
+  // Pages each product was found on (search sites) or last read from (with their change markers).
+  const pageSites = [...sites.values()].filter((s: any) => s.kind !== "list").map((s: any) => s.id);
+  const links = new Map<string, any>(((await db.productSiteLink?.findMany({ where: { siteId: { in: pageSites }, productId: { in: products.map((p: any) => p.id) } } }).catch(() => [])) ?? []).map((l: any) => [`${l.productId}|${l.siteId}`, l]));
+  const linkWrites = new Map<string, any>();
+  const misses = new Map<string, number>();
+  let discovered = 0;
+
   const feedOf = new Map<string, any>(feeds.map((f: any) => [f.brand, f]));
-  for (const f of feeds) run.brands[f.brand] = { products: 0, priced: 0, bySite: {}, noPrice: 0, left: 0, unread: 0 };
+  for (const f of feeds) run.brands[f.brand] = { products: 0, priced: 0, bySite: {}, noPrice: 0, left: 0, unread: 0, scheduled: 0, unchangedPages: 0, found: 0, toReview: 0 };
   const observations: any[] = [];
   const updates: [string, Record<string, any>][] = [];
-  const LEFT = "left", UNREAD_LIST = "list_unread";
+  const LEFT = "left", UNREAD_LIST = "list_unread", NOT_DUE = "not_due";
   // A site answering nothing but errors (Bosch's firewall, 26 Oct 2026) is
   // left alone after PAUSE_AFTER_FAILURES in a row: hammering it with the
   // remaining pages only prolongs the block. The rest wait for the next run.
@@ -235,14 +271,54 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
       return line ? { siteId, price: line.price, inStock: line.inStock, status: "ok", url: line.url, observed: true }
         : { siteId, price: null, inStock: null, status: "not_listed", url: site.url, observed: false };
     }
+    // Scheduling: a page read recently enough isn't read again until it is due (pricewire-map.ts nextCheckAt).
+    const item = items.get(p.id);
+    if (item?.nextCheckAt && new Date(item.nextCheckAt).getTime() > Date.now()) return { siteId, price: null, inStock: null, status: NOT_DUE, url: "", observed: false };
     if (Date.now() - started > deadlineMs || (failing.get(siteId) || 0) >= PAUSE_AFTER_FAILURES) return { siteId, price: null, inStock: null, status: LEFT, url: "", observed: false };
-    const url = pageUrlFor(site.url, p.productCode || "", p.sourceUrl || "");
+    const key = `${p.id}|${siteId}`;
+    let link = links.get(key);
     const t = siteTally(siteId);
+    const brandT = run.brands[brandOf(p.brand) ?? ""];
+    let url: string;
+    if (site.kind === "search") {
+      const retry = link?.status === "none" && (!link.checkedAt || Date.now() - new Date(link.checkedAt).getTime() > NOT_FOUND_RETRY_DAYS * 86_400_000);
+      if (!link || retry) {
+        if (discovered >= MAX_DISCOVER_PER_RUN) return { siteId, price: null, inStock: null, status: LEFT, url: "", observed: false };
+        discovered++;
+        const d = await discover(site.url, { code: p.productCode || "", gtin: p.gtin, title: p.title || "", brand: p.brand || "" }, fetcher);
+        link = d.found ? { productId: p.id, siteId, url: d.url, confidence: d.confidence, matchedBy: d.matchedBy, status: d.status, etag: "", lastModified: "" }
+          : { productId: p.id, siteId, url: "", confidence: 0, matchedBy: d.reason.slice(0, 60), status: "none", etag: "", lastModified: "" };
+        links.set(key, link); linkWrites.set(key, link);
+        if (brandT && d.found) { if (d.status === "auto") brandT.found++; else brandT.toReview++; }
+      }
+      if (link.status !== "auto" && link.status !== "confirmed") return { siteId, price: null, inStock: null, status: link.status === "review" ? "needs_review" : "not_listed", url: link.url, observed: false };
+      url = link.url;
+    } else url = pageUrlFor(site.url, p.productCode || "", p.sourceUrl || "");
+    if (!site.builtIn && !(await robotsAllows(url, fetcher))) {
+      if (!t.error) t.error = "its robots.txt asks us not to read these pages";
+      return { siteId, price: null, inStock: null, status: "unread", url, observed: false };
+    }
     t.read++;
     try {
-      const r = readPagePrice((await fetcher(url)).html, p.productCode || "", url);
+      // Ask "has it changed?" only for the page whose price this product already follows.
+      const conditional = link && link.url === url && item?.siteId === siteId && typeof item?.price === "number" && (link.etag || link.lastModified);
+      const res = await fetcher(url, conditional ? { etag: link.etag, lastModified: link.lastModified } : undefined);
       failing.set(siteId, 0);
-      return r.price !== null ? { siteId, price: r.price, inStock: r.inStock, status: "ok", url, observed: true } : { siteId, price: null, inStock: null, status: r.status, url, observed: true };
+      if (res.etag || res.lastModified || !link) {
+        const next = { ...(link || { productId: p.id, siteId, url, confidence: 1, matchedBy: "template", status: "auto" }), url, etag: res.etag || "", lastModified: res.lastModified || "" };
+        links.set(key, next); linkWrites.set(key, next);
+      }
+      if (res.notModified) {
+        if (brandT) brandT.unchangedPages++;
+        return { siteId, price: item.price, inStock: item.inStock ?? null, status: "ok", url, observed: false, notModified: true };
+      }
+      const r = readPagePrice(res.html, p.productCode || "", url, site.priceSelector || "");
+      if (site.priceSelector) {
+        if (r.price !== null && r.via === "selector") misses.set(siteId, 0);
+        else if (r.price === null && r.status === "no_price") misses.set(siteId, (misses.get(siteId) ?? site.selectorMisses ?? 0) + 1);
+      }
+      return r.price !== null ? { siteId, price: r.price, inStock: r.inStock, status: "ok", url, observed: true, wasPrice: r.wasPrice ?? null, deliveryCost: r.deliveryCost ?? null }
+        : { siteId, price: null, inStock: null, status: r.status, url, observed: true };
     } catch (e: any) {
       const n = (failing.get(siteId) || 0) + 1;
       failing.set(siteId, n);
@@ -253,7 +329,7 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
   const save = (p: any, r: Read) => {
     if (!r.observed) return;
     if (r.price !== null) siteTally(r.siteId).priced++;
-    observations.push({ productId: p.id, sourceId: r.siteId, price: r.price, inStock: r.inStock, deliveryCost: null, includesVat: true, sourceUrl: r.url,
+    observations.push({ productId: p.id, sourceId: r.siteId, price: r.price, inStock: r.inStock, deliveryCost: r.deliveryCost ?? null, wasPrice: r.wasPrice ?? null, includesVat: true, sourceUrl: r.url,
       matchConfidence: 1, status: r.price !== null ? "ok" : "parse_failed", note: `Pricewire: ${sites.get(r.siteId).name}${r.price === null ? `, ${r.status.replace(/_/g, " ")}` : ""}` });
   };
 
@@ -269,7 +345,7 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
       t.products++;
       // Not reached, or not readable (blocked, slow, down): nothing is known
       // about the price, so the product keeps what it follows.
-      const skip = (x: Read) => { if (x.status === LEFT) t.left++; else if (x.status === UNREAD_LIST || x.status === "unread") t.unread++; else return false; return true; };
+      const skip = (x: Read) => { if (x.status === LEFT) t.left++; else if (x.status === NOT_DUE) t.scheduled++; else if (x.status === UNREAD_LIST || x.status === "unread") t.unread++; else return false; return true; };
       let r = await readFrom(f.siteId, p);
       save(p, r);
       if (skip(r)) continue;
@@ -280,7 +356,13 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
         if (b.price !== null || r.status === "not_listed") r = b;
       }
       if (r.price !== null) { t.priced++; t.bySite[r.siteId] = (t.bySite[r.siteId] || 0) + 1; } else t.noPrice++;
-      updates.push([p.id, { siteId: r.price !== null ? r.siteId : "", price: r.price, inStock: r.inStock, status: r.status, url: r.url, readAt: new Date() }]);
+      const item = items.get(p.id);
+      const now = new Date();
+      const changed = r.price !== null && typeof item?.price === "number" && Math.abs(item.price - r.price) >= 0.01;
+      const priceChanges = (item?.priceChanges || 0) + (changed ? 1 : 0);
+      const lastChangeAt = changed ? now : item?.lastChangeAt ? new Date(item.lastChangeAt) : null;
+      updates.push([p.id, { siteId: r.price !== null ? r.siteId : "", price: r.price, inStock: r.inStock, status: r.status, url: r.url, readAt: now,
+        priceChanges, lastChangeAt, nextCheckAt: nextCheckAt(now, { changed, priced: r.price !== null, priceChanges, lastChangeAt }) }]);
     }
   };
   await Promise.all(Array.from({ length: Math.min(opts.concurrency ?? 3, queue.length || 1) }, worker));
@@ -289,6 +371,12 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
   for (let i = 0; i < updates.length; i += 200) {
     await db.$transaction(updates.slice(i, i + 200).map(([productId, data]) => db.brandPriceItem.update({ where: { productId }, data })));
   }
+
+  if (db.productSiteLink) for (const [, l] of linkWrites) {
+    const data = { url: l.url, confidence: l.confidence, matchedBy: l.matchedBy, status: l.status, etag: l.etag || "", lastModified: l.lastModified || "", checkedAt: new Date() };
+    await db.productSiteLink.upsert({ where: { productId_siteId: { productId: l.productId, siteId: l.siteId } }, update: data, create: { productId: l.productId, siteId: l.siteId, ...data } }).catch(() => {});
+  }
+  for (const [id, n] of misses) await db.priceSite.update({ where: { id }, data: { selectorMisses: n } }).catch(() => {});
 
   // What each list sells that we don't, and each site's and brand's last run.
   const ours = new Set(products.map((p: any) => norm(p.productCode)));
@@ -306,7 +394,7 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
     const t = run.brands[f.brand];
     const by = Object.entries(t.bySite).map(([id, n]) => `${n} from ${sites.get(id).name}`).join(", ") || "none priced";
     await db.brandPriceFeed.update({ where: { brand: f.brand }, data: { lastRunAt: new Date(),
-      lastRunSummary: `${by}; ${t.noPrice} without a price${t.unread ? `; ${t.unread} pages not readable, kept as they were` : ""}${t.left ? `; ${t.left} left for the next run` : ""}`.slice(0, 300) } });
+      lastRunSummary: `${by}; ${t.noPrice} without a price${t.unread ? `; ${t.unread} pages not readable, kept as they were` : ""}${t.left ? `; ${t.left} left for the next run` : ""}${t.scheduled ? `; ${t.scheduled} not due yet` : ""}${t.unchangedPages ? `; ${t.unchangedPages} pages unchanged` : ""}${t.found || t.toReview ? `; found ${t.found} new pages${t.toReview ? `, ${t.toReview} to confirm` : ""}` : ""}`.slice(0, 300) } });
   }
   return run;
 }
@@ -334,16 +422,20 @@ export async function checkSite(db: any, siteId: string, brand: FeedBrand, fetch
   if (!brandsForSite(siteId).includes(brand)) throw new Error(`The ${site.name} site only sells ${brandsForSite(siteId).join(", ")}.`);
   const rows = await db.product.findMany({
     where: { isVisible: true, brand: { in: [brand, brand.toUpperCase()] } },
-    select: { id: true, productCode: true, sourceUrl: true, priceNow: true, brandPriceItem: { select: { price: true, siteId: true } } },
+    select: { id: true, productCode: true, sourceUrl: true, priceNow: true, gtin: true, title: true, brand: true, brandPriceItem: { select: { price: true, siteId: true } } },
   });
   const known = rows.map((p: any) => ({ ...p, ref: typeof p.priceNow === "number" ? p.priceNow : p.brandPriceItem?.price ?? null }))
     .filter((p: any) => typeof p.ref === "number" && p.ref > 0);
   let list: Map<string, ListLine> | null = null;
   if (site.kind === "list") list = parseListSite((await fetcher(site.url)).html);
+  // A search site is checked first on the products it has already been matched to, at those pages.
+  const linked = new Map<string, string>(site.kind === "search"
+    ? ((await db.productSiteLink?.findMany({ where: { siteId, status: { in: ["auto", "confirmed"] } }, select: { productId: true, url: true } }).catch(() => [])) ?? []).map((l: any) => [l.productId, l.url])
+    : []);
   // Models the site most likely carries first: those it prices already, then
   // (for a list) those it lists; the rest shuffled so a check is not always
   // decided by the same handful.
-  const score = (p: any) => (p.brandPriceItem?.siteId === siteId ? 2 : 0) + (list?.has(norm(p.productCode)) ? 1 : 0);
+  const score = (p: any) => (p.brandPriceItem?.siteId === siteId || linked.has(p.id) ? 2 : 0) + (list?.has(norm(p.productCode)) ? 1 : 0);
   const sample = known.map((p: any) => ({ p, k: score(p) + Math.random() * 0.5 })).sort((a: any, b: any) => b.k - a.k).slice(0, 12).map((x: any) => x.p);
 
   const lines: CheckLine[] = [];
@@ -355,9 +447,16 @@ export async function checkSite(db: any, siteId: string, brand: FeedBrand, fetch
       read = list.get(norm(p.productCode))?.price ?? null;
       status = read === null ? "no_price" : "correct";
     } else {
-      const url = pageUrlFor(site.url, p.productCode, p.sourceUrl || "");
+      let url = pageUrlFor(site.url, p.productCode, p.sourceUrl || "");
       try {
-        const r = readPagePrice((await fetcher(url)).html, p.productCode, url);
+        // A search site is checked the way it is read: find the product, then only a certain match counts.
+        if (site.kind === "search" && linked.has(p.id)) url = linked.get(p.id)!;
+        else if (site.kind === "search") {
+          const d = await discover(site.url, { code: p.productCode, gtin: p.gtin, title: p.title || "", brand: p.brand || "" }, fetcher);
+          if (!d.found || d.status !== "auto") { lines.push({ code: p.productCode, ours: p.ref, read: null, status: "no_price" }); unreadRun = 0; continue; }
+          url = d.url;
+        }
+        const r = readPagePrice((await fetcher(url)).html, p.productCode, url, site.priceSelector || "");
         read = r.price;
         status = r.price !== null ? "correct" : r.status === "other_model" ? "wrong_model" : "no_price";
         unreadRun = 0;

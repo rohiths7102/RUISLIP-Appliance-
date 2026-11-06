@@ -372,6 +372,11 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   ok(own.items.get("listed").siteId === "other-shop" && own.items.get("listed").price === 450 && own.obs.some((o) => o.sourceId === "other-shop" && o.price === 450),
     "Pricewire: a site the owner added works like a built-in one, under its own price source");
 
+  const srch = make([{ brand: "Bosch", siteId: "srch" }], { sites: [{ id: "srch", name: "Search shop", kind: "search", url: "https://other/search/{q}", enabled: true }] });
+  const ts = await syncPricewire(srch.db, { fetcher: srch.fetcher });
+  ok(srch.items.get("listed").siteId === "srch" && srch.items.get("listed").price === 450 && ts.brands.Bosch.found >= 1,
+    "Pricewire: a search site finds each product with its own search and prices it the same night");
+
   const down = make([{ brand: "Bosch", ...RA, fallbackSiteId: "bosch-home" }], { listOk: false });
   await syncPricewire(down.db, { fetcher: down.fetcher });
   Object.assign(down.items.get("listed"), { siteId: "ruislip-appliances", price: 499 });
@@ -392,6 +397,12 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
 
   const blocked = make([{ brand: "Bosch", siteId: "bosch-home" }]);
   await syncPricewire(blocked.db, { fetcher: blocked.fetcher });
+  ok([...blocked.items.values()].every((i) => i.nextCheckAt && new Date(i.nextCheckAt).getTime() > Date.now()),
+    "Pricewire scheduling: every page read gets a next-check date");
+  const early = await syncPricewire(blocked.db, { fetcher: async (url: string) => { blocked.fetched.push(url); throw new Error("must not be read"); } });
+  ok(early.brands.Bosch.scheduled === 2 && early.brands.Bosch.unread === 0 && blocked.items.get("listed").price === 899,
+    "Pricewire scheduling: a page that isn't due yet isn't read again, and the product keeps its price");
+  for (const i of blocked.items.values()) i.nextCheckAt = null; // the next day
   const t4 = await syncPricewire(blocked.db, { fetcher: async (url: string) => { blocked.fetched.push(url); throw new Error("That website blocked us"); } });
   ok(t4.brands.Bosch.unread === 2 && blocked.items.get("listed").siteId === "bosch-home" && blocked.items.get("listed").price === 899
     && blocked.obs.filter((o) => o.productId === "listed" && o.status === "parse_failed").length === 1,
@@ -477,6 +488,98 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
   ok(pickPage("/brands/liebherr", "", pages) === "/brands/liebherr" && pickPage("/brands/made-up", "SCHONHAUS beautifully at home", pages) === "/brands/schonhaus"
     && pickPage("", "half price fridge freezers this week", pages) === "/categories/fridge-freezers" && pickPage("", "black friday", pages) === "/products",
     "offer AI: only our own pages — an invented page falls back to a brand/department named in the banner, else the whole range");
+}
+
+// Pricewire mapping: robots.txt, point-and-click prices, finding a product with a site's search, the schedule.
+{
+  const M = await import("../lib/price-watch/pricewire-map.js");
+  const { readPagePrice } = await import("../lib/price-watch/pricewire.js");
+  const rules = M.parseRobots("User-agent: *\nDisallow: /search\nAllow: /search/products\n\nUser-agent: OtherBot\nDisallow: /");
+  ok(!M.robotsAllowsPath(rules, "/search?q=x") && M.robotsAllowsPath(rules, "/search/products/x") && M.robotsAllowsPath(rules, "/p/wgg"),
+    "robots.txt: our group's rules are obeyed, the longest rule wins, another bot's block doesn't apply to us");
+
+  const shop = `<html><body><h1>Bosch Series 6 WGG24409GB washing machine</h1><span class="was-price">£549.00</span>
+    <div class="price-box"><span class="price now">£ 449.00</span></div><span class="delivery-cost">£30.00</span><span>£5</span></body></html>`;
+  const cands = M.priceCandidates(shop);
+  const now = cands.find((c) => c.selector === "span.price.now");
+  ok(!!now && now.price === 449 && cands.some((c) => c.price === 549) && !cands.some((c) => c.selector === "span"),
+    "point and click: every element showing a £ price is offered with a selector to pick; a bare tag that can't be found again isn't");
+  const raPage = `<div class="pm">Crampton &amp; Moore: <span class="text-nowrap">£429</span></div><h2>£<span id="productprice" data-price="399.00">399.00</span></h2><span class="count">12.50</span>`;
+  const ra = M.priceCandidates(raPage);
+  ok(ra[0]?.selector === "span#productprice" && ra[0].price === 399 && ra.some((c) => c.price === 429) && !ra.some((c) => c.price === 12.5),
+    "point and click: a bare 399.00 in a price element (the £ printed outside it) is found and listed first; a stray number isn't");
+  ok(M.readBySelector(raPage, "span#productprice") === 399, "point and click: the learned location reads a bare price or its data-price");
+  ok(M.readBySelector(shop, "span.price.now") === 449 && M.readBySelector(shop.replace("price now", "cost"), "span.price.now") === null,
+    "point and click: the learned location reads the price, and finds nothing once the layout changes");
+  ok(readPagePrice(shop, "WGG24409GB", "https://shop.example/p", "span.price.now").price === 449 && readPagePrice(shop, "WAN28258GB", "https://shop.example/p", "span.price.now").price === null,
+    "point and click: the learned location is used only on a page that names the model");
+
+  const ld = (o: object) => `<script type="application/ld+json">${JSON.stringify({ "@type": "Product", name: "Fridge", sku: "KGN39VWEAG", ...o })}</script>`;
+  const rich = readPagePrice(ld({ offers: { "@type": "Offer", price: 599, availability: "https://schema.org/OutOfStock",
+    priceSpecification: [{ "@type": "UnitPriceSpecification", priceType: "https://schema.org/StrikethroughPrice", price: 699 }], shippingDetails: { shippingRate: { value: 25 } } } }), "KGN39VWEAG", "https://shop.example/p");
+  ok(rich.price === 599 && (rich as any).wasPrice === 699 && (rich as any).deliveryCost === 25 && (rich as any).inStock === false,
+    "more than the price: was price, delivery cost and stock come with the price");
+  const variants = { offers: [{ "@type": "Offer", sku: "KGN39VWEAG-BK", price: 649 }, { "@type": "Offer", sku: "KGN39VWEAG", price: 599 }] };
+  const clash = { offers: [{ "@type": "Offer", sku: "KGN39VWEAG-BK", price: 649 }, { "@type": "Offer", sku: "KGN39VWEAG-WH", price: 599 }] };
+  ok(readPagePrice(ld(variants), "KGN39VWEAG", "https://shop.example/p").price === 599 && (readPagePrice(ld(clash), "KGN39VWEAG", "https://shop.example/p") as any).status === "prices_disagree",
+    "variants: the offer for this model's own code is taken; differently priced variants with no exact one give no price");
+
+  const p = { code: "WGG24409GB", gtin: "4242005321234", title: "Bosch Series 6 9kg Washing Machine", brand: "Bosch" };
+  ok(M.scorePage(ld({ sku: "WGG24409GB" }), p).matchedBy === "code" && M.scorePage(`<script type="application/ld+json">{"@type":"Product","gtin13":"4242005321234"}</script>`, p).matchedBy === "ean"
+    && M.scorePage(shop, p).matchedBy === "code_on_page" && M.scorePage("<h1>Bosch Series 6 9kg Washing Machine White</h1>", p).status === undefined && M.scorePage("<h1>Bosch Series 6 9kg Washing Machine White</h1>", p).confidence === 0.6
+    && M.scorePage("<h1>Hotpoint dryer</h1>", p).confidence === 0,
+    "matching: model code or EAN in the data is certain, the code in the text nearly so, a matching title only needs a look");
+  const results = `<a href="/cart">Cart</a><a href="/p/bosch-wgg24409gb">Bosch WGG24409GB</a><a href="/p/other">Hotpoint thing</a><a href="https://elsewhere.com/p/WGG24409GB">x</a>`;
+  ok(M.searchResultLinks(results, "https://shop.example/search?q=WGG24409GB", p).join() === "https://shop.example/p/bosch-wgg24409gb",
+    "matching: only the shop's own product links are followed from its search, never carts or other sites");
+  const pages: Record<string, string> = {
+    "https://shop.example/robots.txt": "User-agent: *\nDisallow: /admin",
+    "https://shop.example/search?q=WGG24409GB": results,
+    "https://shop.example/p/bosch-wgg24409gb": ld({ sku: "WGG24409GB", offers: { "@type": "Offer", price: 449 } }),
+  };
+  const fake = async (url: string) => { if (!(url in pages)) throw new Error("404"); return { html: pages[url] }; };
+  const d = await M.discover("https://shop.example/search?q={q}", p, fake);
+  ok(d.found && d.url === "https://shop.example/p/bosch-wgg24409gb" && d.status === "auto", "matching: the site's search finds the product page and it is followed automatically");
+  const blockedSite = await M.discover("https://blocked.example/search?q={q}", p, async (url: string) => ({ html: url.endsWith("robots.txt") ? "User-agent: *\nDisallow: /" : "" }));
+  ok(!blockedSite.found && /robots/.test(blockedSite.reason), "matching: a site whose robots.txt says no is not searched");
+
+  const t0 = new Date("2026-11-06T05:00:00Z");
+  const days = (d: Date) => Math.round((d.getTime() - t0.getTime()) / 86_400_000);
+  ok(days(M.nextCheckAt(t0, { changed: true, priced: true, priceChanges: 1, lastChangeAt: t0 })) === 1
+    && days(M.nextCheckAt(t0, { changed: false, priced: true, priceChanges: 0, lastChangeAt: null })) === 3
+    && days(M.nextCheckAt(t0, { changed: false, priced: false, priceChanges: 0, lastChangeAt: null })) === 7,
+    "scheduling: a price that just moved is read tomorrow, a steady one in 3 days, a model the site doesn't price in a week");
+}
+
+// Pricing rules: what our price should be from the other sources'.
+{
+  const R = await import("../lib/price-watch/pricing-rules.js");
+  const base = R.checkRule({ name: "Bosch beat by £5", strategy: "beat_lowest", amount: 5, brand: "Bosch" }) as any;
+  const src = (sourceId: string, price: number) => ({ sourceId, source: sourceId, price, at: "2026-11-06" });
+  const s = [src("ruislip-appliances", 454), src("euronics", 469), src("bosch-home", 499)];
+  const t1 = R.targetPrice(base, { ours: 469, sources: s, costExVat: null, floor: null });
+  ok(t1.price === 448.99 && /lowest ruislip-appliances £454\.00 − £5\.00/.test(t1.reason), "rules: £5 under the lowest source, ending .99, with the reason in numbers");
+  ok(R.targetPrice({ ...base, amount: 10, amountUnit: "pct", rounding: "00" }, { ours: 469, sources: s, costExVat: null, floor: null }).price === 408,
+    "rules: a percentage discount and whole-pound rounding");
+  const floored = R.targetPrice(base, { ours: 469, sources: s, costExVat: 380, floor: null });
+  ok(floored.price === null && /cost \+ margin \(£501\.99\) is above the maker's price £499\.00/.test(floored.reason),
+    "rules: when cost + margin is above the maker's price, the rule holds back rather than sell below cost");
+  const floor2 = R.targetPrice({ ...base, capAtMaker: false }, { ours: 449, sources: s, costExVat: 350, floor: null });
+  ok(floor2.price === 462.99 && /held at the floor £462\.99/.test(floor2.reason), "rules: a price under cost + 10% is raised to the floor, rounded up to .99");
+  const capped = R.targetPrice({ ...base, strategy: "match_source", sourceIds: "euronics" }, { ours: 480, sources: [src("euronics", 529), src("bosch-home", 499)], costExVat: null, floor: null });
+  ok(capped.price === 499 && /capped at the maker/.test(capped.reason), "rules: never above the maker's own price");
+  ok(R.targetPrice(base, { ours: 600, sources: s, costExVat: null, floor: null }).price === null && (R.targetPrice(base, { ours: 600, sources: s, costExVat: null, floor: null }) as any).flag === "too_big"
+    && R.targetPrice(base, { ours: 448.99, sources: s, costExVat: null, floor: null }).price === null
+    && R.targetPrice({ ...base, strategy: "match_lowest" }, { ours: 454, sources: s, costExVat: null, floor: null }).price === null && R.targetPrice(base, { ours: 400, sources: [], costExVat: null, floor: null }).price === null,
+    "rules: a move over the limit is held; an unchanged price, a move under £1 (just the .99 ending) or no source gives nothing");
+  ok(R.targetPrice({ ...base, amount: 1 }, { ours: 20, sources: [src("x", 18.4)], costExVat: null, floor: null }).price === 17.4,
+    "rules: prices under £50 keep their exact pence — no .99 rounding on accessories");
+  ok(R.ruleFits({ brand: "Bosch", category: "Dishwashers" }, { brand: "BOSCH", category: "Dishwashers", subcategory: "Integrated Dishwashers" })
+    && R.ruleFits({ brand: "", category: "Integrated Dishwashers" }, { brand: "Neff", category: "Dishwashers", subcategory: "Integrated Dishwashers" })
+    && !R.ruleFits({ brand: "Neff", category: "" }, { brand: "Bosch", category: "Ovens", subcategory: "" }),
+    "rules: a rule covers its brand and its category or sub-category");
+  ok(typeof R.checkRule({ name: "", strategy: "beat_lowest" }) === "string" && typeof R.checkRule({ name: "x", strategy: "match_source" }) === "string" && typeof R.checkRule({ name: "x", strategy: "beat_lowest", amount: 80, amountUnit: "pct" }) === "string",
+    "rules: a rule without a name, a source to follow, or with an absurd discount is refused");
 }
 
 // Pricewire AI: matching a document's rows to our products, and cleaning what the AI returns.

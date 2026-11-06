@@ -24,9 +24,10 @@ import { writeAudit } from "@/lib/audit";
  */
 
 export const AI_MODEL = "claude-haiku-5-5";
-export const AI_SOURCES = ["ai-import", "ai-assistant"] as const;
+/** Sources whose prices wait in the review queue: AI document reads, the assistant, and pricing rules. */
+export const AI_SOURCES = ["ai-import", "ai-assistant", "pricing-rules"] as const;
 export type AiSourceId = (typeof AI_SOURCES)[number];
-const SOURCE_LABELS: Record<AiSourceId, string> = { "ai-import": "AI document import", "ai-assistant": "Pricewire assistant" };
+const SOURCE_LABELS: Record<AiSourceId, string> = { "ai-import": "AI document import", "ai-assistant": "Pricewire assistant", "pricing-rules": "Pricing rules" };
 const QUEUE_DAYS = 30;
 export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // the API takes 32 MB per request; base64 adds a third
 const MAX_TEXT_CHARS = 600_000;
@@ -230,7 +231,7 @@ export type ImportSummary = {
 export async function stageDocument(db: any, file: string, read: DocRead, by: string): Promise<ImportSummary> {
   await ensureAiSources(db);
   const [products, poa] = await Promise.all([
-    db.product.findMany({ select: { id: true, productCode: true, gtin: true, brand: true, priceNow: true, isVisible: true, category: true, subcategory: true } }),
+    db.product.findMany({ select: { id: true, productCode: true, gtin: true, brand: true, priceNow: true, isVisible: true, category: true, pricewire: true, subcategory: true } }),
     poaNamesFromDb(db),
   ]);
   const byId = new Map<string, any>(products.map((p: any) => [p.id, p]));
@@ -298,7 +299,7 @@ export async function aiQueue(db: any): Promise<QueueItem[]> {
   if (!latest.size) return [];
   const ids = [...new Set([...latest.values()].map((o) => o.productId))];
   const [products, poa] = await Promise.all([
-    db.product.findMany({ where: { id: { in: ids } }, select: { id: true, productCode: true, title: true, brand: true, slug: true, priceNow: true, isVisible: true, category: true, subcategory: true, agencyStock: true, adminOverrideFields: true, lastUpdatedByAdmin: true, costPrice: true } }),
+    db.product.findMany({ where: { id: { in: ids } }, select: { id: true, productCode: true, title: true, brand: true, slug: true, priceNow: true, isVisible: true, category: true, pricewire: true, subcategory: true, agencyStock: true, adminOverrideFields: true, lastUpdatedByAdmin: true, costPrice: true } }),
     poaNamesFromDb(db),
   ]);
   const byId = new Map<string, any>(products.map((p: any) => [p.id, p]));

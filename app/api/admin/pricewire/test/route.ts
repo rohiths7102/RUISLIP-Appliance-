@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { testSite } from "@/lib/price-watch/pricewire";
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /**
  * "Test this site": read one model from a site now, before saving it, and
@@ -17,7 +17,8 @@ export async function POST(req: Request) {
   if (!code) return NextResponse.json({ error: "Type a model number to test with." }, { status: 400 });
   if (!/^https:\/\//i.test(url)) return NextResponse.json({ error: "The address must start with https://" }, { status: 400 });
   try {
-    const r = await testSite({ kind: body?.kind === "list" ? "list" : "page", url }, code);
+    const kind = body?.kind === "list" ? "list" : body?.kind === "search" ? "search" : "page";
+    const r = await testSite({ kind, url, priceSelector: typeof body?.priceSelector === "string" ? body.priceSelector : "" }, code);
     return NextResponse.json(r);
   } catch (e: any) {
     return NextResponse.json({ error: `Could not read the site: ${String(e?.message || e).slice(0, 160)}` }, { status: 502 });

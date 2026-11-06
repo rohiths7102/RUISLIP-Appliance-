@@ -40,6 +40,10 @@ export async function PATCH(req: Request) {
   const data = { siteId, fallbackSiteId, enabled: body.enabled !== false };
   const after = await db.brandPriceFeed.update({ where: { brand }, data });
   const changed = Object.keys(data).filter((k) => (before as any)[k] !== (data as any)[k]);
+  // New sites for a brand: every product is due now, so the next read asks the new sites rather than waiting out the old schedule.
+  if (changed.includes("siteId") || changed.includes("fallbackSiteId") || changed.includes("enabled")) {
+    await db.brandPriceItem.updateMany({ where: { brand }, data: { nextCheckAt: null } });
+  }
   if (changed.length) {
     await writeAudit(db, {
       entityType: "pricewire-brand", entityId: brand, action: "pricewire:settings", changedFields: changed,

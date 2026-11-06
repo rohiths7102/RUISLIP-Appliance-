@@ -17,14 +17,15 @@ export const dynamic = "force-dynamic";
  */
 const https = (u: string) => { try { return new URL(u).protocol === "https:"; } catch { return false; } };
 
-function check(body: any): { name: string; kind: "list" | "page"; url: string } | string {
+function check(body: any): { name: string; kind: "list" | "page" | "search"; url: string } | string {
   const name = String(body?.name || "").trim().slice(0, 60);
-  const kind = body?.kind === "list" ? "list" : body?.kind === "page" ? "page" : null;
+  const kind = body?.kind === "list" ? "list" : body?.kind === "page" ? "page" : body?.kind === "search" ? "search" : null;
   const url = String(body?.url || "").trim();
   if (!name) return "Give the site a name.";
-  if (!kind) return "Choose a price list or product pages.";
-  if (!https(url.replace(/\{code\}/gi, "X"))) return "The address must start with https://";
+  if (!kind) return "Choose a price list, product pages or a site search.";
+  if (!https(url.replace(/\{code\}|\{q\}/gi, "X"))) return "The address must start with https://";
   if (kind === "page" && !/\{code\}/i.test(url)) return "A product-page address needs {code} where the model number goes.";
+  if (kind === "search" && !/\{q\}/i.test(url)) return "A search address needs {q} where the search words go, e.g. https://shop.example/search?q={q}";
   return { name, kind, url };
 }
 

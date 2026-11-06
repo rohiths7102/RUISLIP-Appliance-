@@ -142,7 +142,11 @@ async function readCapped(res: Response): Promise<{ text: string; truncated: boo
 }
 
 /** Fetch a page, validating the URL and every redirect hop. */
-export async function fetchPage(raw: string): Promise<{ html: string; finalUrl: string; truncated: boolean }> {
+/**
+ * `known` makes the request conditional (Pricewire scheduling): a site that
+ * answers 304 Not Modified sends no page, and `notModified` is true.
+ */
+export async function fetchPage(raw: string, known: { etag?: string; lastModified?: string } = {}): Promise<{ html: string; finalUrl: string; truncated: boolean; notModified?: boolean; etag?: string; lastModified?: string }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -155,13 +159,18 @@ export async function fetchPage(raw: string): Promise<{ html: string; finalUrl: 
           redirect: "manual",
           signal: controller.signal,
           cache: "no-store",
-          headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml", "Accept-Language": "en-GB,en;q=0.9" },
+          headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml", "Accept-Language": "en-GB,en;q=0.9",
+            ...(hop === 0 && known.etag ? { "If-None-Match": known.etag } : {}), ...(hop === 0 && known.lastModified ? { "If-Modified-Since": known.lastModified } : {}) },
         });
       } catch (e: any) {
         if (e?.name === "AbortError") throw new LookupError("That page took too long to answer (over 15 seconds). Try again, or add the product by hand.", 504);
         throw new LookupError("We couldn't reach that page. Check the link is right and that the site is up.", 502);
       }
 
+      if (res.status === 304) {
+        await res.body?.cancel().catch(() => {});
+        return { html: "", finalUrl: u.toString(), truncated: false, notModified: true, etag: known.etag, lastModified: known.lastModified };
+      }
       if (res.status >= 300 && res.status < 400) {
         const loc = res.headers.get("location");
         await res.body?.cancel().catch(() => {});
@@ -184,7 +193,7 @@ export async function fetchPage(raw: string): Promise<{ html: string; finalUrl: 
         throw new LookupError("That link isn't a web page (it looks like a file or an image). Paste the product page link.");
       }
       const { text, truncated } = await readCapped(res);
-      return { html: text, finalUrl: u.toString(), truncated };
+      return { html: text, finalUrl: u.toString(), truncated, etag: res.headers.get("etag") || "", lastModified: res.headers.get("last-modified") || "" };
     }
     throw new LookupError("That link redirects too many times.", 502);
   } finally {

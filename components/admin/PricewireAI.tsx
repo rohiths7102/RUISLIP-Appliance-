@@ -237,7 +237,7 @@ function Queue({ items, reload }: { items: QueueItem[]; reload: () => void }) {
                   <td className="py-2 pl-4 text-right tabular-nums text-muted">{money(it.from)}</td>
                   <td className="py-2 pl-4 text-right font-semibold tabular-nums">{money(it.to)}</td>
                   <td className={`py-2 pl-4 text-right tabular-nums ${it.changePct === null ? "text-muted" : it.changePct < 0 ? "text-success" : "text-warning"}`}>{it.changePct === null ? "new" : `${it.changePct > 0 ? "+" : ""}${it.changePct}%`}</td>
-                  <td className="py-2 pl-4 text-xs text-muted"><span className="text-ink/80">{it.sourceId === "ai-import" ? "Document" : "Assistant"}</span><p className="line-clamp-2">{it.note}</p></td>
+                  <td className="py-2 pl-4 text-xs text-muted"><span className="text-ink/80">{it.sourceId === "ai-import" ? "Document" : it.sourceId === "pricing-rules" ? "Rule" : "Assistant"}</span><p className="line-clamp-2">{it.note}</p></td>
                 </tr>
               ))}
             </tbody>
@@ -260,6 +260,8 @@ export default function PricewireAI() {
     setLoaded(true);
   }, []);
   useEffect(() => { load(); }, [load]);
+  // Pricing rules run from the engine card above refill the queue.
+  useEffect(() => { window.addEventListener("pricewire:queue-changed", load); return () => window.removeEventListener("pricewire:queue-changed", load); }, [load]);
 
   return (
     <Card className="mt-6 p-5">
