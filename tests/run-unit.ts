@@ -22,6 +22,7 @@ import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/ho
 import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
+import { firstAndLast, promoteScore } from "../lib/price-watch/market";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
 
@@ -615,6 +616,18 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
   ok(validHistory([]) && validHistory([{ role: "user", content: "hi" }, { role: "assistant", content: [{ type: "text", text: "hello" }] }])
     && !validHistory([{ role: "assistant", content: "x" }]) && !validHistory([{ role: "system", content: "x" }]) && !validHistory("x"),
     "assistant: only a conversation that starts with the user and has user/assistant turns is accepted back");
+}
+
+// ---- Pricewire market: trend and what to promote (14 Nov 2026)
+{
+  const fl = firstAndLast([{ price: 329 }, { price: 299 }, { price: 249 }]);
+  ok(fl?.from === 249 && fl?.to === 329 && fl?.pct === 32.13 && firstAndLast([{ price: 100 }]) === null && firstAndLast([{ price: 100 }, { price: 100 }])?.pct === 0,
+    "market: a trend is the oldest read in the window against the newest; one read is no trend");
+  ok(firstAndLast([{ price: 100, includesVat: false }, { price: 120 }])?.pct === 0, "market: an ex-VAT read is compared inc VAT");
+  const base = { views: 10, calls: 2, googleClicks: 1, googleImpressions: 500, price: 449, ruislip: 499 };
+  ok(promoteScore({ ...base, ruislip: 399 }) === 0, "market: a product dearer than Ruislip is never promoted");
+  ok(promoteScore(base) > promoteScore({ ...base, ruislip: 449 }) && promoteScore({ ...base, calls: 5 }) > promoteScore(base) && promoteScore({ ...base, ruislip: null }) > 0,
+    "market: more under Ruislip or more call taps ranks higher; one Ruislip doesn't list can still be promoted on demand");
 }
 
 console.log(`\n${n} unit assertions passed`);

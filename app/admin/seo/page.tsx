@@ -18,8 +18,10 @@ export const dynamic = "force-dynamic";
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
-export default async function AdminSeo() {
+export default async function AdminSeo({ searchParams }: { searchParams: Promise<{ path?: string }> }) {
   const admin = await requireAdmin();
+  // Pricewire → Market → "SEO": open with that product first, ready to edit.
+  const askedPath = String((await searchParams).path || "").slice(0, 200);
   let queries: GscRow[] | null = null, pages: GscRow[] | null = null, error = "", paid: any[] = [];
   let access: NoSearchConsoleAccess | null = null;
   const lift: SeoRow[] = [];
@@ -39,6 +41,16 @@ export default async function AdminSeo() {
       } else if (cat) {
         const ct = await db.category.findFirst({ where: { OR: [{ id: cat }, { slug: cat }, { slug: `/${cat}` }] }, select: { id: true, name: true, seoTitle: true, seoDescription: true } });
         if (ct) lift.push({ ...base, kind: "category", id: ct.id, name: ct.name, seoTitle: ct.seoTitle, seoDescription: ct.seoDescription });
+      }
+    }
+    const askedSlug = askedPath.match(/^\/products\/([^/?#]+)$/)?.[1];
+    if (askedSlug) {
+      const i = lift.findIndex((r) => r.path === askedPath);
+      if (i >= 0) lift.unshift(...lift.splice(i, 1));
+      else {
+        const pr = await db.product.findUnique({ where: { slug: askedSlug }, select: { id: true, title: true, brand: true, seoTitle: true, seoDescription: true } });
+        const g = (pages || []).find((x) => x.key.replace(/^https?:\/\/[^/]+/, "") === askedPath);
+        if (pr) lift.unshift({ path: askedPath, position: g?.position ?? 0, impressions: g?.impressions ?? 0, clicks: g?.clicks ?? 0, kind: "product", id: pr.id, name: `${pr.brand} ${pr.title}`, seoTitle: pr.seoTitle, seoDescription: pr.seoDescription });
       }
     }
   } catch (e: any) {
