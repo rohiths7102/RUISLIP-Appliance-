@@ -243,8 +243,12 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
     "maker price: the maker's shop not selling a best seller keeps Sachin's price and holds the row");
   const c = await run([product("best", "KIN96NSE0G", null)], [read("best", 899), read("best", 889, 1)]);
   const d = await run([product("best", "KIN96NSE0G", null)], [read("best", 899)]);
-  ok(c.writes.length === 1 && c.writes[0].data.priceNow === 899 && !d.writes.length && d.outcome.refused.no_current_price === 1,
-    "maker price: a best seller with no price gets one after two maker reads agree, never from a single read");
+  ok(!c.writes.length && c.outcome.refused.keeps_call === 1 && !d.writes.length && d.outcome.refused.keeps_call === 1,
+    "maker price: unattended, a product showing Call stays Call however many maker reads agree (owner, 14 Nov 2026)");
+  const many0 = Array.from({ length: 130 }, (_, i) => product(`q${i}`, `D${i}`, i < 10 ? 100 : null));
+  const h = await run(many0, many0.map((p) => read(p.id, 110)));
+  ok(!h.outcome.halted && h.writes.length === 10 && h.outcome.refused.keeps_call === 120,
+    "maker price: unattended, Call products do not count toward the change budget, so the priced ones still update");
   const e = await run([product("x", "KIN96NSE0G", null)], [read("x", 899)], { approvedBy: "sachin@example.com", allowAutoApply: false });
   ok(e.writes.length === 1 && e.writes[0].data.priceNow === 899, "brand prices: a person's Apply gives a first price from one read, even with the source on manual");
   const many = Array.from({ length: 130 }, (_, i) => product(`p${i}`, `C${i}`, 100));

@@ -159,6 +159,9 @@ export async function autoApplySource(
       ? round2(includesVat ? obs.deliveryCost : obs.deliveryCost * (1 + CFG.vatRate))
       : null;
     if (typeof p.priceNow === "number" && Math.abs(p.priceNow - proposedPrice) < 0.01) { out.unchanged++; continue; }
+    // Owner, 14 Nov 2026: a product showing "Call" stays "Call" unattended — a
+    // maker site's price only reaches it when a person ticks it in Pricewire.
+    if (feedSource && p.priceNow === null && !opts.approvedBy) { refuse("keeps_call"); continue; }
     const listed = listPrice.get(p.id);
     if (listed !== undefined && Math.abs(listed - proposedPrice) >= 0.01) { refuse("price_list_differs"); continue; }
 
