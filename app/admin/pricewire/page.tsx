@@ -6,6 +6,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import PricewireAdmin from "@/components/admin/PricewireAdmin";
 import { AiDesk, ReviewQueue } from "@/components/admin/PricewireAI";
 import PricewireEngine from "@/components/admin/PricewireEngine";
+import PricewireMarket from "@/components/admin/PricewireMarket";
 export const metadata = { title: "Pricewire" };
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function AdminPricewire() {
       <PricewireAdmin {...data} links={{ brands: adminHref("brands"), priceWatch: adminHref("price-watch") }}
         engine={<PricewireEngine sites={data.sites.map((s) => ({ id: s.id, name: s.name, kind: s.kind, url: s.url }))} sources={sources}
           brands={brandRows.map((b: any) => b.brand).filter(Boolean)} categories={[...new Set<string>(categoryRows.map((c: any) => c.name))]} />}
-        desk={<AiDesk />} queue={<ReviewQueue />} />
+        market={<PricewireMarket />} desk={<AiDesk />} queue={<ReviewQueue />} />
     </AdminShell>
   );
 }

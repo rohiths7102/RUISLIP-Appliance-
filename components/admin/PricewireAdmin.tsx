@@ -219,12 +219,12 @@ function BrandCard({ b, sites, checks, links, onSaved }: { b: BrandView; sites: 
 
 /** The tool's modules, in the order the owner works through them. Each has its own address (#sources …). */
 const MODULES = [
-  { id: "overview", label: "Overview" }, { id: "sources", label: "Sources" }, { id: "engine", label: "Pricing engine" },
+  { id: "overview", label: "Overview" }, { id: "market", label: "Market" }, { id: "sources", label: "Sources" }, { id: "engine", label: "Pricing engine" },
   { id: "desk", label: "AI desk" }, { id: "review", label: "Review queue" }, { id: "activity", label: "Activity" },
 ] as const;
 type ModuleId = (typeof MODULES)[number]["id"];
 
-export default function PricewireAdmin({ sites, brands, pending, runs, checks, coverage, changes, links, engine, desk, queue }: Data & { links: PricewireLinks; engine: ReactNode; desk: ReactNode; queue: ReactNode }) {
+export default function PricewireAdmin({ sites, brands, pending, runs, checks, coverage, changes, links, market, engine, desk, queue }: Data & { links: PricewireLinks; market: ReactNode; engine: ReactNode; desk: ReactNode; queue: ReactNode }) {
   const [mod, setMod] = useState<ModuleId>("overview");
   const [counts, setCounts] = useState<{ review: number | null; alerts: number | null }>({ review: null, alerts: null });
   // Open the module named in the address, and keep the address in step, so a module can be bookmarked or linked.
@@ -372,6 +372,7 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
       </section>
       </>}
 
+      {mod === "market" && market}
       {mod === "engine" && <Card className="mt-6 p-5"><Module title="Pricing engine" text="Rules that turn the other sources' prices into ours, finding products on a shop's site, teaching a site where its price is, alerts and price history.">{engine}</Module></Card>}
       {mod === "desk" && <Card className="mt-6 p-5"><Module title="AI desk" text="Upload any price document, or ask the assistant. What they find waits in the review queue.">{desk}</Module></Card>}
       {mod === "review" && <Card className="mt-6 p-5"><Module title="Review queue" text="Every suggested price, from pricing rules, uploaded documents and the assistant. Apply puts it on the website through the same checks as any other price change.">{queue}</Module></Card>}

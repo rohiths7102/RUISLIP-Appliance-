@@ -22,7 +22,7 @@ import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/ho
 import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
-import { firstAndLast, promoteScore } from "../lib/price-watch/market";
+import { firstAndLast, promoteScore, visitorKind, seoOpportunity } from "../lib/price-watch/market";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
 
@@ -628,6 +628,12 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
   ok(promoteScore({ ...base, ruislip: 399 }) === 0, "market: a product dearer than Ruislip is never promoted");
   ok(promoteScore(base) > promoteScore({ ...base, ruislip: 449 }) && promoteScore({ ...base, calls: 5 }) > promoteScore(base) && promoteScore({ ...base, ruislip: null }) > 0,
     "market: more under Ruislip or more call taps ranks higher; one Ruislip doesn't list can still be promoted on demand");
+  ok(visitorKind({ source: "google-ads", referrer: "www.google.com" }) === "ads" && visitorKind({ referrer: "www.google.co.uk" }) === "google" && visitorKind({ referrer: "chatgpt.com" }) === "ai"
+    && visitorKind({ source: "", referrer: "" }) === "direct" && visitorKind({ referrer: "www.facebook.com" }) === "other",
+    "market: a paid click is Google Ads even though it came from Google; AI assistants, direct and other sites are told apart");
+  ok(!!seoOpportunity({ googleImpressions: 40, googlePosition: 9.2, views30: 0, hasSeoTitle: true }) && !seoOpportunity({ googleImpressions: 40, googlePosition: 2.1, views30: 0, hasSeoTitle: true })
+    && !!seoOpportunity({ googleImpressions: 0, googlePosition: null, views30: 4, hasSeoTitle: false }) && !seoOpportunity({ googleImpressions: 0, googlePosition: null, views30: 4, hasSeoTitle: true }),
+    "market: SEO work is a page Google shows low down, or a visited page with no search title; a page already near the top is left alone");
 }
 
 console.log(`\n${n} unit assertions passed`);

@@ -4,7 +4,6 @@ import { Badge, Button, Notice } from "@/components/admin/ui";
 import type { Alert, HistorySeries, Rule } from "@/lib/price-watch/pricing-rules";
 import type { PriceCandidate } from "@/lib/price-watch/pricewire-map";
 import { queueChanged } from "@/components/admin/PricewireAI";
-import type { Market, Move } from "@/lib/price-watch/market";
 
 /**
  * Admin → Pricewire → Engine: alerts, pricing rules, mapping (finding products
@@ -241,8 +240,8 @@ function Mapping({ sites, brands }: { sites: Site[]; brands: string[] }) {
 
 /* ------------------------------------------------------------ history */
 
-const COLOURS = ["#0b2545", "#3b82c4", "#d97706", "#16a34a", "#9333ea", "#dc2626", "#0891b2"];
-function Chart({ series }: { series: HistorySeries[] }) {
+export const COLOURS = ["#0b2545", "#3b82c4", "#d97706", "#16a34a", "#9333ea", "#dc2626", "#0891b2"];
+export function Chart({ series }: { series: HistorySeries[] }) {
   const pts = series.flatMap((s) => s.points);
   if (!pts.length) return null;
   const t = pts.map((p) => new Date(p.at).getTime()), v = pts.map((p) => p.price);
@@ -296,96 +295,11 @@ function History() {
   );
 }
 
-/* ------------------------------------------------------------ market */
-
-const pct = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
-const th = "py-1.5 pr-3 text-left text-[11px] font-medium text-muted";
-const td = "py-1.5 pr-3 align-top";
-const productLink = (slug: string, code: string) => <a className="font-mono text-xs hover:text-blue-deep" href={`/products/${slug}`} target="_blank" rel="noreferrer">{code}</a>;
-
-function MoveTable({ rows, empty }: { rows: Move[]; empty: string }) {
-  if (!rows.length) return <p className="text-xs text-muted">{empty}</p>;
-  return (
-    <table className="w-full text-sm"><thead><tr><th className={th}>Model</th><th className={th}>Brand</th><th className={th}>Was</th><th className={th}>Now</th><th className={th}>Change</th></tr></thead>
-      <tbody>{rows.map((m) => <tr key={m.code} className="border-t border-line"><td className={td}>{productLink(m.slug, m.code)}</td><td className={td}>{m.brand}</td><td className={td}>{money(m.from)}</td><td className={td}>{money(m.to)}</td><td className={`${td} font-medium ${m.pct > 0 ? "text-emerald-700" : "text-red-700"}`}>{pct(m.pct)}</td></tr>)}</tbody>
-    </table>
-  );
-}
-
-function MarketView() {
-  const [m, setM] = useState<Market | null>(null);
-  const [err, setErr] = useState("");
-  useEffect(() => { call("/api/admin/pricewire/insights?view=market").then(({ ok, j }) => (ok ? setM(j) : setErr(j.error || "Could not load the market view."))); }, []);
-  if (err) return <Notice tone="warning">{err}</Notice>;
-  if (!m) return <p className="text-xs text-muted">Reading the last {30} days…</p>;
-  const h = "text-sm font-semibold text-ink";
-  return (
-    <div className="space-y-6 text-sm">
-      <section>
-        <h3 className={h}>Price trend on the sites we follow, last {m.days} days</h3>
-        <div className="mt-2 grid gap-2 sm:grid-cols-3">
-          {m.trend.map((t) => (
-            <div key={t.brand} className="rounded-lg border border-line p-3">
-              <p className="font-medium text-ink">{t.brand} <span className="text-xs font-normal text-muted">from {t.site}</span></p>
-              <p className="mt-1 text-xs text-ink/80">{t.up} went up · {t.down} went down · {t.read} products read twice or more</p>
-              <p className="text-xs text-muted">Average move {t.up + t.down ? pct(t.avgPct) : "none"}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 grid gap-4 lg:grid-cols-2">
-          <div><p className="mb-1 text-xs font-medium text-ink">Biggest increases</p><MoveTable rows={m.risers} empty="No increases in this window." /></div>
-          <div><p className="mb-1 text-xs font-medium text-ink">Biggest drops</p><MoveTable rows={m.fallers} empty="No drops in this window." /></div>
-        </div>
-      </section>
-
-      <section>
-        <h3 className={h}>Our prices against Ruislip Appliances</h3>
-        <table className="mt-2 w-full max-w-xl text-sm"><thead><tr><th className={th}>Brand</th><th className={th}>We're cheaper</th><th className={th}>Same</th><th className={th}>We're dearer</th><th className={th}>They don't list it</th></tr></thead>
-          <tbody>{m.versus.map((v) => <tr key={v.brand} className="border-t border-line"><td className={td}>{v.brand}</td><td className={td}>{v.cheaper}</td><td className={td}>{v.same}</td><td className={`${td} ${v.dearer ? "font-medium text-red-700" : ""}`}>{v.dearer}</td><td className={td}>{v.notListed}</td></tr>)}</tbody>
-        </table>
-        {m.dearer.length > 0 && <>
-          <p className="mb-1 mt-3 text-xs font-medium text-ink">Where Ruislip is cheaper than us</p>
-          <table className="w-full text-sm"><thead><tr><th className={th}>Model</th><th className={th}>Brand</th><th className={th}>Us</th><th className={th}>Ruislip</th><th className={th}>We're dearer by</th></tr></thead>
-            <tbody>{m.dearer.map((d) => <tr key={d.code} className="border-t border-line"><td className={td}>{productLink(d.slug, d.code)}</td><td className={td}>{d.brand}</td><td className={td}>{money(d.price)}</td><td className={td}>{money(d.ruislip)}</td><td className={`${td} text-red-700`}>{pct(d.pct)}</td></tr>)}</tbody>
-          </table>
-        </>}
-      </section>
-
-      <section>
-        <h3 className={h}>Best to promote</h3>
-        <p className="text-xs text-muted">Priced at or under Ruislip Appliances, ranked by demand: views and call taps on this site, and Google searches that showed or clicked the product's page (last 28–30 days). Use these for ads, the homepage and SEO work.</p>
-        {m.google !== "connected" && <Notice tone="info" className="mt-2">{m.google === "not_connected" ? "Google Search Console isn't connected, so Google clicks and impressions are left out. Connect it under Admin → SEO." : `Google Search Console didn't answer: ${m.google}`}</Notice>}
-        {m.promote.length ? (
-          <table className="mt-2 w-full text-sm"><thead><tr><th className={th}>Model</th><th className={th}>Brand</th><th className={th}>Our price</th><th className={th}>Ruislip</th><th className={th}>Views</th><th className={th}>Calls</th><th className={th}>Google clicks / impressions</th><th className={th}>Why</th><th className={th}></th></tr></thead>
-            <tbody>{m.promote.map((p) => (
-              <tr key={p.code} className="border-t border-line">
-                <td className={td}>{productLink(p.slug, p.code)}</td><td className={td}>{p.brand}</td><td className={td}>{money(p.price)}</td><td className={td}>{money(p.ruislip)}</td>
-                <td className={td}>{p.views}</td><td className={td}>{p.calls}</td><td className={td}>{p.googleClicks} / {p.googleImpressions}{p.googlePosition !== null ? <span className="text-xs text-muted"> (pos. {p.googlePosition})</span> : null}</td>
-                <td className={`${td} text-xs text-ink/75`}>{p.why}</td>
-                <td className={td}><a className="text-xs text-blue-deep hover:underline" href={`/admin/seo?path=${encodeURIComponent(`/products/${p.slug}`)}`}>SEO</a></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        ) : <p className="mt-2 text-xs text-muted">No priced Bosch, Neff or Siemens product has had views, calls or Google impressions in this window yet.</p>}
-      </section>
-
-      <section>
-        <h3 className={h}>Margin</h3>
-        {m.margin.withCost ? (
-          <table className="mt-2 w-full max-w-xl text-sm"><thead><tr><th className={th}>Model</th><th className={th}>Price</th><th className={th}>Cost (ex VAT)</th><th className={th}>Margin</th></tr></thead>
-            <tbody>{m.margin.rows.map((r) => <tr key={r.code} className="border-t border-line"><td className={td}>{productLink(r.slug, r.code)}</td><td className={td}>{money(r.price)}</td><td className={td}>{money(r.cost)}</td><td className={td}>{pct(r.marginPct)}</td></tr>)}</tbody>
-          </table>
-        ) : <Notice tone="info" className="mt-2">None of the {m.margin.priced} priced Bosch, Neff and Siemens products has a cost price on file, so profit can't be worked out yet. Add costs (product page → Cost price, or the AI desk with a supplier price list) and the most profitable lines will show here.</Notice>}
-      </section>
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------ shell */
 
-const TABS = ["Market", "Alerts", "Pricing rules", "Mapping", "Price history"] as const;
+const TABS = ["Alerts", "Pricing rules", "Mapping", "Price history"] as const;
 export default function PricewireEngine(props: Props) {
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Market");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Alerts");
   return (
     <div>
       <div className="flex flex-wrap items-baseline gap-3">
@@ -395,7 +309,6 @@ export default function PricewireEngine(props: Props) {
         </nav>
       </div>
       <div className="mt-4">
-        {tab === "Market" && <MarketView />}
         {tab === "Alerts" && <Alerts />}
         {tab === "Pricing rules" && <Rules sources={props.sources} brands={props.brands} categories={props.categories} />}
         {tab === "Mapping" && <Mapping sites={props.sites} brands={["Bosch", "Neff", "Siemens"]} />}
