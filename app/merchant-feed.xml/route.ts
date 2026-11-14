@@ -1,6 +1,7 @@
 import { getPrisma } from "@/lib/prisma";
 import { feedRows } from "@/lib/merchant-feed";
 import { isBestSeller } from "@/lib/best-sellers";
+import { feedLabels } from "@/lib/price-watch/market";
 export const dynamic = "force-dynamic";
 
 /** Escape the five XML special characters for safe element content. */
@@ -19,7 +20,10 @@ export async function GET() {
   const base = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3005").replace(/\/+$/, "");
 
   try {
-    const rows = await feedRows(await getPrisma());
+    const db = await getPrisma();
+    const rows = await feedRows(db);
+    // Labels are a bonus: if they fail, the feed still goes out without them.
+    const labels = await feedLabels(db, rows).catch(() => new Map());
 
     const items = rows.map((p) => {
       const title = esc(p.title.slice(0, 150));
@@ -48,6 +52,10 @@ export async function GET() {
         // Sachin's best sellers: a Google listing group or a Meta product set
         // filters on this to advertise exactly them (Admin → Google Ads).
         ...(isBestSeller(p.productCode) ? ["      <g:custom_label_0>Best seller</g:custom_label_0>"] : []),
+        // Pricewire → Market's picks, for a Shopping campaign to bid on (lib/price-watch/market.ts feedLabels).
+        ...(labels.get(p.slug)?.promote ? ["      <g:custom_label_1>Promote</g:custom_label_1>"] : []),
+        ...(labels.get(p.slug)?.priceDrop ? ["      <g:custom_label_2>Price drop</g:custom_label_2>"] : []),
+        ...(labels.get(p.slug)?.cheaperThanRuislip ? ["      <g:custom_label_3>Cheaper than Ruislip</g:custom_label_3>"] : []),
         "    </item>",
       ].join("\n");
     });

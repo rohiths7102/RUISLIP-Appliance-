@@ -22,7 +22,7 @@ import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/ho
 import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
-import { firstAndLast, promoteScore, visitorKind, seoOpportunity } from "../lib/price-watch/market";
+import { firstAndLast, promoteScore, visitorKind, seoOpportunity, labelFor } from "../lib/price-watch/market";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
 
@@ -634,6 +634,10 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
   ok(!!seoOpportunity({ googleImpressions: 40, googlePosition: 9.2, views30: 0, hasSeoTitle: true }) && !seoOpportunity({ googleImpressions: 40, googlePosition: 2.1, views30: 0, hasSeoTitle: true })
     && !!seoOpportunity({ googleImpressions: 0, googlePosition: null, views30: 4, hasSeoTitle: false }) && !seoOpportunity({ googleImpressions: 0, googlePosition: null, views30: 4, hasSeoTitle: true }),
     "market: SEO work is a page Google shows low down, or a visited page with no search title; a page already near the top is left alone");
+  const L = (o: Partial<{ price: number; ruislip: number | null; views: number; calls: number; droppedTo: number | null }>) => labelFor({ price: 449, ruislip: 499, views: 3, calls: 0, droppedTo: null, ...o });
+  ok(L({}).promote && L({}).cheaperThanRuislip && !L({ views: 0 }).promote && !L({ ruislip: 399 }).promote && L({ ruislip: null }).promote && !L({ ruislip: null }).cheaperThanRuislip && !L({ price: 6.76, ruislip: null }).promote,
+    "feed labels: Promote needs interest, £100 or more and never a price above Ruislip; Cheaper than Ruislip needs Ruislip's price");
+  ok(L({ droppedTo: 449 }).priceDrop && !L({ droppedTo: 399 }).priceDrop && !L({}).priceDrop, "feed labels: Price drop only while the product still sits at the dropped price");
 }
 
 console.log(`\n${n} unit assertions passed`);

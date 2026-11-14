@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { callGroq, groqConfigured } from "@/lib/chat/groq";
-import { searchAnalytics } from "@/lib/search-console";
-import { SITE } from "@/lib/seo";
+import { groqConfigured } from "@/lib/chat/groq";
+import { suggestSeo } from "@/lib/seo-suggest";
 export const dynamic = "force-dynamic";
 
 /**
@@ -20,26 +19,8 @@ export async function POST(req: Request) {
   if (!["product", "category"].includes(kind) || typeof id !== "string" || typeof path !== "string") return NextResponse.json({ error: "Bad request" }, { status: 400 });
 
   try {
-    const db = await getPrisma();
-    const row = kind === "product"
-      ? await db.product.findUnique({ where: { id }, select: { title: true, brand: true, category: true, subcategory: true, priceNow: true, shortDescription: true, warranty: true } })
-      : await db.category.findUnique({ where: { id }, select: { name: true, description: true, productCount: true } });
-    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const queries = ((await searchAnalytics(db, "query", 28, `${SITE().replace(/\/+$/, "")}${path}`).catch(() => null)) || [])
-      .sort((a, b) => b.impressions - a.impressions).slice(0, 8).map((q) => q.key);
-
-    const facts = kind === "product"
-      ? `Product: ${row.brand} ${row.title}. Department: ${row.category} / ${row.subcategory}. ${row.priceNow != null ? `Price £${row.priceNow}.` : "Price on request."} ${row.warranty ? `Warranty: ${row.warranty}.` : ""} ${row.shortDescription || ""}`
-      : `Department page: ${row.name} (${row.productCount} models). ${row.description || ""}`;
-    const text = await callGroq([
-      { role: "system", content: `You write search titles and descriptions for Jyotsna Electrical (Euronics Ruislip), a family-run appliance shop in South Ruislip, West London, that delivers in its own van and fits appliances across the HA, UB, W3–W6, WD3–WD24 and SL postcodes. Rules: title at most 58 characters (count them) with the product or department first and a local hook (Ruislip / West London / delivered & fitted); description at most 150 characters, plain British English, answers the search, no exclamation marks, no claims not in the facts. Reply with JSON only: {"title": "...", "description": "..."}` },
-      { role: "user", content: `Facts: ${facts}\nSearches Google matched this page to: ${queries.length ? queries.join("; ") : "none recorded yet"}` },
-    ], { timeoutMs: 20000, temperature: 0.4 });
-    const j = JSON.parse((text.match(/\{[\s\S]*\}/) || ["{}"])[0]);
-    const title = String(j.title || "").replace(/\s+/g, " ").trim().slice(0, 70);
-    const description = String(j.description || "").replace(/\s+/g, " ").trim().slice(0, 170);
-    if (!title) return NextResponse.json({ error: "The AI didn't return a usable title." }, { status: 502 });
-    return NextResponse.json({ title, description, queries });
+    const out = await suggestSeo(await getPrisma(), kind, id, path);
+    return out ? NextResponse.json(out) : NextResponse.json({ error: "Not found" }, { status: 404 });
   } catch (e: any) {
     console.error("seo suggest", e);
     return NextResponse.json({ error: e?.message || "The AI didn't answer." }, { status: 502 });

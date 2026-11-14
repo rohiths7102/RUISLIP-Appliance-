@@ -240,3 +240,49 @@ export async function marketInsights(db: any, days = 30): Promise<Market> {
 
   return { days, pulse, daily: [...daily.values()], trend, versus, cards: picked, google, margin: { withCost: withCost.length, priced: feedBrand.length, rows: marginRows } };
 }
+
+/**
+ * Google Shopping feed labels from the same data as Market, so an ad campaign
+ * can bid on the products most likely to sell (merchant-feed.xml):
+ *   custom_label_1 "Promote"              £100 or more, at or under Ruislip Appliances' price, and viewed or called about in 30 days
+ *                                         (a click costs ~£0.30–1.30: not worth paying for on a £6 spare part);
+ *   custom_label_2 "Price drop"           the price agent lowered it in the last 30 days and it still sits there;
+ *   custom_label_3 "Cheaper than Ruislip" under Ruislip Appliances' price this week.
+ * Read from the database only (no Google call), so the feed stays fast.
+ */
+export type FeedLabels = { promote: boolean; priceDrop: boolean; cheaperThanRuislip: boolean };
+export const PROMOTE_FROM = 100;
+export function labelFor(r: { price: number; ruislip: number | null; views: number; calls: number; droppedTo: number | null }): FeedLabels {
+  const notDearer = r.ruislip === null || r.price <= r.ruislip + 0.01;
+  return {
+    promote: r.price >= PROMOTE_FROM && notDearer && r.views + r.calls > 0,
+    priceDrop: r.droppedTo !== null && Math.abs(r.droppedTo - r.price) < 0.01,
+    cheaperThanRuislip: r.ruislip !== null && r.price < r.ruislip - 0.01,
+  };
+}
+export async function feedLabels(db: any, rows: { slug: string; priceNow: number }[]): Promise<Map<string, FeedLabels>> {
+  const now = Date.now(), since = new Date(now - 30 * DAY);
+  const products: any[] = await db.product.findMany({ where: { isVisible: true, priceNow: { not: null } }, select: { id: true, slug: true } });
+  const idOf = new Map(products.map((p) => [p.slug, p.id]));
+  const [rObs, events, applied] = await Promise.all([
+    db.priceObservation.findMany({ where: { sourceId: COMPETITOR, status: "ok", observedAt: { gte: new Date(now - 7 * DAY) } }, orderBy: { observedAt: "desc" }, select: { productId: true, price: true, includesVat: true } }),
+    db.trackedEvent.findMany({ where: { type: { in: ["page_view", "call_click"] }, productSlug: { not: "" }, createdAt: { gte: since } }, select: { type: true, productSlug: true } }),
+    db.adminAuditLog.findMany({ where: { entityType: "product", action: "price-watch:auto-apply", createdAt: { gte: since } }, orderBy: { createdAt: "asc" }, select: { entityId: true, previousValue: true, newValue: true } }),
+  ]);
+  const ruislip = new Map<string, number>();
+  for (const o of rObs) if (o.price > 0 && !ruislip.has(o.productId)) ruislip.set(o.productId, vat(o));
+  const views = new Map<string, number>(), calls = new Map<string, number>();
+  for (const e of events) { const m = e.type === "page_view" ? views : calls; m.set(e.productSlug, (m.get(e.productSlug) || 0) + 1); }
+  // The latest automatic change per product: a drop if it went down.
+  const dropped = new Map<string, number | null>();
+  for (const a of applied) {
+    const from = a.previousValue?.priceNow, to = a.newValue?.priceNow;
+    if (typeof to === "number") dropped.set(a.entityId, typeof from === "number" && to < from ? to : null);
+  }
+  const out = new Map<string, FeedLabels>();
+  for (const r of rows) {
+    const id = idOf.get(r.slug);
+    out.set(r.slug, labelFor({ price: r.priceNow, ruislip: id ? ruislip.get(id) ?? null : null, views: views.get(r.slug) || 0, calls: calls.get(r.slug) || 0, droppedTo: id ? dropped.get(id) ?? null : null }));
+  }
+  return out;
+}
