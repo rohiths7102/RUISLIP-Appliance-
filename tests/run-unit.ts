@@ -315,7 +315,7 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
     && pageUrlFor("https://www.bosch-home.co.uk/en/product/{code}", "X", "https://www.ruislipappliances.com/products/X.htm") === "https://www.bosch-home.co.uk/en/product/X",
     "product page address: the product's own page when it is on that site, else the site's address with the model number");
 
-  const make = (feeds: any[], opts: { listOk?: boolean; sites?: any[] } = {}) => {
+  const make = (feeds: any[], opts: { listOk?: boolean; sites?: any[]; bshPrice?: number } = {}) => {
     const items = new Map<string, any>(); const obs: any[] = [];
     const siteRows = new Map<string, any>([
       { id: "ruislip-appliances", name: "Ruislip Appliances", kind: "list", url: "https://list", enabled: true },
@@ -349,7 +349,7 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
       fetched.push(url);
       if (url === "https://list") { if (opts.listOk === false) throw new Error("timed out"); return { html: list }; }
       if (url.startsWith("https://other/")) return { html: shop(url.split("/").pop()!, 450) };
-      return { html: bsh(decodeURIComponent(url.split("/").pop()!)) };
+      return { html: bsh(decodeURIComponent(url.split("/").pop()!), opts.bshPrice) };
     };
     return { db, items, obs, fetched, fetcher, feedRows, siteRows };
   };
@@ -358,15 +358,23 @@ ok(isBestSeller("KIN96NSE0G") && isBestSeller("kin96nse0g") && !isBestSeller("KI
   const r = make([{ brand: "Bosch", ...RA, fallbackSiteId: "bosch-home" }, { brand: "Neff", ...RA, fallbackSiteId: "neff-home" }, { brand: "Siemens", ...RA }]);
   const t = await syncPricewire(r.db, { fetcher: r.fetcher });
   const ob = (id: string, src: string) => r.obs.find((o) => o.productId === id && o.sourceId === src);
-  ok(r.items.get("listed").siteId === "ruislip-appliances" && r.items.get("listed").price === 499 && ob("listed", "ruislip-appliances")?.price === 499 && !ob("listed", "bosch-home")
+  ok(r.items.get("listed").siteId === "ruislip-appliances" && r.items.get("listed").price === 499 && ob("listed", "ruislip-appliances")?.price === 499 && ob("listed", "bosch-home")?.price === 899
     && r.items.get("unlisted").siteId === "bosch-home" && r.items.get("unlisted").price === 899 && ob("unlisted", "bosch-home")?.price === 899
     && r.fetched.includes("https://www.bosch-home.co.uk/en/product/KIN96NSE0G") && r.items.get("sie").price === 1999 && r.items.get("sie").siteId === "ruislip-appliances",
-    "Pricewire: a listed model follows the list site; one it doesn't list is read from the backup site at its address");
+    "Pricewire: a listed model follows the list site when it is cheaper; one it doesn't list is read from the backup site at its address");
   ok(t.brands.Bosch.priced === 2 && t.brands.Bosch.bySite["ruislip-appliances"] === 1 && t.brands.Bosch.bySite["bosch-home"] === 1 && t.sites["ruislip-appliances"].priced === 2,
     "Pricewire: the run says how many each brand got from each site");
   const missing = JSON.parse(r.siteRows.get("ruislip-appliances").notInCatalogue);
   ok(missing.length === 1 && missing[0].code === "T99NEW1" && missing[0].brand === "Neff",
     "Pricewire: models in a list that we don't have are kept per site, our brands only");
+
+  const cheap = make([{ brand: "Bosch", ...RA, fallbackSiteId: "bosch-home" }], { bshPrice: 399 });
+  await syncPricewire(cheap.db, { fetcher: cheap.fetcher });
+  ok(cheap.items.get("listed").siteId === "bosch-home" && cheap.items.get("listed").price === 399,
+    "Pricewire: when the backup site is cheaper than the main one, the product follows the backup (the lower price)");
+  const notDue = await syncPricewire(cheap.db, { fetcher: async (url: string) => { if (url === "https://list") return { html: list }; throw new Error("must not be read"); } });
+  ok(cheap.items.get("listed").siteId === "bosch-home" && cheap.items.get("listed").price === 399 && notDue.brands.Bosch.scheduled >= 1,
+    "Pricewire: a product following the cheaper backup keeps it on nights the backup page isn't due, no flip back");
 
   const m = make([{ brand: "Bosch", siteId: "bosch-home" }]);
   await syncPricewire(m.db, { fetcher: m.fetcher });

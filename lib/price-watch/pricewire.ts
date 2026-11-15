@@ -15,7 +15,8 @@ import { isPoaProduct, poaNamesFromDb } from "@/lib/poa";
  *                     number goes. Bosch, Neff and Siemens are built in; the
  *                     owner can add any other site and test it before use.
  *   Brands  each picks a main site and, optionally, a backup site for models
- *           the main one has no price for.
+ *           the main one has no price for, or a dearer one: a product
+ *           follows whichever of the two is cheaper (owner, 15 Nov 2026).
  *
  * Every read is saved as a PriceObservation under the site's id, and
  * BrandPriceItem.siteId records the site each product follows. The price
@@ -349,11 +350,15 @@ export async function syncPricewire(db: any, opts: { deadlineMs?: number; concur
       let r = await readFrom(f.siteId, p);
       save(p, r);
       if (skip(r)) continue;
-      if (r.price === null && usable(f.fallbackSiteId)) {
+      if (usable(f.fallbackSiteId)) {
         const b = await readFrom(f.fallbackSiteId, p);
         save(p, b);
-        if (skip(b)) continue;
-        if (b.price !== null || r.status === "not_listed") r = b;
+        if (r.price === null) {
+          if (skip(b)) continue;
+          if (b.price !== null || r.status === "not_listed") r = b;
+        } else if (b.price !== null && b.price < r.price - 0.005) r = b; // the lower of the two (owner, 15 Nov 2026)
+        // Backup not read this run (not due, blocked): a product following it keeps that mapping, no flip for a night.
+        else if (b.price === null && items.get(p.id)?.siteId === f.fallbackSiteId && skip(b)) continue;
       }
       if (r.price !== null) { t.priced++; t.bySite[r.siteId] = (t.bySite[r.siteId] || 0) + 1; } else t.noPrice++;
       const item = items.get(p.id);

@@ -200,7 +200,7 @@ function BrandCard({ b, sites, checks, links, onSaved }: { b: BrandView; sites: 
         <select value={f.siteId} onChange={(e) => setF({ ...f, siteId: e.target.value })} className={input}>
           {sites.filter((s) => s.brands.includes(b.brand) || s.id === f.siteId).map((s) => <option key={s.id} value={s.id} disabled={!pickable(s)}>{s.name}{tag(s)}</option>)}
         </select></label>
-      <label className="mt-3 block text-sm"><span className="font-medium text-ink">If {name(f.siteId)} has no price, try</span>
+      <label className="mt-3 block text-sm"><span className="font-medium text-ink">If {name(f.siteId)} has no price or a dearer one, use</span>
         <select value={f.fallbackSiteId} onChange={(e) => setF({ ...f, fallbackSiteId: e.target.value })} className={input}>
           <option value="">Nothing — keep the current price</option>
           {sites.filter((s) => s.id !== f.siteId && (s.brands.includes(b.brand) || s.id === f.fallbackSiteId)).map((s) => <option key={s.id} value={s.id} disabled={!pickable(s)}>{s.name}{tag(s)}</option>)}
