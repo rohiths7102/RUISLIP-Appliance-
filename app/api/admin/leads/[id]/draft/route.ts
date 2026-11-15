@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // cookie must not be able to run up the bill in a loop.
   const gate = await requireAdminApi(req, { limit: 20, windowMs: 60_000 });
   if ("response" in gate) return gate.response;
-  if (!groqConfigured()) return NextResponse.json({ error: "AI drafting needs GROQ_API_KEY — the chatbot key powers this too." }, { status: 503 });
+  if (!groqConfigured()) return NextResponse.json({ error: "AI drafting needs an AI key (ANTHROPIC_API_KEY, GROQ_API_KEY or GEMINI_API_KEY)." }, { status: 503 });
   const { id } = await params;
 
   try {

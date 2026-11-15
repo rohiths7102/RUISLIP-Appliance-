@@ -1,5 +1,20 @@
+import Anthropic from "@anthropic-ai/sdk";
+
 export interface ChatMsg { role: "system" | "user" | "assistant"; content: string; }
-export const groqConfigured = () => !!(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY);
+/**
+ * Every AI feature on the site (chat, SEO titles, lead drafts, the weekly
+ * summary, offers, Pricewire) goes through this file. Claude Haiku answers
+ * first whenever ANTHROPIC_API_KEY is set (owner, 15 Nov 2026); Groq and then
+ * Gemini stay behind it, so one provider having a bad day never takes a
+ * feature off the air. The name `groqConfigured` is kept for its callers: it
+ * means "some AI is configured".
+ */
+export const CLAUDE_MODEL = "claude-haiku-5-5";
+export const claudeConfigured = () => !!process.env.ANTHROPIC_API_KEY;
+export const groqConfigured = () => !!(process.env.ANTHROPIC_API_KEY || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY);
+/** Which providers are tried, in order. */
+export const providerOrder = (env: Record<string, string | undefined> = process.env) =>
+  (["claude", "groq", "gemini"] as const).filter((p) => !!env[{ claude: "ANTHROPIC_API_KEY", groq: "GROQ_API_KEY", gemini: "GEMINI_API_KEY" }[p]]);
 
 /**
  * Default model. Must be one the account can actually serve: a wrong id fails
@@ -11,6 +26,30 @@ export const groqConfigured = () => !!(process.env.GROQ_API_KEY || process.env.G
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
 type CallOpts = { model?: string; timeoutMs?: number; temperature?: number; maxTokens?: number };
+
+/**
+ * Claude Haiku. Short, plain answers: effort "low" keeps its thinking brief,
+ * and thinking counts against max_tokens, so the budget is the caller's
+ * answer length plus room to think. Haiku takes no temperature setting.
+ */
+async function callClaude(messages: ChatMsg[], opts: CallOpts = {}, image?: { mime: string; b64: string }): Promise<string> {
+  const client = new Anthropic({ timeout: opts.timeoutMs ?? 20000, maxRetries: 1 });
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const turns: Anthropic.MessageParam[] = messages.filter((m) => m.role !== "system").map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+  if (image && turns.length) {
+    const last = turns[turns.length - 1];
+    turns[turns.length - 1] = { role: "user", content: [{ type: "image", source: { type: "base64", media_type: image.mime as "image/png", data: image.b64 } }, { type: "text", text: String(last.content) }] };
+  }
+  const r = await client.messages.create({
+    model: process.env.CLAUDE_MODEL || CLAUDE_MODEL,
+    max_tokens: (opts.maxTokens ?? 700) + 2000,
+    ...(system ? { system } : {}),
+    messages: turns,
+    output_config: { effort: "low" },
+  });
+  if (r.stop_reason === "refusal") throw new Error("Claude declined this request");
+  return r.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+}
 
 async function callGroqOnly(messages: ChatMsg[], opts: CallOpts = {}): Promise<string> {
   const key = process.env.GROQ_API_KEY;
@@ -74,6 +113,11 @@ export async function callGemini(messages: ChatMsg[], timeoutMs: number): Promis
 
 /** Gemini reading one picture (Groq's models are text-only). Used by Admin → Offers. */
 export async function callGeminiImage(prompt: string, image: { mime: string; b64: string }, timeoutMs: number): Promise<string> {
+  // Claude reads pictures too: with its key set, it reads the banner; Gemini is the fallback.
+  if (claudeConfigured()) {
+    try { const t = await callClaude([{ role: "user", content: prompt }], { timeoutMs, maxTokens: 400 }, image); if (t) return t; }
+    catch (e) { console.warn("image: Claude failed, trying Gemini —", String((e as Error)?.message || e)); }
+  }
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY not set");
   const model = process.env.GEMINI_MODEL || GEMINI_MODEL;
@@ -102,8 +146,17 @@ export async function callGeminiImage(prompt: string, image: { mime: string; b64
  * retired model id or a timeout leaves the customer just as stuck, and Gemini
  * answering is always better than the fallback sentence.
  */
-export async function callAssistant(messages: ChatMsg[], opts: CallOpts = {}): Promise<{ text: string; provider: "groq" | "gemini" }> {
+export async function callAssistant(messages: ChatMsg[], opts: CallOpts = {}): Promise<{ text: string; provider: "claude" | "groq" | "gemini" }> {
   const timeoutMs = opts.timeoutMs ?? 20000;
+  if (claudeConfigured()) {
+    try {
+      const out = await callClaude(messages, opts);
+      if (out) return { text: out, provider: "claude" };
+      console.warn("ai: Claude returned no text, trying Groq");
+    } catch (e) {
+      console.warn("ai: Claude failed, trying Groq —", String((e as Error)?.message || e));
+    }
+  }
   if (process.env.GROQ_API_KEY) {
     try {
       const out = await callGroqOnly(messages, opts);

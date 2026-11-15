@@ -223,6 +223,25 @@ function ProductCard({ c, job }: { c: MarketCard; job: Tag }) {
   );
 }
 
+/** Runs the daily SEO agent now: up to 5 of these pages get a new Google title and description, with the same checks. */
+function SeoAgent() {
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<{ ok: boolean; text: string } | null>(null);
+  async function run() {
+    setBusy(true); setOut(null);
+    const { ok, j } = await call("/api/admin/seo/agent", "POST");
+    setBusy(false);
+    setOut({ ok, text: ok ? `${j.note}.${j.changed?.length ? ` Changed: ${j.changed.join(", ")}.` : ""}` : j.error || "The SEO agent didn't run. Try again." });
+  }
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 text-sm">
+      <span className="text-ink/85">Every morning the AI rewrites up to 5 of these by itself. Each page rests 28 days between rewrites so Google can show the effect.</span>
+      <Button small onClick={run} disabled={busy}><Sparkles className="mr-1 inline h-3.5 w-3.5" />{busy ? "Rewriting…" : "Fix 5 with AI now"}</Button>
+      {out && <span className={out.ok ? "text-emerald-700" : "text-red-700"}>{out.text}</span>}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------ module */
 
 export default function PricewireMarket() {
@@ -294,6 +313,7 @@ export default function PricewireMarket() {
           ))}
         </div>
         <p className="mt-2 max-w-3xl text-sm text-muted">{active.lead}</p>
+        {job === "seo" && lists.seo.length > 0 && <SeoAgent />}
         {job === "seo" && m.google !== "connected" && <Notice tone="info" className="mt-3">{m.google === "not_connected" ? "Google Search Console isn't connected, so this list uses visitor numbers only. Connect it under Admin → SEO to add Google's positions and clicks." : `Google Search Console didn't answer: ${m.google}`}</Notice>}
         {lists[job].length ? <ul className="mt-4 grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">{lists[job].map((c) => <ProductCard key={`${job}-${c.id}`} c={c} job={job} />)}</ul>
           : <p className="mt-4 text-sm text-muted">Nothing on this list right now.</p>}

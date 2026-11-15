@@ -11,8 +11,9 @@ import { SITE } from "@/lib/seo";
 import { sendDailySummary } from "@/lib/price-watch/daily-summary";
 import { writeWeekSummary } from "@/lib/marketing/week-summary";
 import { cronAuthorised } from "@/lib/cron-auth";
+import { runSeoAgent } from "@/lib/seo-auto";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /**
  * The marketing engine's daily run (vercel.json cron, 06:00 UTC). In order:
@@ -53,6 +54,9 @@ export async function GET(req: Request) {
 
   run.chatDeleted = await db.chatTurn.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 365 * 86_400_000) } } })
     .then((r: any) => r.count).catch((e: any) => `failed: ${e?.message}`);
+
+  // The SEO agent rewrites the worst-placed pages' Google text first, so the IndexNow step below submits them too.
+  run.seoAgent = await runSeoAgent(db).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`);
 
   // Prices change nightly; Bing and Copilot quote them, so they re-read those pages today.
   run.indexNow = await db.product.findMany({ where: { isVisible: true, updatedAt: { gte: new Date(Date.now() - 25 * 3_600_000) } }, select: { slug: true } })

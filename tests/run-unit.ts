@@ -23,6 +23,8 @@ import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
 import { zipSync } from "fflate";
 import { firstAndLast, promoteScore, visitorKind, seoOpportunity, labelFor } from "../lib/price-watch/market";
+import { seoTextOk } from "../lib/seo-auto";
+import { providerOrder } from "../lib/chat/groq";
 
 let n = 0; const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log("  ✓", m); n++; };
 
@@ -638,6 +640,11 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
   ok(L({}).promote && L({}).cheaperThanRuislip && !L({ views: 0 }).promote && !L({ ruislip: 399 }).promote && L({ ruislip: null }).promote && !L({ ruislip: null }).cheaperThanRuislip && !L({ price: 6.76, ruislip: null }).promote,
     "feed labels: Promote needs interest, £100 or more and never a price above Ruislip; Cheaper than Ruislip needs Ruislip's price");
   ok(L({ droppedTo: 449 }).priceDrop && !L({ droppedTo: 399 }).priceDrop && !L({}).priceDrop, "feed labels: Price drop only while the product still sits at the dropped price");
+  const T = "Neff Double Oven – Built-in, Stainless Steel – Ruislip", D = "We deliver and fit this Neff built-in electric double oven across HA, UB and W3–W6 postcodes.";
+  ok(seoTextOk(T, D) && !seoTextOk(T + " and much more besides here", D) && !seoTextOk(T, D + " Only £799.") && !seoTextOk(T, D.replace("We deliver", "Free delivery")) && !seoTextOk("Oven", D),
+    "SEO agent: only text within Google's lengths, with no price and no 'free', is published unattended");
+  ok(providerOrder({ ANTHROPIC_API_KEY: "x", GROQ_API_KEY: "y", GEMINI_API_KEY: "z" }).join() === "claude,groq,gemini" && providerOrder({ GROQ_API_KEY: "y" }).join() === "groq" && !providerOrder({}).length,
+    "AI: Claude Haiku answers first whenever its key is set; Groq, then Gemini, stand behind it");
 }
 
 console.log(`\n${n} unit assertions passed`);

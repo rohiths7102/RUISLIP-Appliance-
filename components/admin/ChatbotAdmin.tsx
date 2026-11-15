@@ -12,7 +12,7 @@ export default function ChatbotAdmin() {
     <div className="max-w-2xl">
       <h2 className="text-sm font-bold uppercase tracking-wide text-blue-deep">Assistant setup</h2>
       <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {[["Indexed docs", status?.documents ?? "—"], ["Groq", status?.groqConfigured ? "configured" : "not set"], ["Embeddings", status?.embeddings ? "on" : "lexical"], ["Last built", status?.lastBuilt ? new Date(status.lastBuilt).toLocaleDateString() : "—"]].map(([l, v]) => (
+        {[["Indexed docs", status?.documents ?? "—"], ["AI", status?.groqConfigured ? "configured" : "not set"], ["Embeddings", status?.embeddings ? "on" : "lexical"], ["Last built", status?.lastBuilt ? new Date(status.lastBuilt).toLocaleDateString() : "—"]].map(([l, v]) => (
           <StatTile key={l as string} label={l as string} value={v as any} />
         ))}
       </div>

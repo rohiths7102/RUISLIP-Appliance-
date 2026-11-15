@@ -48,7 +48,7 @@ export async function suggestOffer(input: { image?: { mime: string; b64: string 
   if (hint) {
     try {
       const msgs = [{ role: "user" as const, content: ask(pages, `The owner describes the banner as: "${hint}".`) }];
-      const r = parse(process.env.GROQ_API_KEY ? await callGroq(msgs, { maxTokens: 300 }) : await callGemini(msgs, 20000));
+      const r = parse(process.env.ANTHROPIC_API_KEY || process.env.GROQ_API_KEY ? await callGroq(msgs, { maxTokens: 300 }) : await callGemini(msgs, 20000));
       if (r) return { alt: r.description, href: pickPage(r.page, `${r.description} ${hint}`, pages), via: "text" };
     } catch { /* fall back to rules */ }
   }
