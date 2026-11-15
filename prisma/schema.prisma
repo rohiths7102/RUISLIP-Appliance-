@@ -67,6 +67,7 @@ model Product {
   pricewire             Boolean   @default(false)
   priceObservations     PriceObservation[]
   brandPriceItem        BrandPriceItem?
+  buyerFaq              ProductFaq?
   siteLinks             ProductSiteLink[]
   isVisible             Boolean   @default(true)
   featured              Boolean   @default(false)
@@ -259,6 +260,18 @@ model BrandPriceFeed {
 
 /// The brand price list: every visible Bosch, Neff and Siemens product and the
 /// price Pricewire last mapped to it.
+/// Buyer questions and answers an AI wrote for a product page from its own facts
+/// (lib/geo-faq.ts), shown on the page and as FAQPage data for Google and AI
+/// assistants. Its own table so the catalogue load never carries it.
+model ProductFaq {
+  productId String   @id
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// [{ q, a }]
+  items     Json
+  provider  String   @default("")
+  writtenAt DateTime @default(now())
+}
+
 model BrandPriceItem {
   productId   String    @id
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)

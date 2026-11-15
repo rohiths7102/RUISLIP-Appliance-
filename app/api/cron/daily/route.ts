@@ -12,6 +12,8 @@ import { sendDailySummary } from "@/lib/price-watch/daily-summary";
 import { writeWeekSummary } from "@/lib/marketing/week-summary";
 import { cronAuthorised } from "@/lib/cron-auth";
 import { runSeoAgent } from "@/lib/seo-auto";
+import { runGeoAgent } from "@/lib/geo-faq";
+import { writeEffectsNote } from "@/lib/price-watch/effects";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
@@ -23,6 +25,8 @@ export const maxDuration = 120;
  *   4. delete chat conversations older than 12 months (the privacy notice's promise)
  *   5. recount every category and brand ("Search 5,100+ appliances", "343 models")
  *   6. tell Bing (IndexNow) which product pages changed since yesterday
+ *   6b. GEO agent: buyer Q&A on up to 3 of the most-viewed product pages (AI);
+ *       on Mondays the AI's note on whether price changes brought more views/calls
  *   7. write the dashboard's plain-English "this week" summary (AI, from the numbers)
  *   8. send the owner the morning price summary (WhatsApp + Admin → Price watch),
  *      which includes the best sellers' maker prices applied an hour earlier by
@@ -57,6 +61,9 @@ export async function GET(req: Request) {
 
   // The SEO agent rewrites the worst-placed pages' Google text first, so the IndexNow step below submits them too.
   run.seoAgent = await runSeoAgent(db).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`);
+  run.geoAgent = await runGeoAgent(db, { budgetMs: 30_000 }).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`);
+  // Once a week: the AI's few lines on whether last week's price changes brought more views and calls.
+  run.effectsNote = monday ? await writeEffectsNote(db).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`) : "not Monday";
 
   // Prices change nightly; Bing and Copilot quote them, so they re-read those pages today.
   run.indexNow = await db.product.findMany({ where: { isVisible: true, updatedAt: { gte: new Date(Date.now() - 25 * 3_600_000) } }, select: { slug: true } })

@@ -5,6 +5,7 @@ import { Button, Card, Notice } from "@/components/admin/ui";
 import { Chart, COLOURS } from "@/components/admin/PricewireEngine";
 import type { Market, MarketCard, Tag, Visitors } from "@/lib/price-watch/market";
 import type { HistorySeries } from "@/lib/price-watch/pricing-rules";
+import type { Effects, Verdict } from "@/lib/price-watch/effects";
 
 /**
  * Admin → Pricewire → Market: what the price agent changed, who is looking at
@@ -242,6 +243,104 @@ function SeoAgent() {
   );
 }
 
+
+/* ------------------------------------------------------------ did the price changes work? */
+
+const VERDICT: Record<Verdict, { label: string; cls: string }> = {
+  more: { label: "More interest", cls: "bg-emerald-50 text-emerald-800" },
+  fewer: { label: "Less interest", cls: "bg-red-50 text-red-800" },
+  same: { label: "No change", cls: "bg-paper-2 text-ink/70" },
+  quiet: { label: "Too few visits", cls: "bg-paper-2 text-muted" },
+  too_soon: { label: "Too soon", cls: "bg-paper-2 text-muted" },
+};
+const KINDS = [{ id: "down", label: "Price cuts" }, { id: "up", label: "Price rises" }, { id: "first", label: "First prices on Call products" }] as const;
+const perDay = (a: number, b: number) => `${a} → ${b}`;
+
+function PriceEffects() {
+  const [e, setE] = useState<Effects | null>(null);
+  const [err, setErr] = useState("");
+  const [all, setAll] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(() => { call("/api/admin/pricewire/insights?view=effects").then(({ ok, j }) => (ok ? setE(j) : setErr(j.error || "Could not load the price effects."))); }, []);
+  async function writeNote() {
+    setBusy(true); setMsg("");
+    const { ok, j } = await call("/api/admin/pricewire/insights", "POST", { action: "effects-note" });
+    setBusy(false);
+    if (ok && j.ok) setE((x) => x && { ...x, note: { text: j.text, at: new Date().toISOString(), provider: j.provider } });
+    else setMsg(j.note || j.error || "The AI didn't write a note. Try again.");
+  }
+  if (err) return <Notice tone="warning">{err}</Notice>;
+  if (!e) return <Card className="p-5"><p className="text-sm text-muted">Comparing visits before and after each price change…</p></Card>;
+  const judged = e.rows.filter((r) => r.verdict !== "too_soon");
+  const rows = all ? e.rows : judged.slice(0, 12);
+  return (
+    <Card className="p-5">
+      <h2 className="text-base font-semibold text-ink">Did the price changes work?</h2>
+      <p className="text-xs text-muted">Product page views and call taps per day, in the {e.window} days before each price change and the days since (up to {e.window}). The newest change per product, last 30 days.</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {KINDS.map((k) => { const s = e.summary[k.id]; return (
+          <div key={k.id} className="rounded-lg border border-line bg-white p-3.5">
+            <p className="text-xs text-muted">{k.label}</p>
+            <p className="mt-0.5 text-xl font-semibold tabular-nums text-ink">{s.n.toLocaleString("en-GB")}</p>
+            <p className="mt-1 text-xs text-ink/80">{s.more} got more interest, {s.fewer} less</p>
+            <p className="text-xs tabular-nums text-muted">Calls a day {perDay(s.callsBefore, s.callsAfter)} · views a day {perDay(s.viewsBefore, s.viewsAfter)}</p>
+          </div>
+        ); })}
+      </div>
+      <div className="mt-4 rounded-lg border border-line bg-paper-2/60 p-4 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-medium text-ink">The AI&apos;s read on it</p>
+          <Button small onClick={writeNote} disabled={busy}><Sparkles className="mr-1 inline h-3.5 w-3.5" />{busy ? "Writing…" : e.note ? "Write a fresh note" : "Write this week's note"}</Button>
+        </div>
+        {e.note ? <><p className="mt-2 whitespace-pre-line text-ink/85">{e.note.text}</p><p className="mt-1 text-[11px] text-muted">Written {shortDay(e.note.at)}{e.note.provider ? ` by ${e.note.provider}` : ""}, from the numbers below only. A new note is written every Monday.</p></>
+          : <p className="mt-1 text-muted">No note yet. One is written every Monday morning from the numbers below.</p>}
+        {msg && <p className="mt-1 text-red-700">{msg}</p>}
+      </div>
+      {rows.length ? (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="text-left text-[11px] text-muted"><th className="py-1.5 pr-3 font-medium">Product</th><th className="py-1.5 pr-3 font-medium">Price</th><th className="py-1.5 pr-3 font-medium">Changed</th><th className="py-1.5 pr-3 font-medium">Views a day</th><th className="py-1.5 pr-3 font-medium">Calls a day</th><th className="py-1.5 font-medium">Result</th></tr></thead>
+            <tbody>{rows.map((r) => (
+              <tr key={r.id} className="border-t border-line">
+                <td className="py-1.5 pr-3"><a className="hover:text-blue-deep" href={`/products/${r.slug}`} target="_blank" rel="noreferrer"><span className="font-mono text-xs">{r.code}</span> <span className="text-muted">{r.brand}</span></a></td>
+                <td className="py-1.5 pr-3 tabular-nums">{money(r.from)} → {money(r.to)}</td>
+                <td className="py-1.5 pr-3 text-muted">{shortDay(r.at)}</td>
+                <td className="py-1.5 pr-3 tabular-nums">{perDay(r.viewsBefore, r.viewsAfter)}</td>
+                <td className="py-1.5 pr-3 tabular-nums">{perDay(r.callsBefore, r.callsAfter)}</td>
+                <td className="py-1.5"><span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${VERDICT[r.verdict].cls}`}>{VERDICT[r.verdict].label}</span></td>
+              </tr>
+            ))}</tbody>
+          </table>
+          {e.rows.length > 12 && <button type="button" className="mt-2 text-xs font-medium text-blue-deep hover:underline" onClick={() => setAll(!all)}>{all ? "Show the first 12" : `Show all ${e.rows.length.toLocaleString("en-GB")} changes`}</button>}
+        </div>
+      ) : <p className="mt-4 text-sm text-muted">No price changed in the last 30 days.</p>}
+    </Card>
+  );
+}
+
+/** GEO: buyer Q&A on the busiest product pages, for Google's AI answers, ChatGPT and Perplexity. */
+function GeoAgent() {
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<{ ok: boolean; text: string } | null>(null);
+  async function run() {
+    setBusy(true); setOut(null);
+    const { ok, j } = await call("/api/admin/pricewire/insights", "POST", { action: "geo" });
+    setBusy(false);
+    setOut({ ok, text: ok ? `${j.note}.${j.written?.length ? ` Written: ${j.written.join(", ")}.` : ""}` : j.error || "The AI didn't run. Try again." });
+  }
+  return (
+    <Card className="p-5">
+      <h2 className="text-base font-semibold text-ink">AI search answers</h2>
+      <p className="mt-1 max-w-3xl text-sm text-ink/85">Every morning the AI adds &quot;Questions buyers ask&quot; to 3 of the most-viewed product pages, written from the product&apos;s own specification. Google&apos;s AI answers, ChatGPT and Perplexity quote these and link the page. Answers never state a price or say &quot;free&quot;.</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+        <Button small onClick={run} disabled={busy}><Sparkles className="mr-1 inline h-3.5 w-3.5" />{busy ? "Writing…" : "Write 3 now"}</Button>
+        {out && <span className={out.ok ? "text-emerald-700" : "text-red-700"}>{out.text}</span>}
+      </div>
+    </Card>
+  );
+}
+
 /* ------------------------------------------------------------ module */
 
 export default function PricewireMarket() {
@@ -282,6 +381,8 @@ export default function PricewireMarket() {
         </div>
       </Card>
 
+      <PriceEffects />
+
       <div className="grid gap-6 xl:grid-cols-2">
         <Card className="p-5">
           <h2 className="text-base font-semibold text-ink">Prices the price agent changed</h2>
@@ -318,6 +419,8 @@ export default function PricewireMarket() {
         {lists[job].length ? <ul className="mt-4 grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">{lists[job].map((c) => <ProductCard key={`${job}-${c.id}`} c={c} job={job} />)}</ul>
           : <p className="mt-4 text-sm text-muted">Nothing on this list right now.</p>}
       </section>
+
+      <GeoAgent />
 
       <Card className="p-5">
         <h2 className="text-base font-semibold text-ink">Profit</h2>

@@ -2,6 +2,7 @@ import { loadCatalog, getBusiness } from "@/lib/repo";
 import { topCategories } from "@/lib/select";
 import { AREA_GROUPS, TOWNS } from "@/lib/areas";
 import { SITE } from "@/lib/seo";
+import { getPrisma } from "@/lib/prisma";
 export const revalidate = 86400;
 
 /**
@@ -18,6 +19,13 @@ export async function GET() {
   const hours = Object.entries(b.openingHours || {}).map(([d, h]) => `${d} ${h}`).join("; ");
   const depts = topCategories(categories).filter((c) => (c.productCount ?? 0) > 0);
   const topBrands = [...brands].sort((x, y) => y.productCount - x.productCount).slice(0, 30);
+  // The product pages shoppers look at most this month (each has buyer Q&A on it once the GEO agent reaches it).
+  const popular: { slug: string; title: string; brand: string; productCode: string }[] = await getPrisma().then(async (db) => {
+    const v: any[] = await db.trackedEvent.groupBy({ by: ["productSlug"], where: { type: "page_view", productSlug: { not: "" }, createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } }, _count: { _all: true }, orderBy: { _count: { productSlug: "desc" } }, take: 25 });
+    const ps: any[] = await db.product.findMany({ where: { slug: { in: v.map((x) => x.productSlug) }, isVisible: true }, select: { slug: true, title: true, brand: true, productCode: true } });
+    const at = new Map(v.map((x, i) => [x.productSlug, i]));
+    return ps.sort((a, b) => at.get(a.slug)! - at.get(b.slug)!);
+  }).catch(() => []);
 
   const name = b.businessName && b.businessName !== b.tradingName ? `${b.businessName} (${b.tradingName})` : b.tradingName || b.businessName;
   const body = `# ${name}
@@ -35,7 +43,10 @@ ${depts.map((c) => `- [${c.name}](${base}/categories/${c.id}): ${c.productCount}
 ## Brands (most models first)
 ${topBrands.map((x) => `- [${x.name}](${base}/brands/${x.slug}): ${x.productCount} models`).join("\n")}
 
-## Delivery towns
+${popular.length ? `## Popular appliances this month
+${popular.map((x) => `- [${x.brand} ${x.productCode}: ${x.title}](${base}/products/${x.slug})`).join("\n")}
+
+` : ""}## Delivery towns
 ${AREA_GROUPS.map((g) => `- ${g}: ${TOWNS.filter((t) => t.group === g).map((t) => `[${t.name}](${base}/areas/${t.slug})`).join(", ")}`).join("\n")}
 
 ## Key pages

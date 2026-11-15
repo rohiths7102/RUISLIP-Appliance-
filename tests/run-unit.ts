@@ -18,6 +18,8 @@ import { autoApplySource } from "../lib/price-watch/auto-apply.js";
 import { readMakerPrice } from "../lib/maker-price.js";
 import { syncPricewire, parseListSite, readPagePrice, pageUrlFor, checkSite, checkPassed, brandsForSite } from "../lib/price-watch/pricewire.js";
 import { ruislipType } from "../scripts/catalog/ruislip-types.js";
+import { compareWindows, verdictOf } from "../lib/price-watch/effects.js";
+import { faqOk, parseFaq, faqJsonLd } from "../lib/geo-faq.js";
 import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/homepage.js";
 import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
@@ -661,6 +663,29 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
     "SEO agent: only text within Google's lengths, with no price and no 'free', is published unattended");
   ok(providerOrder({ ANTHROPIC_API_KEY: "x", GROQ_API_KEY: "y", GEMINI_API_KEY: "z" }).join() === "claude,groq,gemini" && providerOrder({ GROQ_API_KEY: "y" }).join() === "groq" && !providerOrder({}).length,
     "AI: Claude Haiku answers first whenever its key is set; Groq, then Gemini, stand behind it");
+}
+
+{
+  const D = 86_400_000, at = Date.UTC(2026, 10, 10), now = at + 10 * D;
+  const ev = [...Array(7)].map((_, i) => ({ type: "page_view", at: at - (i + 1) * D + 1000 }))
+    .concat([...Array(14)].map((_, i) => ({ type: "page_view", at: at + Math.floor(i / 2) * D + 1000 })), [{ type: "call_click", at: at + D }, { type: "page_view", at: at + 8 * D }]);
+  const w = compareWindows(ev, at, now);
+  ok(w.viewsBefore === 1 && w.viewsAfter === 2 && w.callsBefore === 0 && Math.abs(w.callsAfter - 0.1) < 0.01 && w.daysAfter === 7,
+    "price effects: views and calls per day, 7 days before vs up to 7 days after; a visit after the window is not counted");
+  ok(verdictOf(w) === "more" && verdictOf({ ...w, viewsAfter: 0.5, callsAfter: 0 }) === "fewer" && verdictOf({ ...w, viewsAfter: 1.1, callsAfter: 0 }) === "same"
+    && verdictOf({ ...w, daysAfter: 1 }) === "too_soon" && verdictOf({ daysAfter: 7, viewsBefore: 0.1, viewsAfter: 0.1, callsBefore: 0, callsAfter: 0 }) === "quiet",
+    "price effects: more/fewer need a 25% swing, under 2 days is too soon, a handful of visits is too quiet to judge");
+  const good = [{ q: "Will the KIN85NSE0G fit a 177cm housing?", a: "Yes, the KIN85NSE0G is built for a 177.5cm niche and fits standard UK kitchen housings." },
+    { q: "Is it frost free inside the freezer?", a: "It has NoFrost, so the freezer section never needs manual defrosting, per the specification." },
+    { q: "Can you install it and take my old one?", a: "Yes, our team can fit it and take the old appliance away for recycling. Call the shop to arrange it." }];
+  ok(faqOk(good) && !faqOk(good.map((x, i) => (i === 2 ? { ...x, a: x.a + " Free delivery too." } : x))) && faqOk(good.map((x, i) => (i === 1 ? { q: "Does the freezer need defrosting by hand?", a: "No, it has NoFrost, so the freezer section never needs manual defrosting, per the specification." } : x))),
+    "GEO FAQ: 'frost free' is a feature and passes; any other 'free' is refused");
+  const ok3 = good.map((x, i) => (i === 1 ? { q: "Does the freezer need defrosting by hand?", a: "No, it has NoFrost, so the freezer section never needs manual defrosting, per the specification." } : x));
+  ok(!faqOk(ok3.slice(0, 2)) && !faqOk([...ok3.slice(0, 2), { q: "How much is it at the shop?", a: "It costs £649 at the moment, which is a great price for this model." }])
+    && !faqOk([...ok3.slice(0, 2), { q: "No question mark here at all", a: "This answer is long enough to pass the length check on its own." }]),
+    "GEO FAQ: 3-5 real questions with short answers; any price is refused");
+  ok(parseFaq("```json\n" + JSON.stringify(ok3) + "\n```")?.length === 3 && parseFaq("no json") === null && faqJsonLd(ok3).mainEntity.length === 3,
+    "GEO FAQ: the JSON array is read from a fenced reply; FAQPage data has one Question per item");
 }
 
 console.log(`\n${n} unit assertions passed`);

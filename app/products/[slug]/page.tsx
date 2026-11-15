@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Phone, MessageCircle, Check } from "lucide-react";
+import { Phone, MessageCircle, Check, Plus } from "lucide-react";
 import { loadCatalog } from "@/lib/repo";
 import { getProduct, relatedFor, toCardItem, poaNamesFrom, hidesPrice } from "@/lib/select";
 import { isBestSeller } from "@/lib/best-sellers";
@@ -12,6 +12,8 @@ import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { breadcrumbJsonLd, jsonLdScript, SITE } from "@/lib/seo";
+import { getPrisma } from "@/lib/prisma";
+import { faqOk, faqJsonLd, type Faq } from "@/lib/geo-faq";
 export const revalidate = 300; // ISR — admin writes purge instantly via revalidateStorefront
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -58,6 +60,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   // the bare /categories index.
   const catRow = categories.find((c) => c.name === p.subcategory) || categories.find((c) => c.name === p.category);
   const catId = catRow?.id || String(p.meta?.leaf || "");
+  // Buyer questions the GEO agent wrote (lib/geo-faq.ts). Optional: a missing table or row shows nothing.
+  const faqRow = await getPrisma().then((db) => db.productFaq.findUnique({ where: { productId: p.id }, select: { items: true } })).catch(() => null);
+  const faq: Faq[] = faqOk(faqRow?.items) ? faqRow!.items : [];
 
   // Marked up as a Product only when it has a published price: Google counts a
   // Product with no offer as an error, and 2,607 pages (spares with no price,
@@ -91,6 +96,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         { name: p.category, url: `/categories/${catId}` },
         { name: p.title, url: `/products/${slug}` },
       ]))} />
+      {faq.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(faqJsonLd(faq))} />}
 
       {/* Sachin: "there is no easy way to go to homepage". The shop name in the
           header has linked home all along but nothing said so. This names it,
@@ -188,6 +194,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      )}
+
+      {faq.length > 0 && (
+        <section className="container-x mt-16">
+          <h2 className="mb-5 font-display text-display-3 font-normal">Questions buyers ask</h2>
+          <div className="max-w-4xl divide-y divide-ink/8 overflow-hidden rounded-[4px] border border-ink/10 bg-card">
+            {faq.map((x) => (
+              <details key={x.q} className="group px-5 py-4">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-[14.5px] font-semibold text-ink marker:hidden [&::-webkit-details-marker]:hidden">{x.q}<Plus size={16} aria-hidden className="mt-0.5 shrink-0 text-blue transition-transform group-open:rotate-45" /></summary>
+                <p className="mt-2 text-[14px] leading-relaxed text-[#44586f]">{x.a}</p>
+              </details>
+            ))}
           </div>
         </section>
       )}
