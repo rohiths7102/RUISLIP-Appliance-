@@ -268,7 +268,7 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
     const errors = Object.entries(j.sites as Record<string, any>).filter(([, t]) => t.error).map(([id, t]) => `${siteName(id)}: ${t.error}`);
     const priced = Object.entries(j.brands as Record<string, any>).map(([b, t]) => `${b} ${t.priced}/${t.products}`).join(", ");
     setMsg({ tone: errors.length ? "danger" : sum("left") ? "warning" : "success",
-      text: `Priced ${priced} this read.${sum("left") ? ` ${sum("left")} product pages still to read — press Read prices now again.` : ""}${sum("unread") ? ` ${sum("unread")} pages could not be read; those products keep their last price.` : ""}${errors.length ? ` ${errors.join("; ")}.` : ""}` });
+      text: `Priced ${priced} this read. ${j.changed ? `${j.changed} price${j.changed === 1 ? "" : "s"} updated on the website.` : "No shop price needed changing."}${Object.values((j.applied || {}) as Record<string, string>).some((v) => v.startsWith("held")) ? " A site's changes were held for you to check — see Activity." : ""}${sum("left") ? ` ${sum("left")} product pages still to read — press Read prices now again.` : ""}${sum("unread") ? ` ${sum("unread")} pages could not be read; those products keep their last price.` : ""}${errors.length ? ` ${errors.join("; ")}.` : ""}` });
     refresh();
   }
   // What Apply acts on: the ticked rows, else every row shown under the brand filter.
