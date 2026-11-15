@@ -15,8 +15,17 @@ export const slugOf = (p: Product) => p.newSlug.replace(/^\/products\//, "");
  * Siemens accessories show Ruislip Appliances' or the maker's retail price;
  * other brands' accessories, priced from supplier cost, stay hidden).
  */
+/**
+ * Brand + category pairs sold call-for-price whoever priced them, Pricewire included
+ * (Sachin, 15 Nov 2026: Bosch and Neff small domestic appliances show no price).
+ */
+export const POA_BRAND_CATEGORY: [string, string][] = [["Bosch", "Small Appliances"], ["Neff", "Small Appliances"]];
+export const poaPair = (p: { category?: string | null; subcategory?: string | null; brand?: string | null }) =>
+  POA_BRAND_CATEGORY.some(([b, c]) => p.brand === b && (p.category === c || p.subcategory === c));
+/** The same pairs as a Prisma filter, for queries that mirror hidesPrice (put inside NOT). */
+export const POA_PAIR_WHERE = POA_BRAND_CATEGORY.flatMap(([brand, c]) => [{ brand, category: c }, { brand, subcategory: c }]);
 export const hidesPrice = (poa: Set<string>, p: { category?: string | null; subcategory?: string | null; brand?: string | null; pricewire?: boolean | null }) =>
-  poa.has(p.brand || "") || (!p.pricewire && (poa.has(p.category || "") || poa.has(p.subcategory || "")));
+  poaPair(p) || poa.has(p.brand || "") || (!p.pricewire && (poa.has(p.category || "") || poa.has(p.subcategory || "")));
 
 export const toCardItem = (p: Product, poaNames?: Set<string>) => {
   // Owner-flagged "call for price" categories (accessories at cost price, coffee

@@ -1,4 +1,4 @@
-import { poaNamesFrom } from "@/lib/select";
+import { poaNamesFrom, POA_PAIR_WHERE } from "@/lib/select";
 
 /** Stock states the shop will stand behind on the phone, so Google may list them. */
 export const FEED_AVAILABILITY = ["in_stock", "limited", "to_order"];
@@ -33,7 +33,7 @@ export async function feedRows(db: any): Promise<FeedRow[]> {
       availabilityNormalised: { in: FEED_AVAILABILITY },
       // Hidden prices stay out (lib/select hidesPrice): a call-for-price brand always,
       // a call-for-price category unless Pricewire priced the product.
-      ...(poaNames.length && { NOT: [{ brand: { in: poaNames } }], OR: [{ pricewire: true }, { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }] }),
+      ...(poaNames.length && { NOT: [{ brand: { in: poaNames } }, ...POA_PAIR_WHERE], OR: [{ pricewire: true }, { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }] }),
     },
     select: {
       productCode: true, title: true, brand: true, slug: true, priceNow: true,

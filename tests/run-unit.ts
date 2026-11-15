@@ -51,6 +51,14 @@ ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }),
     && isPoaProduct(poa, { category: "Cooking", subcategory: "Hobs", brand: "Siemens", pricewire: true }),
     "call for price: a Pricewire price shows in a call-for-price category; other accessories stay hidden; a call-for-price brand still hides");
 }
+{
+  const none = new Set<string>();
+  ok(isPoaProduct(none, { category: "Small Appliances", subcategory: "Toasters", brand: "Bosch", pricewire: true })
+    && isPoaProduct(none, { category: "Small Appliances", subcategory: "Kettles", brand: "Neff" })
+    && !isPoaProduct(none, { category: "Small Appliances", subcategory: "Toasters", brand: "Ninja" })
+    && !isPoaProduct(none, { category: "Laundry", subcategory: "Integrated Washing Machines", brand: "Bosch", pricewire: true }),
+    "Bosch and Neff small appliances are call for price even when Pricewire priced them; other brands and Bosch laundry keep prices");
+}
 ok(poaNamesFrom([], []).has("Siemens"), "with no brand information at all, Siemens stays masked");
 ok(!poaNamesFrom([], [{ name: "Siemens", priceOnApplication: false }]).has("Siemens"), "the owner unticking Siemens wins over the fallback");
 // rag documents

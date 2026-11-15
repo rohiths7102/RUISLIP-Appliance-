@@ -1,4 +1,5 @@
 import { poaNamesFromDb } from "@/lib/poa";
+import { poaPair } from "@/lib/select";
 import { searchAnalytics, type GscRow } from "@/lib/search-console";
 import { isNegated } from "@/lib/ads-reports";
 import { adminHref } from "@/lib/admin-config";
@@ -194,7 +195,7 @@ export async function actions(db: any, opts: { gsc?: boolean } = {}): Promise<{ 
   // --- Shopping feed: products Google can't advertise
   const poa = await poaNamesFromDb(db).catch(() => new Set<string>());
   const vis = await db.product.findMany({ where: { isVisible: true }, select: { slug: true, productCode: true, title: true, category: true, subcategory: true, brand: true, mainImage: true, priceNow: true, availabilityNormalised: true } }).catch(() => []);
-  const sellable = vis.filter((p: any) => !poa.has(p.category) && !poa.has(p.subcategory) && !poa.has(p.brand));
+  const sellable = vis.filter((p: any) => !poa.has(p.category) && !poa.has(p.subcategory) && !poa.has(p.brand) && !poaPair(p));
   const noPhoto = sellable.filter((p: any) => !p.mainImage).length;
   if (noPhoto) out.push({
     key: `feed:no-photo:${noPhoto}`, area: "Shopping feed", title: `${noPhoto} products have no photo`,

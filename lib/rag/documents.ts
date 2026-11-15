@@ -1,5 +1,5 @@
 import type { Product, Category, Brand, Business, Service } from "../types";
-import { poaNamesFrom } from "../select";
+import { poaNamesFrom, poaPair } from "../select";
 
 export interface RagDoc { sourceType: string; sourceId: string; title: string; content: string; metadata: Record<string, any>; }
 
@@ -56,7 +56,7 @@ export function buildDocuments(cat: { products: Product[]; categories: Category[
   // bot can't be the one surface that quotes a number the owner withholds.
   const poa = poaNamesFrom(cat.categories, cat.brands);
   return [
-    ...cat.products.map((p) => productDoc(p, { omitPrice: poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand) })),
+    ...cat.products.map((p) => productDoc(p, { omitPrice: poa.has(p.category) || poa.has(p.subcategory) || poa.has(p.brand) || poaPair(p) })),
     ...cat.categories.map(categoryDoc), ...cat.brands.map(brandDoc),
     ...cat.services.map(serviceDoc), ...businessDocs(cat.business), ...faqDocs(cat.business),
   ];
