@@ -61,6 +61,12 @@ export default async function PrivacyPage() {
         you order.
       </P>
       <P>
+        <strong className="text-ink">Price-drop alerts.</strong> If you ask us to email you when a product's price
+        drops, we keep your email address, the product and its price that day. We send one email if the price
+        falls and then delete your address; if it hasn't fallen after 180 days we delete it anyway. Every alert
+        email has a link to stop it. The lawful basis is your consent, which you can withdraw at any time.
+      </P>
+      <P>
         <strong className="text-ink">Phone calls.</strong> If you call us we may note the same details so we can
         quote, order a part or book a delivery.
       </P>

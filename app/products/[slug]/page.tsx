@@ -6,6 +6,7 @@ import { loadCatalog } from "@/lib/repo";
 import { getProduct, relatedFor, toCardItem, poaNamesFrom, hidesPrice } from "@/lib/select";
 import { isBestSeller } from "@/lib/best-sellers";
 import PriceMatchPromise, { showsPriceMatch } from "@/components/PriceMatchPromise";
+import PriceDropAlert from "@/components/PriceDropAlert";
 import { gbp, formatPrice, PRICE_ON_APPLICATION, PRICE_MATCH_BRANDS, availabilityLabel, availabilityDot, telHref, waHref } from "@/lib/format";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import ProductCard from "@/components/ProductCard";
@@ -143,6 +144,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
           {!poa && <p className="mb-6 text-xs text-ink/70">Price shown excludes optional delivery &amp; installation</p>}
           {showsPriceMatch(p.category) && <PriceMatchPromise code={p.productCode} title={p.title} />}
+          {p.priceNow !== null && !poa && <PriceDropAlert slug={slug} />}
 
           <div className="mb-6 rounded-[4px] border border-blue/40 bg-blue/[.07] px-[18px] py-4">
             <p className="text-[13.5px] leading-relaxed text-[#44586f]">

@@ -52,3 +52,23 @@ export async function notifyEnquiry(record: {
     return { sent: false, reason: "request-failed" };
   }
 }
+
+/** True once Resend is set up (RESEND_API_KEY). Shoppers' emails also need ENQUIRY_FROM_EMAIL on a domain verified in Resend. */
+export const emailConfigured = () => Boolean(process.env.RESEND_API_KEY);
+
+/** One plain-text email through Resend. Never throws. */
+export async function sendEmail(to: string, subject: string, text: string): Promise<{ sent: boolean; reason?: string }> {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { sent: false, reason: "not-configured" };
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: process.env.ENQUIRY_FROM_EMAIL || "Euronics Ruislip <onboarding@resend.dev>", to, subject, text }),
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.ok ? { sent: true } : { sent: false, reason: `resend ${res.status}` };
+  } catch {
+    return { sent: false, reason: "request-failed" };
+  }
+}

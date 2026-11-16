@@ -68,6 +68,7 @@ model Product {
   priceObservations     PriceObservation[]
   brandPriceItem        BrandPriceItem?
   buyerFaq              ProductFaq?
+  priceAlerts           PriceAlert[]
   siteLinks             ProductSiteLink[]
   isVisible             Boolean   @default(true)
   featured              Boolean   @default(false)
@@ -263,6 +264,21 @@ model BrandPriceFeed {
 /// Buyer questions and answers an AI wrote for a product page from its own facts
 /// (lib/geo-faq.ts), shown on the page and as FAQPage data for Google and AI
 /// assistants. Its own table so the catalogue load never carries it.
+/// "Email me if the price drops": one shopper, one product. Emailed once when the
+/// price falls below priceAtSignup, then deleted; unanswered ones go after 180 days.
+model PriceAlert {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  email         String
+  priceAtSignup Float
+  /// Random; the email's "stop these emails" link deletes the alert with it.
+  token         String   @unique
+  createdAt     DateTime @default(now())
+
+  @@unique([productId, email])
+}
+
 model ProductFaq {
   productId String   @id
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)

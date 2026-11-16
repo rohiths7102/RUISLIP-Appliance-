@@ -20,6 +20,7 @@ import { syncPricewire, parseListSite, readPagePrice, pageUrlFor, checkSite, che
 import { ruislipType } from "../scripts/catalog/ruislip-types.js";
 import { compareWindows, verdictOf } from "../lib/price-watch/effects.js";
 import { faqOk, parseFaq, faqJsonLd } from "../lib/geo-faq.js";
+import { dropped, EMAIL_RE, alertEmail } from "../lib/price-alerts.js";
 import { toHomepage, liveOffers, DEFAULT_OFFERS, HomepageError } from "../lib/homepage.js";
 import { pickPage } from "../lib/offer-ai.js";
 import { readFileSync } from "node:fs";
@@ -686,6 +687,16 @@ ok(ruislipType("Hobs", "Hobs (Built-In)", "iQ700 80cm FlexInduction Hob - TFT To
     "GEO FAQ: 3-5 real questions with short answers; any price is refused");
   ok(parseFaq("```json\n" + JSON.stringify(ok3) + "\n```")?.length === 3 && parseFaq("no json") === null && faqJsonLd(ok3).mainEntity.length === 3,
     "GEO FAQ: the JSON array is read from a fenced reply; FAQPage data has one Question per item");
+}
+
+{
+  ok(dropped(499, 479) && dropped(80, 79) && !dropped(499, 498.5) && !dropped(499, 499) && !dropped(499, 529) && !dropped(499, null) && !dropped(50, 49.5),
+    "price alerts: a drop is at least £1 and 1% below the signup price; same, higher or no price is not");
+  ok(EMAIL_RE.test("jo.smith+oven@gmail.com") && !EMAIL_RE.test("jo@") && !EMAIL_RE.test("a b@x.com") && !EMAIL_RE.test("<x>@y.com"),
+    "price alerts: ordinary emails pass, junk is refused");
+  const m = alertEmail({ title: "Bosch Series 4 washer", productCode: "WGG04409GB", slug: "bosch-wgg04409gb" }, 499, 449, "tok_123456789012345678", "020 8864 5763");
+  ok(m.subject.includes("£449") && m.text.includes("£499 to £449") && m.text.includes("/products/bosch-wgg04409gb") && m.text.includes("/api/price-alert?stop=tok_123456789012345678"),
+    "price alerts: the email names old and new price, links the product and has a stop link");
 }
 
 console.log(`\n${n} unit assertions passed`);

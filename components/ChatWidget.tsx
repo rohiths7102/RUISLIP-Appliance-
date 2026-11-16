@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Phone, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Phone, Sparkles, PhoneIncoming } from "lucide-react";
 import { telHref } from "@/lib/format";
 import { adSource } from "@/lib/ad-source";
 
@@ -14,6 +14,12 @@ export default function ChatWidget({ phone }: { phone: string }) {
   const boxRef = useRef<HTMLDivElement>(null);
   // Groups this tab's questions into one conversation in Admin → Chatbot. Random, per tab; identifies no one.
   const conversationId = useRef("");
+  // "Call me back": name + phone, sent as an enquiry with what they asked (Admin → Sales, and an alert to the shop).
+  const [cb, setCb] = useState<"closed" | "open" | "busy" | "sent">("closed");
+  const [cbName, setCbName] = useState("");
+  const [cbPhone, setCbPhone] = useState("");
+  const [cbError, setCbError] = useState("");
+  const asked = msgs.filter((m) => m.role === "user");
   useEffect(() => { boxRef.current?.scrollTo({ top: boxRef.current.scrollHeight, behavior: "smooth" }); }, [msgs, open]);
 
   async function send(e?: React.FormEvent) {
@@ -32,6 +38,21 @@ export default function ChatWidget({ phone }: { phone: string }) {
     } catch {
       setMsgs((m) => [...m, { role: "assistant", content: `Sorry — I'm having trouble. Please call the store on ${phone}.` }]);
     } finally { setBusy(false); }
+  }
+
+  async function callBack(e: React.FormEvent) {
+    e.preventDefault();
+    setCb("busy"); setCbError("");
+    const shown = msgs.flatMap((m) => m.sources || []).filter((x) => x.productCode);
+    const first = shown[shown.length - 1];
+    const r = await fetch("/api/enquiries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      source: "chat", name: cbName, phone: cbPhone, adSource: adSource(),
+      productCode: first?.productCode || "", productTitle: first?.title || "",
+      message: `Asked for a call back from the chat. They asked: ${asked.slice(-3).map((m) => `"${m.content.slice(0, 200)}"`).join(" / ")}${shown.length ? `. Products shown: ${[...new Set(shown.map((x) => x.productCode))].slice(0, 6).join(", ")}` : ""}.`,
+    }) }).catch(() => null);
+    const j: any = await r?.json().catch(() => null);
+    if (r?.ok) { setCb("sent"); setMsgs((m) => [...m, { role: "assistant", content: `Thanks ${cbName.split(" ")[0]}, the shop will call you on ${cbPhone} as soon as it can (opening hours). If it's urgent, call ${phone}.` }]); }
+    else { setCb("open"); setCbError(j?.error || `That didn't send; please call ${phone}.`); }
   }
 
   return (
@@ -67,6 +88,24 @@ export default function ChatWidget({ phone }: { phone: string }) {
             {busy && <div className="text-xs text-ink/70">Assistant is typing…</div>}
           </div>
           <div className="border-t border-line p-3">
+            {asked.length > 0 && cb === "closed" && (
+              <button type="button" onClick={() => setCb("open")} className="mb-2 flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 px-3 py-1.5 text-xs font-medium text-blue-deep hover:bg-blue/5">
+                <PhoneIncoming size={13} aria-hidden /> Ask the shop to call me back
+              </button>
+            )}
+            {(cb === "open" || cb === "busy") && (
+              <form onSubmit={callBack} className="mb-2 space-y-1.5 rounded-xl border border-line bg-paper p-2">
+                <div className="flex gap-1.5">
+                  <input required value={cbName} onChange={(e) => setCbName(e.target.value)} placeholder="Your name" autoComplete="name" aria-label="Your name" className="min-w-0 flex-1 rounded-full border border-line px-3 py-1.5 text-sm outline-none focus:border-blue" />
+                  <input required type="tel" value={cbPhone} onChange={(e) => setCbPhone(e.target.value)} placeholder="Phone" autoComplete="tel" aria-label="Your phone number" className="min-w-0 flex-1 rounded-full border border-line px-3 py-1.5 text-sm outline-none focus:border-blue" />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <button type="button" onClick={() => setCb("closed")} className="text-[11px] text-muted underline underline-offset-2">Cancel</button>
+                  <button type="submit" disabled={cb === "busy"} className="rounded-full bg-blue px-3 py-1 text-xs font-semibold text-paper disabled:opacity-50">Call me back</button>
+                </div>
+                {cbError && <p className="text-[11px] text-red-700" role="alert">{cbError}</p>}
+              </form>
+            )}
             <a href={telHref(phone)} className="mb-2 flex items-center justify-center gap-2 rounded-full bg-blue/15 px-3 py-1.5 text-xs font-medium text-navy"><Phone size={13} /> Call the store: {phone}</a>
             <form onSubmit={send} className="flex items-center gap-2">
               <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about a product…" className="flex-1 rounded-full border border-line px-3 py-2 text-sm outline-none focus:border-blue" />

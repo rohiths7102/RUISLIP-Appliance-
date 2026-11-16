@@ -3,6 +3,7 @@ import { appendFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getPrisma } from "@/lib/prisma";
 import { notifyEnquiry } from "@/lib/notify";
+import { sendWhatsApp } from "@/lib/whatsapp";
 import { rateLimit, clientIp, tooMany } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   if (!b.name || !b.message) return NextResponse.json({ error: "Name and message are required" }, { status: 400 });
   if (b.company) return NextResponse.json({ ok: true }); // honeypot: bots fill hidden fields
+  const chat = b.source === "chat"; // "Call me back" from the chat assistant: the phone number is the point
+  if (chat && String(b.phone || "").replace(/\D/g, "").length < 10) return NextResponse.json({ error: "Please give a phone number we can call." }, { status: 400 });
 
   const record = {
     name: String(b.name).slice(0, 200),
@@ -32,7 +35,7 @@ export async function POST(req: Request) {
     message: String(b.message).slice(0, 4000),
     productCode: String(b.productCode || "").slice(0, 60),
     productTitle: String(b.productTitle || "").slice(0, 300),
-    source: b.productCode ? "product" : "contact",
+    source: chat ? "chat" : b.productCode ? "product" : "contact",
     gclid: /^[A-Za-z0-9_-]{10,200}$/.test(String(b.gclid || "")) ? String(b.gclid) : "",
     adSource: /^[a-z0-9][a-z0-9._-]{0,39}$/.test(String(b.adSource || "")) ? String(b.adSource) : "",
   };
@@ -41,6 +44,8 @@ export async function POST(req: Request) {
     const db = await getPrisma();
     const e = await db.enquiry.create({ data: record });
     await notifyEnquiry(record).catch(() => {}); // alert is best-effort; never blocks the response
+    // And to the owner's phone, when WhatsApp is set up (a no-op until then).
+    await sendWhatsApp(`New ${record.source} enquiry: ${record.name}, ${record.phone || record.email || "no contact"}${record.productCode ? `, about ${record.productCode}` : ""}. ${record.message.slice(0, 200)}`).catch(() => {});
     return NextResponse.json({ ok: true, id: e.id, stored: "database" });
   } catch {
     // No database configured — persist to disk so the enquiry still reaches the owner.
