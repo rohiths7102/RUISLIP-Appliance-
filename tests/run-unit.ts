@@ -49,8 +49,8 @@ ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }),
 {
   const poa = new Set(["Accessories & Spare Parts", "Siemens"]);
   ok(isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Smeg" })
-    && !isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Bosch", pricewire: true })
-    && isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Bosch" })
+    && !isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Miele", pricewire: true })
+    && isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Miele" })
     && isPoaProduct(poa, { category: "Cooking", subcategory: "Hobs", brand: "Siemens", pricewire: true }),
     "call for price: a Pricewire price shows in a call-for-price category; other accessories stay hidden; a call-for-price brand still hides");
 }
@@ -61,6 +61,16 @@ ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }),
     && !isPoaProduct(none, { category: "Small Appliances", subcategory: "Toasters", brand: "Ninja" })
     && !isPoaProduct(none, { category: "Laundry", subcategory: "Integrated Washing Machines", brand: "Bosch", pricewire: true }),
     "Bosch and Neff small appliances are call for price even when Pricewire priced them; other brands and Bosch laundry keep prices");
+}
+{
+  const none = new Set<string>();
+  ok(isPoaProduct(none, { category: "Accessories & Spare Parts", subcategory: "Spare Parts", brand: "Neff", pricewire: true })
+    && isPoaProduct(none, { category: "Accessories & Spare Parts", subcategory: "Hood Filters & Accessories", brand: "Bosch", pricewire: true })
+    && isPoaProduct(none, { category: "Floorcare", subcategory: "Cordless Vacuums", brand: "Bosch", pricewire: true })
+    && isPoaProduct(none, { category: "Coffee Machines", subcategory: "Tassimo & Pod Machines", brand: "Bosch", pricewire: true })
+    && !isPoaProduct(none, { category: "Cooking", subcategory: "Ovens", brand: "Neff", pricewire: true })
+    && !isPoaProduct(none, { category: "Floorcare", subcategory: "Cordless Vacuums", brand: "Shark" }),
+    "Bosch and Neff parts, accessories, vacuums and coffee machines are call for price even when Pricewire priced them; their ovens and other brands' vacuums keep prices");
 }
 ok(poaNamesFrom([], []).has("Siemens"), "with no brand information at all, Siemens stays masked");
 ok(!poaNamesFrom([], [{ name: "Siemens", priceOnApplication: false }]).has("Siemens"), "the owner unticking Siemens wins over the fallback");

@@ -11,15 +11,29 @@ export const slugOf = (p: Product) => p.newSlug.replace(/^\/products\//, "");
 /**
  * Does the shop hide this product's price ("call for price")? A brand set to
  * call for price always hides it. A call-for-price category hides it unless
- * Pricewire put the price on from a checked site (Oct 2026: Bosch, Neff and
- * Siemens accessories show Ruislip Appliances' or the maker's retail price;
- * other brands' accessories, priced from supplier cost, stay hidden).
+ * Pricewire put the price on from a checked site (Oct 2026). Bosch and Neff are
+ * the exception since Nov 2026: POA_BRAND_CATEGORY below hides their parts,
+ * accessories and small items whoever priced them.
  */
+/** Categories masked when the catalogue carries no flag for them — see poaNamesFrom. */
+const POA_FALLBACK = [
+  "Accessories & Spare Parts", "Coffee Machines", "Oven & Cooking Accessories",
+  "Hob Accessories", "Hood Filters & Accessories", "Laundry Accessories",
+  "Refrigeration Accessories", "Dishwasher Accessories", "Vacuum Bags & Accessories",
+  "Coffee Machine Accessories", "Kitchen Machine Accessories", "Kitchen Utensils",
+  "Cleaning & Care Products", "Spare Parts",
+];
 /**
- * Brand + category pairs sold call-for-price whoever priced them, Pricewire included
- * (Sachin, 15 Nov 2026: Bosch and Neff small domestic appliances show no price).
+ * Brand + category pairs sold call-for-price whoever priced them, Pricewire included.
+ * Sachin, 15 Nov 2026: Bosch and Neff small domestic appliances show no price.
+ * Sachin, 25 Nov 2026: nor do Bosch and Neff parts and accessories (the maker's retail
+ * price Pricewire put on leaves no margin), nor their other small items — vacuum
+ * cleaners and coffee machines — which sell below cost at the published price.
+ * This ends the Oct 2026 exemption for these two brands; their large appliances keep prices.
  */
-export const POA_BRAND_CATEGORY: [string, string][] = [["Bosch", "Small Appliances"], ["Neff", "Small Appliances"]];
+const POA_PAIR_BRANDS = ["Bosch", "Neff"];
+const POA_PAIR_CATEGORIES = [...POA_FALLBACK, "Small Appliances", "Floorcare"];
+export const POA_BRAND_CATEGORY: [string, string][] = POA_PAIR_BRANDS.flatMap((b) => POA_PAIR_CATEGORIES.map((c): [string, string] => [b, c]));
 export const poaPair = (p: { category?: string | null; subcategory?: string | null; brand?: string | null }) =>
   POA_BRAND_CATEGORY.some(([b, c]) => p.brand === b && (p.category === c || p.subcategory === c));
 /** The same pairs as a Prisma filter, for queries that mirror hidesPrice (put inside NOT). */
@@ -65,13 +79,6 @@ export const toCardItem = (p: Product, poaNames?: Set<string>) => {
  * flagged category must not un-hide its prices on every storefront surface.
  * An empty `cs` (no flag information at all) therefore masks the whole set.
  */
-const POA_FALLBACK = [
-  "Accessories & Spare Parts", "Coffee Machines", "Oven & Cooking Accessories",
-  "Hob Accessories", "Hood Filters & Accessories", "Laundry Accessories",
-  "Refrigeration Accessories", "Dishwasher Accessories", "Vacuum Bags & Accessories",
-  "Coffee Machine Accessories", "Kitchen Machine Accessories", "Kitchen Utensils",
-  "Cleaning & Care Products", "Spare Parts",
-];
 /**
  * Brands the owner sells call-for-price: Siemens, asked for on 12 Sept 2026.
  * Same rule as POA_FALLBACK — a brand ABSENT from `bs` is masked; one present
