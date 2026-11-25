@@ -41,7 +41,7 @@ async function adsData() {
     db.product.findMany({
       select: {
         title: true, brand: true, productCode: true, slug: true, category: true, subcategory: true,
-        priceNow: true, mainImage: true, availabilityNormalised: true, isVisible: true,
+        priceNow: true, mainImage: true, availabilityNormalised: true, isVisible: true, pricewire: true,
       },
     }),
     poaNamesFromDb(db),

@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { gbp, availabilityLabel, telHref, waChatHref } from "../lib/format.js";
-import { slugOf, poaNamesFrom } from "../lib/select.js";
+import { slugOf, poaNamesFrom, shownPriceWhere } from "../lib/select.js";
 import { isPoaProduct } from "../lib/poa.js";
 import { productDoc, buildDocuments, faqDocs } from "../lib/rag/documents.js";
 import { retrieve } from "../lib/rag/retriever.js";
@@ -71,6 +71,12 @@ ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }),
     && !isPoaProduct(none, { category: "Cooking", subcategory: "Ovens", brand: "Neff", pricewire: true })
     && !isPoaProduct(none, { category: "Floorcare", subcategory: "Cordless Vacuums", brand: "Shark" }),
     "Bosch and Neff parts, accessories, vacuums and coffee machines are call for price even when Pricewire priced them; their ovens and other brands' vacuums keep prices");
+}
+{
+  const none: any = shownPriceWhere([]), some: any = shownPriceWhere(new Set(["Siemens"]));
+  ok(none.NOT.some((w: any) => w.brand === "Bosch" && w.category === "Floorcare") && !("OR" in none)
+    && some.NOT.some((w: any) => w.brand?.in?.[0] === "Siemens") && some.NOT.some((w: any) => w.brand === "Neff" && w.subcategory === "Spare Parts") && Array.isArray(some.OR),
+    "feed filter: the Bosch and Neff pairs are excluded even when nothing is flagged; flagged names add the brand and category rules");
 }
 ok(poaNamesFrom([], []).has("Siemens"), "with no brand information at all, Siemens stays masked");
 ok(!poaNamesFrom([], [{ name: "Siemens", priceOnApplication: false }]).has("Siemens"), "the owner unticking Siemens wins over the fallback");

@@ -38,6 +38,18 @@ export const poaPair = (p: { category?: string | null; subcategory?: string | nu
   POA_BRAND_CATEGORY.some(([b, c]) => p.brand === b && (p.category === c || p.subcategory === c));
 /** The same pairs as a Prisma filter, for queries that mirror hidesPrice (put inside NOT). */
 export const POA_PAIR_WHERE = POA_BRAND_CATEGORY.flatMap(([brand, c]) => [{ brand, category: c }, { brand, subcategory: c }]);
+/**
+ * !hidesPrice as a Prisma filter: spread into the `where` of any query that must
+ * return only products whose price the shop shows (Google feeds, admin feed counts).
+ * The brand + category pairs apply even when no category or brand is flagged.
+ */
+export const shownPriceWhere = (poaNames: Iterable<string>) => {
+  const names = [...poaNames];
+  return {
+    NOT: [...POA_PAIR_WHERE, ...(names.length ? [{ brand: { in: names } }] : [])],
+    ...(names.length && { OR: [{ pricewire: true }, { NOT: [{ category: { in: names } }, { subcategory: { in: names } }] }] }),
+  };
+};
 export const hidesPrice = (poa: Set<string>, p: { category?: string | null; subcategory?: string | null; brand?: string | null; pricewire?: boolean | null }) =>
   poaPair(p) || poa.has(p.brand || "") || (!p.pricewire && (poa.has(p.category || "") || poa.has(p.subcategory || "")));
 
