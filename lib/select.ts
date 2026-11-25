@@ -32,7 +32,7 @@ const POA_FALLBACK = [
  * This ends the Oct 2026 exemption for these two brands; their large appliances keep prices.
  */
 const POA_PAIR_BRANDS = ["Bosch", "Neff"];
-const POA_PAIR_CATEGORIES = [...POA_FALLBACK, "Small Appliances", "Floorcare"];
+export const POA_PAIR_CATEGORIES = [...POA_FALLBACK, "Small Appliances", "Floorcare"];
 export const POA_BRAND_CATEGORY: [string, string][] = POA_PAIR_BRANDS.flatMap((b) => POA_PAIR_CATEGORIES.map((c): [string, string] => [b, c]));
 export const poaPair = (p: { category?: string | null; subcategory?: string | null; brand?: string | null }) =>
   POA_BRAND_CATEGORY.some(([b, c]) => p.brand === b && (p.category === c || p.subcategory === c));
