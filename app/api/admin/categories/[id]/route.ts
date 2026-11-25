@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { syncCategoryToRag, syncCategoryProductsToRag } from "@/lib/rag/index";
 import { revalidateStorefront } from "@/lib/revalidate";
+import { POA_PAIR_CATEGORIES } from "@/lib/select";
 export const dynamic = "force-dynamic";
 // A call-for-price flip rewrites the RAG doc of every product in the category
 // (839 for the accessories department) — give the write room beyond the 10s default.
@@ -56,6 +57,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data[k] = v; changed.push(k);
     }
     if (!changed.length) return NextResponse.json(existing);
+    // Bosch and Neff prices in these categories are hidden by category NAME
+    // (lib/select POA_BRAND_CATEGORY). A rename would move the products to a name
+    // the rule does not know and put the withheld prices back on the site and in
+    // Google's feed, so the rule has to be changed with the name.
+    if (changed.includes("name") && POA_PAIR_CATEGORIES.includes(existing.name)) {
+      return NextResponse.json({ error: `"${existing.name}" cannot be renamed here: the rule that hides Bosch and Neff prices goes by this name. Ask your developer to rename it.` }, { status: 400 });
+    }
     const updated = await db.category.update({ where: { id }, data });
     // Products join categories by NAME string — a rename must carry them along
     // or the department page empties and call-for-price suppression silently

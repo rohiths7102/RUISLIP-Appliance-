@@ -15,6 +15,7 @@ import { runSeoAgent } from "@/lib/seo-auto";
 import { runGeoAgent } from "@/lib/geo-faq";
 import { writeEffectsNote } from "@/lib/price-watch/effects";
 import { runPriceAlerts } from "@/lib/price-alerts";
+import { sweepHiddenPrices } from "@/lib/hidden-price-sweep";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
@@ -29,6 +30,8 @@ export const maxDuration = 120;
  *   6a. price-drop alerts: email shoppers whose watched product got cheaper
  *   6b. GEO agent: buyer Q&A on up to 3 of the most-viewed product pages (AI);
  *       on Mondays the AI's note on whether price changes brought more views/calls
+ *   6c. hidden prices: the chatbot index and unsent reply drafts drop any price the
+ *       Bosch and Neff call-for-price rule withholds (lib/hidden-price-sweep)
  *   7. write the dashboard's plain-English "this week" summary (AI, from the numbers)
  *   8. send the owner the morning price summary (WhatsApp + Admin → Price watch),
  *      which includes the best sellers' maker prices applied an hour earlier by
@@ -65,6 +68,7 @@ export async function GET(req: Request) {
   run.seoAgent = await runSeoAgent(db).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`);
   // After the 05:00 and 05:30 price updates: shoppers watching a product that got cheaper get their one email.
   run.priceAlerts = await runPriceAlerts(db).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`);
+  run.hiddenPrices = await sweepHiddenPrices(db).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`);
   run.geoAgent = await runGeoAgent(db, { budgetMs: 30_000 }).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`);
   // Once a week: the AI's few lines on whether last week's price changes brought more views and calls.
   run.effectsNote = monday ? await writeEffectsNote(db).then((r) => r.note).catch((e: any) => `failed: ${e?.message}`) : "not Monday";

@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { gbp, availabilityLabel, telHref, waChatHref } from "../lib/format.js";
-import { slugOf, poaNamesFrom } from "../lib/select.js";
+import { slugOf, poaNamesFrom, shownPriceWhere } from "../lib/select.js";
+import { quotesPrice } from "../lib/hidden-price-sweep.js";
 import { isPoaProduct } from "../lib/poa.js";
 import { productDoc, buildDocuments, faqDocs } from "../lib/rag/documents.js";
 import { retrieve } from "../lib/rag/retriever.js";
@@ -49,8 +50,8 @@ ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }),
 {
   const poa = new Set(["Accessories & Spare Parts", "Siemens"]);
   ok(isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Smeg" })
-    && !isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Bosch", pricewire: true })
-    && isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Bosch" })
+    && !isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Miele", pricewire: true })
+    && isPoaProduct(poa, { category: "Accessories & Spare Parts", subcategory: "Hob Accessories", brand: "Miele" })
     && isPoaProduct(poa, { category: "Cooking", subcategory: "Hobs", brand: "Siemens", pricewire: true }),
     "call for price: a Pricewire price shows in a call-for-price category; other accessories stay hidden; a call-for-price brand still hides");
 }
@@ -62,6 +63,25 @@ ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }),
     && !isPoaProduct(none, { category: "Laundry", subcategory: "Integrated Washing Machines", brand: "Bosch", pricewire: true }),
     "Bosch and Neff small appliances are call for price even when Pricewire priced them; other brands and Bosch laundry keep prices");
 }
+{
+  const none = new Set<string>();
+  ok(isPoaProduct(none, { category: "Accessories & Spare Parts", subcategory: "Spare Parts", brand: "Neff", pricewire: true })
+    && isPoaProduct(none, { category: "Accessories & Spare Parts", subcategory: "Hood Filters & Accessories", brand: "Bosch", pricewire: true })
+    && isPoaProduct(none, { category: "Floorcare", subcategory: "Cordless Vacuums", brand: "Bosch", pricewire: true })
+    && isPoaProduct(none, { category: "Coffee Machines", subcategory: "Tassimo & Pod Machines", brand: "Bosch", pricewire: true })
+    && !isPoaProduct(none, { category: "Cooking", subcategory: "Ovens", brand: "Neff", pricewire: true })
+    && !isPoaProduct(none, { category: "Floorcare", subcategory: "Cordless Vacuums", brand: "Shark" }),
+    "Bosch and Neff parts, accessories, vacuums and coffee machines are call for price even when Pricewire priced them; their ovens and other brands' vacuums keep prices");
+}
+{
+  const none: any = shownPriceWhere([]), some: any = shownPriceWhere(new Set(["Siemens"]));
+  ok(none.NOT.some((w: any) => w.brand === "Bosch" && w.category === "Floorcare") && !("OR" in none)
+    && some.NOT.some((w: any) => w.brand?.in?.[0] === "Siemens") && some.NOT.some((w: any) => w.brand === "Neff" && w.subcategory === "Spare Parts") && Array.isArray(some.OR),
+    "feed filter: the Bosch and Neff pairs are excluded even when nothing is flagged; flagged names add the brand and category rules");
+}
+ok(quotesPrice("The filter is £24.90 today.", 24.9) && quotesPrice("Price: £1,024.9", 1024.9) && quotesPrice("£ 53.2", 53.2)
+  && !quotesPrice("I can do £22 for you.", 24.9) && !quotesPrice("Call us for a price.", 24.9) && !quotesPrice("£124.90", 24.9),
+  "hidden-price sweep: a draft quoting the withheld price is caught; the owner's own figure or no figure is not");
 ok(poaNamesFrom([], []).has("Siemens"), "with no brand information at all, Siemens stays masked");
 ok(!poaNamesFrom([], [{ name: "Siemens", priceOnApplication: false }]).has("Siemens"), "the owner unticking Siemens wins over the fallback");
 // rag documents

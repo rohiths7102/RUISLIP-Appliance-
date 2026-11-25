@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { poaNamesFromDb } from "@/lib/poa";
-import { POA_PAIR_WHERE } from "@/lib/select";
+import { shownPriceWhere } from "@/lib/select";
+import { FEED_AVAILABILITY } from "@/lib/merchant-feed";
 import { loadCatalog } from "@/lib/repo";
 import AdminShell from "@/components/admin/AdminShell";
 import { Sparkline, BarChart, HBar } from "@/components/admin/Charts";
@@ -54,8 +55,8 @@ async function dashboard() {
     db.product.count({
       where: {
         isVisible: true, priceNow: { not: null }, mainImage: { not: "" },
-        availabilityNormalised: { in: ["in_stock", "limited"] },
-        ...(poaNames.length && { NOT: [{ brand: { in: poaNames } }, ...POA_PAIR_WHERE], OR: [{ pricewire: true }, { NOT: [{ category: { in: poaNames } }, { subcategory: { in: poaNames } }] }] }),
+        availabilityNormalised: { in: FEED_AVAILABILITY },
+        ...shownPriceWhere(poaNames),
       },
     }),
   ]);

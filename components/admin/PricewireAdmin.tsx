@@ -324,7 +324,7 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
             const total = b.products || 1;
             return (
               <div key={b.brand}>
-                <div className="flex justify-between gap-3 text-xs text-white/70"><span className="font-medium text-white">{b.brand}</span><span>{b.mapped} of {b.products} priced{b.callForPrice ? " · brand set to call for price" : ""}</span></div>
+                <div className="flex justify-between gap-3 text-xs text-white/70"><span className="font-medium text-white">{b.brand}</span><span>{b.mapped} of {b.products} mapped · {b.showing} showing a price{b.callForPrice ? " · brand set to call for price" : ""}</span></div>
                 <div className="mt-1 flex h-2.5 overflow-hidden rounded-full bg-white/10" role="img" aria-label={`${b.brand}: ${sites.filter((s) => by[s.id]).map((s) => `${by[s.id]} from ${s.name}`).join(", ") || "none priced"}`}>
                   {sites.filter((s) => by[s.id]).map((s) => <span key={s.id} title={`${s.name}: ${by[s.id]}`} style={{ width: `${(by[s.id] / total) * 100}%`, background: colourOf(s.id) }} />)}
                 </div>
@@ -401,7 +401,7 @@ export default function PricewireAdmin({ sites, brands, pending, runs, checks, c
             </table>
             {shown.length > 400 && <p className="mt-2 text-xs text-muted">Showing 400 of {shown.length}.</p>}
           </div>
-        ) : <p className="mt-4 text-sm text-muted">Nothing waiting: every mapped product shows its site&apos;s price.</p>}
+        ) : <p className="mt-4 text-sm text-muted">Nothing waiting: every mapped product whose price the shop shows carries its site&apos;s price.</p>}
       </Card>}
 
       {mod === "activity" && <>

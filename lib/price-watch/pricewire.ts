@@ -548,8 +548,10 @@ export async function pricewireOverview(db: any): Promise<{
     const callForPrice = !!brandRows.find((b: any) => b.name === brand)?.priceOnApplication;
     for (const i of mine) {
       // A call-for-price brand's prices can never go on, so none of them is "waiting".
-      // A call-for-price category does not stop a Pricewire price (lib/select hidesPrice).
-      if (!i.siteId || typeof i.price !== "number" || callForPrice) continue;
+      // Nor can the price of a product the shop hides whoever priced it (Bosch and Neff
+      // parts and small items, lib/select hidesPrice): Apply refuses it. A call-for-price
+      // category alone does not stop a Pricewire price, so the row is checked as one.
+      if (!i.siteId || typeof i.price !== "number" || callForPrice || isPoaProduct(poa, { category: i.product.category, subcategory: i.product.subcategory, brand, pricewire: true })) continue;
       if (!(typeof i.product.priceNow === "number" && Math.abs(i.product.priceNow - i.price) < 0.01)) {
         pending.push({ productId: i.productId, slug: i.product.slug, brand, code: i.productCode, title: i.product.title, from: i.product.priceNow ?? null, to: i.price, siteId: i.siteId });
       }
