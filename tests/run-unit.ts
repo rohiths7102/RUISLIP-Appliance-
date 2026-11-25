@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { gbp, availabilityLabel, telHref, waChatHref } from "../lib/format.js";
 import { slugOf, poaNamesFrom, shownPriceWhere } from "../lib/select.js";
+import { quotesPrice } from "../lib/hidden-price-sweep.js";
 import { isPoaProduct } from "../lib/poa.js";
 import { productDoc, buildDocuments, faqDocs } from "../lib/rag/documents.js";
 import { retrieve } from "../lib/rag/retriever.js";
@@ -78,6 +79,9 @@ ok(!isPoaProduct(poaSet, { category: "Hobs", subcategory: "", brand: "Bosch" }),
     && some.NOT.some((w: any) => w.brand?.in?.[0] === "Siemens") && some.NOT.some((w: any) => w.brand === "Neff" && w.subcategory === "Spare Parts") && Array.isArray(some.OR),
     "feed filter: the Bosch and Neff pairs are excluded even when nothing is flagged; flagged names add the brand and category rules");
 }
+ok(quotesPrice("The filter is £24.90 today.", 24.9) && quotesPrice("Price: £1,024.9", 1024.9) && quotesPrice("£ 53.2", 53.2)
+  && !quotesPrice("I can do £22 for you.", 24.9) && !quotesPrice("Call us for a price.", 24.9) && !quotesPrice("£124.90", 24.9),
+  "hidden-price sweep: a draft quoting the withheld price is caught; the owner's own figure or no figure is not");
 ok(poaNamesFrom([], []).has("Siemens"), "with no brand information at all, Siemens stays masked");
 ok(!poaNamesFrom([], [{ name: "Siemens", priceOnApplication: false }]).has("Siemens"), "the owner unticking Siemens wins over the fallback");
 // rag documents

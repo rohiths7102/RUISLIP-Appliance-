@@ -3,7 +3,7 @@ import { buildDocuments, productDoc, businessDocs, faqDocs, categoryDoc, brandDo
 import { embedText, embeddingsEnabled } from "./embed";
 import { poaNamesFromDb, isPoaProduct } from "../poa";
 
-const docId = (sourceType: string, sourceId: string) => `${sourceType}:${sourceId}`;
+export const docId = (sourceType: string, sourceId: string) => `${sourceType}:${sourceId}`;
 
 /** Shared upsert of a single RAG document (computes an embedding only if configured). */
 async function upsertDoc(db: any, d: RagDoc): Promise<void> {
